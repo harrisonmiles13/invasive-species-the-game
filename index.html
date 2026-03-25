@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invasive Species: The Card Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── TOP BAR ─────────────────────────────────────────────── -->
+  <header id="topbar">
+    <div id="title-block">
+      <span id="title-main">Invasive Species</span>
+      <span id="title-sub">The Card Game</span>
+    </div>
+
+    <div id="season-track">
+      <span class="track-label">Growing Seasons</span>
+      <div id="season-pips"></div>
+    </div>
+
+    <div id="hud-stats">
+      <div class="stat-chip chip-native">
+        <span class="stat-icon">🌿</span>
+        <span id="hud-natives">— Native</span>
+      </div>
+      <div class="stat-chip chip-invasive">
+        <span class="stat-icon">⚠</span>
+        <span id="hud-invasives">— Invasive</span>
+      </div>
+      <div class="stat-chip chip-score">
+        <span class="stat-icon">★</span>
+        <span id="hud-score">Score 0</span>
+      </div>
+      <div class="stat-chip chip-deck">
+        <span class="stat-icon">🂠</span>
+        <span id="hud-deck">Deck: —</span>
+      </div>
+    </div>
+
+    <div id="topbar-controls">
+      <label class="control-label">Players
+        <select id="player-count">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </label>
+      <label class="control-label">Grid
+        <select id="grid-size">
+          <option value="3">3×3</option>
+          <option value="4">4×4</option>
+          <option value="5">5×5</option>
+          <option value="6">6×6</option>
+          <option value="7">7×7</option>
+          <option value="8">8×8</option>
+          <option value="9">9×9</option>
+          <option value="10" selected>10×10</option>
+        </select>
+      </label>
+      <label class="control-label">Ecosystem
+        <select id="ecosystem-type">
+          <option value="random" selected>🎲 Random</option>
+          <optgroup label="Mixed Ecosystems">
+            <option value="river_valley">River Valley</option>
+            <option value="meandering_river">Meandering River</option>
+            <option value="glacial_lake">Glacial Lake</option>
+            <option value="coastal_margin">Coastal Margin</option>
+            <option value="estuary">Estuary</option>
+            <option value="island">Island</option>
+            <option value="wetland_marsh">Wetland Marsh</option>
+            <option value="river_delta">River Delta</option>
+          </optgroup>
+          <optgroup label="Uniform Ecosystems">
+            <option value="terrestrial">Terrestrial (only)</option>
+            <option value="freshwater">Freshwater (only)</option>
+            <option value="marine">Marine (only)</option>
+            <option value="wetland">Wetland (only)</option>
+          </optgroup>
+        </select>
+      </label>
+      <button id="btn-new-game" class="btn btn-neutral">New Game</button>
+      <button id="btn-tutorial" class="btn btn-neutral btn-icon" title="How to Play">?</button>
+      <button id="btn-settings" class="btn btn-neutral btn-icon" title="Settings">⚙</button>
+    </div>
+  </header>
+
+  <!-- ── MAIN ────────────────────────────────────────────────── -->
+  <div id="layout">
+
+    <!-- Center: field + actions -->
+    <main id="center">
+      <div id="phase-bar">
+        <span id="hud-phase">—</span>
+        <div id="action-buttons">
+          <button id="btn-draw"       class="btn btn-primary hidden">Draw Card</button>
+          <button id="btn-discard-hand" class="btn btn-danger hidden">Discard Hand</button>
+          <button id="btn-end-play"   class="btn btn-secondary hidden">Done Playing →</button>
+          <button id="btn-native"     class="btn btn-native hidden">Resolve Ecosystem Turn →</button>
+          <button id="btn-invasive"   class="btn btn-danger hidden">Resolve Invasive Turn</button>
+          <button id="btn-next-round" class="btn btn-season hidden">Next Season →</button>
+          <button id="btn-game-over"  class="btn btn-primary hidden">View Results</button>
+        </div>
+      </div>
+
+      <div id="play-instruction" class="hidden">
+        <div id="play-instruction-inner">
+          <span id="play-instruction-text"></span>
+          <button class="btn btn-primary btn-xs hidden" id="btn-confirm-chemical">✓ Confirm</button>
+          <button class="btn btn-neutral btn-xs" id="btn-cancel-play">✕ Cancel</button>
+        </div>
+      </div>
+
+      <div id="field-container">
+        <div id="field-label">Playing Field</div>
+        <div id="field"></div>
+        <div id="field-deck-row">
+          <div class="deck-pile" id="deck-visual">
+            <div class="pile-top deck-top">Deck</div>
+          </div>
+          <div class="deck-pile discard-pile" id="discard-visual">
+            <div class="pile-top discard-top">Discard</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right sidebar: log -->
+    <aside id="sidebar-right">
+      <div id="log-panel">
+        <div class="panel-title">Event Log</div>
+        <div id="log"></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ── HAND BAR ─────────────────────────────────────────────── -->
+  <footer id="hand-bar">
+    <div id="hand-header">
+      <span id="hand-label">Hand</span>
+      <span id="hand-hint" class="hand-hint"></span>
+    </div>
+    <div id="hand"></div>
+  </footer>
+
+</div>
+
+<!-- ── REFILL BANNER ─────────────────────────────────────────────── -->
+<div id="refill-banner" class="hidden">Refilling player hand…</div>
+
+<!-- ── FLOATING CARD TOOLTIP ───────────────────────────────────── -->
+<div id="tooltip" class="hidden">
+  <div id="tooltip-header"></div>
+  <div id="tooltip-body">
+    <div id="tooltip-name"></div>
+    <div id="tooltip-latin"></div>
+    <span id="tooltip-type" class="card-type-badge"></span>
+    <div id="tooltip-immunity"></div>
+    <p id="tooltip-desc"></p>
+    <div id="tooltip-action" class="hidden"></div>
+  </div>
+</div>
+
+<!-- ── TUTORIAL ──────────────────────────────────────────────────── -->
+<div id="tutorial-modal" class="hidden">
+  <div id="tutorial-content">
+    <button id="tut-close" aria-label="Close tutorial">✕</button>
+    <div id="tutorial-step-track"></div>
+    <div id="tutorial-body"></div>
+    <div id="tutorial-buttons">
+      <button class="btn btn-neutral" id="tut-skip">Skip Tutorial</button>
+      <button class="btn btn-neutral" id="tut-back">← Back</button>
+      <button class="btn btn-primary" id="tut-next">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS MODAL ───────────────────────────────────────────── -->
+<div id="settings-modal" class="hidden">
+  <div id="settings-content">
+    <div id="settings-title">Settings</div>
+    <div id="settings-body">
+      <div class="settings-row">
+        <span class="settings-label">Theme</span>
+        <div class="theme-toggle">
+          <button class="theme-btn" data-theme-value="light">☀ Light</button>
+          <button class="theme-btn active" data-theme-value="system">⬤ System</button>
+          <button class="theme-btn" data-theme-value="dark">☾ Dark</button>
+        </div>
+      </div>
+    </div>
+    <div id="settings-buttons">
+      <button class="btn btn-neutral" id="settings-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM MODAL ────────────────────────────────────────────── -->
+<div id="confirm-modal" class="hidden">
+  <div id="confirm-content">
+    <div id="confirm-title">Start a New Game?</div>
+    <p id="confirm-body">Your current game will be lost.</p>
+    <div id="confirm-buttons">
+      <button class="btn btn-danger" id="confirm-yes">New Game</button>
+      <button class="btn btn-neutral" id="confirm-no">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL ───────────────────────────────────────────────────── -->
+<div id="modal" class="hidden">
+  <div id="modal-content">
+    <div id="modal-title"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ── FEEDBACK BUTTON ──────────────────────────────────────────── -->
+<button id="feedback-btn">ISC Feedback</button>
+
+<!-- ── FEEDBACK MODAL ───────────────────────────────────────────── -->
+<div id="feedback-modal" class="hidden">
+  <div id="feedback-content">
+    <button id="feedback-close" aria-label="Close">✕</button>
+    <div id="feedback-title">ISC Feedback</div>
+    <p id="feedback-subtitle">Share your thoughts, bugs, or suggestions with the development team.</p>
+    <textarea id="feedback-text" placeholder="Type your feedback here…" rows="6"></textarea>
+    <div id="feedback-buttons">
+      <button class="btn btn-neutral" id="feedback-cancel">Cancel</button>
+      <button class="btn btn-danger" id="feedback-submit">Send Feedback</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/game.js"></script>
+</body>
+</html>
