@@ -2545,13 +2545,31 @@ $('feedback-modal').addEventListener('click', e => {
   if (e.target === $('feedback-modal')) closeFeedback();
 });
 
-$('feedback-submit').addEventListener('click', () => {
+$('feedback-submit').addEventListener('click', async () => {
   const text = $('feedback-text').value.trim();
   if (!text) { $('feedback-text').focus(); return; }
-  const subject = encodeURIComponent('ISC Alpha Feedback');
-  const body    = encodeURIComponent(text);
-  window.location.href = `mailto:harrisonmiles@vt.edu?subject=${subject}&body=${body}`;
-  closeFeedback();
+
+  const btn = $('feedback-submit');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('https://formspree.io/f/mbdpraby', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    });
+    if (res.ok) {
+      btn.textContent = 'Sent!';
+      setTimeout(() => { closeFeedback(); btn.textContent = 'Send Feedback'; btn.disabled = false; }, 1200);
+    } else {
+      throw new Error('Server error');
+    }
+  } catch {
+    btn.textContent = 'Failed — try again';
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = 'Send Feedback'; }, 2500);
+  }
 });
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
