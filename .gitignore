@@ -1,0 +1,17 @@
+# Node modules and package files
+node_modules/
+*.log
+.env
+
+# Build outputs
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~

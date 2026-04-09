@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#667eea" />
+
+  <title>🌿 Nature Defenders v1.0</title>
+
+  <style>
+    /* Nature Defenders v1.0 Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      color: white;
+    }
+
+    /* Header */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      background: rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 100;
+    }
+
+    .header-left h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .header-center {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .btn-icon:active {
+      transform: scale(0.95);
+    }
+
+    /* Game Area */
+    .game-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hex-grid {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .hex-cell {
+      position: absolute;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+      border-radius: 50%;
+    }
+
+    .hex-cell.valid-drop {
+      border-color: #4CAF50;
+      background: rgba(76, 175, 80, 0.1);
+      box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+    }
+
+    .hex-cell.occupied {
+      pointer-events: none;
+    }
+
+    /* Cards */
+    .card {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      cursor: grab;
+      user-select: none;
+      transition: all 0.2s ease;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      position: absolute;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    }
+
+    .card:active {
+      cursor: grabbing;
+      transform: scale(0.95);
+    }
+
+    .card.dragging {
+      opacity: 0.7;
+      transform: scale(1.1);
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    /* Card types */
+    .card.leaf { background: #4CAF50; }
+    .card.pawprint { background: #8BC34A; }
+    .card.flame { background: #FF5722; }
+    .card.shield { background: #607D8B; }
+    .card.rake { background: #2196F3; }
+    .card.shears { background: #3F51B5; }
+    .card.droplet { background: #00BCD4; }
+    .card.wind { background: #9C27B0; }
+    .card.toxin { background: #E91E63; }
+
+    /* Player Area */
+    .player-area {
+      background: rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .hand-container {
+      margin: 0 auto;
+      max-width: 400px;
+    }
+
+    .hand-label {
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
+    }
+
+    .cards-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    .hand-card {
+      position: relative;
+      cursor: grab;
+      transition: all 0.2s ease;
+    }
+
+    .hand-card:hover {
+      transform: translateY(-5px);
+    }
+
+    /* Overlays */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .panel {
+      background: rgba(20, 20, 30, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 0.5rem;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 50%;
+      transition: background 0.2s ease;
+    }
+
+    .btn-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Particle effects */
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .app-header {
+        padding: 0.5rem;
+      }
+
+      .header-left h1 {
+        font-size: 1rem;
+      }
+
+      .btn-icon {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1rem;
+      }
+
+      .card {
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
+      }
+
+      .panel {
+        padding: 1rem;
+        max-width: 95vw;
+      }
+    }
+
+    @media (max-height: 600px) {
+      .app-header {
+        padding: 0.25rem 0.5rem;
+      }
+
+      .player-area {
+        padding: 0.5rem;
+      }
+
+      .hand-label {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1>🌿 Nature Defenders</h1>
+      </div>
+      <div class="header-center">
+        <div class="score-display">⭐ <span id="score">0</span></div>
+        <div class="turn-display">🌱 <span id="turn">1</span></div>
+      </div>
+      <div class="header-right">
+        <button class="btn-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+        <button class="btn-icon" onclick="toggleLegend()" title="Legend">📖</button>
+        <button class="btn-icon" onclick="toggleMenu()" title="Menu">☰</button>
+      </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="game-area">
+      <div class="hex-grid" id="hexGrid"></div>
+    </main>
+
+    <!-- Player Hand -->
+    <footer class="player-area">
+      <div class="hand-container">
+        <div class="hand-label">Your Hand</div>
+        <div class="cards-row" id="playerHand"></div>
+      </div>
+    </footer>
+
+    <!-- Menu Overlay -->
+    <div class="overlay" id="menuOverlay">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>🌿 Menu</h2>
+          <button class="btn-close" onclick="toggleMenu()">×</button>
+        </div>
+        <div class="menu-content">
+          <button class="menu-btn" onclick="newGame()">🎮 New Game</button>
+          <button class="menu-btn" onclick="showHelp()">❓ How to Play</button>
+          <button class="menu-btn" onclick="showSettings()">⚙️ Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend Overlay -->
+    <div class="overlay" id="legendOverlay">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>📖 Legend</h2>
+          <button class="btn-close" onclick="toggleLegend()">×</button>
+        </div>
+        <div class="legend-content">
+          <p>Drag cards from your hand onto the hexagonal grid</p>
+          <div style="margin: 1rem 0;">
+            <h3>Growth & Nature</h3>
+            <div style="display: flex; gap: 1rem; margin: 0.5rem 0;">
+              <div style="text-align: center;"><div class="card leaf">🌿</div><small>Growth</small></div>
+              <div style="text-align: center;"><div class="card pawprint">🐾</div><small>Predator</small></div>
+              <div style="text-align: center;"><div class="card flame">🔥</div><small>Fire</small></div>
+              <div style="text-align: center;"><div class="card shield">🛡️</div><small>Defense</small></div>
+            </div>
+            <h3>Control Methods</h3>
+            <div style="display: flex; gap: 1rem; margin: 0.5rem 0;">
+              <div style="text-align: center;"><div class="card rake">🔨</div><small>Manual</small></div>
+              <div style="text-align: center;"><div class="card shears">✂️</div><small>Cutting</small></div>
+              <div style="text-align: center;"><div class="card droplet">💧</div><small>Water</small></div>
+              <div style="text-align: center;"><div class="card toxin">☠️</div><small>Chemical</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Particles Container -->
+    <div id="particles"></div>
+  </div>
+
+  <script>
+    // Nature Defenders v1.0 Game Engine
+
+    let gameState = {
+      field: new Array(100).fill(null), // 10x10 grid
+      hand: [],
+      score: 0,
+      turn: 1,
+      draggedCard: null,
+      dragOffset: { x: 0, y: 0 }
+    };
+
+    const cardTypes = {
+      leaf: { icon: '🌿', color: '#4CAF50' },
+      pawprint: { icon: '🐾', color: '#8BC34A' },
+      flame: { icon: '🔥', color: '#FF5722' },
+      shield: { icon: '🛡️', color: '#607D8B' },
+      rake: { icon: '🔨', color: '#2196F3' },
+      shears: { icon: '✂️', color: '#3F51B5' },
+      droplet: { icon: '💧', color: '#00BCD4' },
+      wind: { icon: '💨', color: '#9C27B0' },
+      toxin: { icon: '☠️', color: '#E91E63' }
+    };
+
+    // Initialize game
+    function initGame() {
+      generateStartingField();
+      generatePlayerHand();
+      renderField();
+      renderHand();
+      updateUI();
+    }
+
+    function generateStartingField() {
+      // Place 4 random cards on field
+      const positions = [22, 27, 72, 77];
+      const types = ['leaf', 'pawprint', 'flame', 'shield'];
+
+      positions.forEach((pos, i) => {
+        gameState.field[pos] = {
+          id: 'start_' + i,
+          type: types[i],
+          ...cardTypes[types[i]]
+        };
+      });
+    }
+
+    function generatePlayerHand() {
+      const controlTypes = ['rake', 'shears', 'droplet', 'wind', 'toxin'];
+      gameState.hand = controlTypes.map((type, i) => ({
+        id: 'hand_' + i,
+        type: type,
+        ...cardTypes[type]
+      }));
+    }
+
+    function renderField() {
+      const grid = document.getElementById('hexGrid');
+      grid.innerHTML = '';
+
+      // Calculate grid layout
+      const containerRect = grid.getBoundingClientRect();
+      const cellSize = Math.min(containerRect.width / 12, containerRect.height / 12, 60);
+
+      // Create hex cells
+      for (let row = 0; row < 10; row++) {
+        for (let col = 0; col < 10; col++) {
+          const index = row * 10 + col;
+          const cell = document.createElement('div');
+          cell.className = 'hex-cell';
+          cell.dataset.index = index;
+
+          // Calculate hexagonal offset
+          const offsetX = (col + (row % 2) * 0.5) * cellSize * 0.9;
+          const offsetY = row * cellSize * 0.8;
+
+          cell.style.left = offsetX + 'px';
+          cell.style.top = offsetY + 'px';
+          cell.style.width = cellSize + 'px';
+          cell.style.height = cellSize + 'px';
+
+          // Add drag events
+          cell.addEventListener('dragover', handleDragOver);
+          cell.addEventListener('drop', handleDrop);
+
+          // Render card if present
+          const card = gameState.field[index];
+          if (card) {
+            const cardEl = createCardElement(card);
+            cardEl.style.position = 'relative';
+            cardEl.style.width = (cellSize * 0.8) + 'px';
+            cardEl.style.height = (cellSize * 0.8) + 'px';
+            cardEl.style.fontSize = (cellSize * 0.3) + 'px';
+            cell.appendChild(cardEl);
+            cell.classList.add('occupied');
+          }
+
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    function renderHand() {
+      const hand = document.getElementById('playerHand');
+      hand.innerHTML = '';
+
+      gameState.hand.forEach((card, index) => {
+        const cardEl = createCardElement(card);
+        cardEl.className += ' hand-card';
+        cardEl.draggable = true;
+        cardEl.dataset.cardIndex = index;
+
+        // Add drag events
+        cardEl.addEventListener('dragstart', handleDragStart);
+        cardEl.addEventListener('dragend', handleDragEnd);
+
+        // Touch events for mobile
+        cardEl.addEventListener('touchstart', handleTouchStart, { passive: false });
+        cardEl.addEventListener('touchmove', handleTouchMove, { passive: false });
+        cardEl.addEventListener('touchend', handleTouchEnd);
+
+        hand.appendChild(cardEl);
+      });
+    }
+
+    function createCardElement(card) {
+      const cardEl = document.createElement('div');
+      cardEl.className = 'card ' + card.type;
+      cardEl.textContent = card.icon;
+      cardEl.dataset.cardId = card.id;
+      return cardEl;
+    }
+
+    // Drag & Drop Events
+    function handleDragStart(e) {
+      const cardIndex = parseInt(e.target.dataset.cardIndex);
+      gameState.draggedCard = { ...gameState.hand[cardIndex], handIndex: cardIndex };
+
+      e.dataTransfer.setData('text/plain', '');
+
+      // Visual feedback
+      e.target.classList.add('dragging');
+      highlightValidDropZones();
+
+      // Haptic feedback
+      vibrate(50);
+      playSound('pickup');
+      createParticles(e.target, 'pickup');
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      clearValidDropZones();
+      gameState.draggedCard = null;
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      const cell = e.target.closest('.hex-cell');
+      if (cell && isValidDrop(parseInt(cell.dataset.index))) {
+        cell.classList.add('valid-drop');
+      }
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const cell = e.target.closest('.hex-cell');
+      const index = parseInt(cell.dataset.index);
+
+      if (gameState.draggedCard && isValidDrop(index)) {
+        // Place card
+        gameState.field[index] = { ...gameState.draggedCard };
+        delete gameState.field[index].handIndex;
+
+        // Remove from hand
+        gameState.hand.splice(gameState.draggedCard.handIndex, 1);
+
+        // Feedback
+        vibrate([100, 50, 100]);
+        playSound('place');
+        createParticles(cell, 'place');
+
+        // Update score
+        gameState.score += 10;
+
+        // Re-render
+        renderField();
+        renderHand();
+        updateUI();
+      } else {
+        // Invalid drop feedback
+        vibrate([200]);
+        playSound('error');
+        createParticles(cell, 'error');
+      }
+
+      clearValidDropZones();
+    }
+
+    // Touch Events for Mobile
+    let touchStartPos = null;
+    let touchCard = null;
+
+    function handleTouchStart(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      touchStartPos = { x: touch.clientX, y: touch.clientY };
+      touchCard = e.target.closest('.card');
+
+      if (touchCard) {
+        const cardIndex = parseInt(touchCard.dataset.cardIndex);
+        gameState.draggedCard = { ...gameState.hand[cardIndex], handIndex: cardIndex };
+
+        touchCard.classList.add('dragging');
+        highlightValidDropZones();
+
+        vibrate(50);
+        playSound('pickup');
+      }
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      if (touchCard && gameState.draggedCard) {
+        const touch = e.touches[0];
+        const rect = touchCard.getBoundingClientRect();
+
+        // Move card with finger
+        touchCard.style.position = 'fixed';
+        touchCard.style.left = (touch.clientX - rect.width / 2) + 'px';
+        touchCard.style.top = (touch.clientY - rect.height / 2) + 'px';
+        touchCard.style.zIndex = '1000';
+      }
+    }
+
+    function handleTouchEnd(e) {
+      if (touchCard && gameState.draggedCard) {
+        const touch = e.changedTouches[0];
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const cell = elementBelow ? elementBelow.closest('.hex-cell') : null;
+
+        if (cell) {
+          const index = parseInt(cell.dataset.index);
+          if (isValidDrop(index)) {
+            // Place card
+            gameState.field[index] = { ...gameState.draggedCard };
+            delete gameState.field[index].handIndex;
+
+            gameState.hand.splice(gameState.draggedCard.handIndex, 1);
+
+            vibrate([100, 50, 100]);
+            playSound('place');
+            createParticles(cell, 'place');
+
+            gameState.score += 10;
+
+            renderField();
+            renderHand();
+            updateUI();
+          } else {
+            vibrate([200]);
+            playSound('error');
+          }
+        }
+
+        // Reset card position
+        touchCard.style.position = '';
+        touchCard.style.left = '';
+        touchCard.style.top = '';
+        touchCard.style.zIndex = '';
+        touchCard.classList.remove('dragging');
+
+        clearValidDropZones();
+        gameState.draggedCard = null;
+        touchCard = null;
+        touchStartPos = null;
+      }
+    }
+
+    function isValidDrop(index) {
+      return gameState.field[index] === null; // Simple rule: only empty cells
+    }
+
+    function highlightValidDropZones() {
+      const cells = document.querySelectorAll('.hex-cell');
+      cells.forEach((cell, index) => {
+        if (isValidDrop(index)) {
+          cell.classList.add('valid-drop');
+        }
+      });
+    }
+
+    function clearValidDropZones() {
+      const cells = document.querySelectorAll('.hex-cell');
+      cells.forEach(cell => {
+        cell.classList.remove('valid-drop');
+      });
+    }
+
+    function updateUI() {
+      document.getElementById('score').textContent = gameState.score;
+      document.getElementById('turn').textContent = gameState.turn;
+    }
+
+    // Feedback Systems
+    function vibrate(pattern) {
+      if ('vibrate' in navigator) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    function playSound(type) {
+      // Web Audio API implementation would go here
+      // For now, just create audio context if available
+      if (window.AudioContext || window.webkitAudioContext) {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        const frequencies = {
+          pickup: 440,
+          place: 523,
+          error: 150
+        };
+
+        oscillator.frequency.value = frequencies[type] || 440;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+      }
+    }
+
+    function createParticles(element, type) {
+      const rect = element.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const colors = {
+        pickup: '#4CAF50',
+        place: '#4CAF50',
+        error: '#F44336'
+      };
+
+      const count = type === 'place' ? 12 : 6;
+
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.position = 'fixed';
+        particle.style.left = centerX + 'px';
+        particle.style.top = centerY + 'px';
+        particle.style.width = '4px';
+        particle.style.height = '4px';
+        particle.style.background = colors[type] || '#4CAF50';
+        particle.style.borderRadius = '50%';
+        particle.style.pointerEvents = 'none';
+        particle.style.zIndex = '9999';
+
+        document.getElementById('particles').appendChild(particle);
+
+        // Animate particle
+        const angle = (i / count) * Math.PI * 2;
+        const speed = 50 + Math.random() * 50;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed - 50;
+
+        let x = centerX;
+        let y = centerY;
+        let velX = vx;
+        let velY = vy;
+        let opacity = 1;
+
+        const animate = () => {
+          x += velX * 0.016;
+          y += velY * 0.016;
+          velY += 0.5; // gravity
+          opacity -= 0.02;
+
+          particle.style.left = x + 'px';
+          particle.style.top = y + 'px';
+          particle.style.opacity = opacity;
+
+          if (opacity > 0) {
+            requestAnimationFrame(animate);
+          } else {
+            particle.remove();
+          }
+        };
+
+        requestAnimationFrame(animate);
+      }
+    }
+
+    // UI Functions
+    function toggleMenu() {
+      const overlay = document.getElementById('menuOverlay');
+      overlay.classList.toggle('show');
+    }
+
+    function toggleLegend() {
+      const overlay = document.getElementById('legendOverlay');
+      overlay.classList.toggle('show');
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function newGame() {
+      gameState.field.fill(null);
+      gameState.score = 0;
+      gameState.turn = 1;
+      initGame();
+      toggleMenu();
+    }
+
+    function showHelp() {
+      alert('Drag cards from your hand onto the grid to play them. Each card type has different effects!');
+    }
+
+    function showSettings() {
+      alert('Settings panel coming soon!');
+    }
+
+    // Initialize game when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      initGame();
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      setTimeout(renderField, 100);
+    });
+  </script>
+</body>
+</html>
