@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#667eea" />
+  <meta name="theme-color" content="#064e3b" />
+  <meta name="description" content="Nature Defenders — an educational strategy game about stopping real invasive species with real control methods." />
 
-  <title>🌿 Nature Defenders v1.0</title>
+  <title>🌿 Nature Defenders</title>
 
   <style>
-    /* Nature Defenders v1.0 Styles */
+    /* Nature Defenders Styles */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -21,9 +22,11 @@
     html, body {
       width: 100%;
       height: 100%;
+      height: 100dvh;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(160deg, #064e3b 0%, #065f46 55%, #0c4a6e 100%);
       overflow: hidden;
+      overscroll-behavior: none;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -34,7 +37,11 @@
       flex-direction: column;
       width: 100vw;
       height: 100vh;
+      height: 100dvh;
       color: white;
+      padding-top: env(safe-area-inset-top);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
 
     /* Header */
@@ -42,54 +49,77 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.5rem 1rem;
-      background: rgba(0, 0, 0, 0.1);
+      gap: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      background: rgba(0, 0, 0, 0.18);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       z-index: 100;
     }
 
     .header-left h1 {
-      font-size: 1.25rem;
+      font-size: 1.1rem;
       font-weight: 700;
       margin: 0;
+      white-space: nowrap;
     }
 
     .header-center {
       display: flex;
-      gap: 1rem;
+      gap: 0.9rem;
       align-items: center;
       font-weight: 600;
       font-size: 0.9rem;
+      white-space: nowrap;
     }
 
     .header-right {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
 
     .btn-icon {
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 2.6rem;
+      height: 2.6rem;
       border: none;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.12);
       color: white;
       font-size: 1.2rem;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: transform 0.15s ease, background 0.15s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .btn-icon:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: scale(1.05);
+      touch-action: manipulation;
     }
 
     .btn-icon:active {
-      transform: scale(0.95);
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Invasion meter */
+    .invasion-meter {
+      height: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      position: relative;
+      z-index: 99;
+    }
+
+    .invasion-meter .fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4CAF50, #FFC107 60%, #F44336);
+      transition: width 0.4s ease;
+    }
+
+    /* Body: board + hand (column on portrait, row on short landscape) */
+    .game-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     /* Game Area */
@@ -98,118 +128,189 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: 0.5rem;
       overflow: hidden;
       position: relative;
+      min-height: 0;
     }
 
-    .hex-grid {
-      width: 100%;
-      height: 100%;
+    .board {
       position: relative;
     }
 
-    .hex-cell {
+    .cell {
       position: absolute;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border: 2px solid transparent;
       border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.06);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .hex-cell.valid-drop {
+    .cell.valid-target {
       border-color: #4CAF50;
-      background: rgba(76, 175, 80, 0.1);
-      box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+      box-shadow: 0 0 12px rgba(76, 175, 80, 0.7);
+      animation: pulse 1s ease infinite;
+      cursor: pointer;
     }
 
-    .hex-cell.occupied {
-      pointer-events: none;
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
     }
 
-    /* Cards */
-    .card {
-      width: 50px;
-      height: 50px;
+    .token {
+      width: 86%;
+      height: 86%;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
-      color: white;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-      cursor: grab;
-      user-select: none;
-      transition: all 0.2s ease;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      position: absolute;
-    }
-
-    .card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
-    }
-
-    .card:active {
-      cursor: grabbing;
-      transform: scale(0.95);
-    }
-
-    .card.dragging {
-      opacity: 0.7;
-      transform: scale(1.1);
-      z-index: 1000;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
       pointer-events: none;
     }
 
-    /* Card types */
-    .card.leaf { background: #4CAF50; }
-    .card.pawprint { background: #8BC34A; }
-    .card.flame { background: #FF5722; }
-    .card.shield { background: #607D8B; }
-    .card.rake { background: #2196F3; }
+    .token.invader { border: 2px solid rgba(239, 83, 80, 0.9); }
+    .token.native  { border: 2px solid rgba(255, 213, 79, 0.9); }
+
+    /* Cards */
+    .card {
+      width: 58px;
+      height: 58px;
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      font-size: 1.5rem;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      touch-action: none;
+    }
+
+    .card .card-label {
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      opacity: 0.95;
+    }
+
+    .card.selected {
+      transform: translateY(-8px) scale(1.06);
+      border-color: #fff;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.9), 0 8px 18px rgba(0, 0, 0, 0.5);
+    }
+
+    .card.drag-ghost {
+      position: fixed;
+      z-index: 2000;
+      pointer-events: none;
+      transform: scale(1.15);
+      opacity: 0.9;
+      margin: 0;
+    }
+
+    .card.drag-source {
+      opacity: 0.35;
+    }
+
+    /* Control card colors */
+    .card.manual { background: #2196F3; }
     .card.shears { background: #3F51B5; }
-    .card.droplet { background: #00BCD4; }
-    .card.wind { background: #9C27B0; }
-    .card.toxin { background: #E91E63; }
+    .card.bio    { background: #689F38; }
+    .card.water  { background: #00ACC1; }
+    .card.burn   { background: #F4511E; }
+    .card.chem   { background: #D81B60; }
 
     /* Player Area */
     .player-area {
-      background: rgba(0, 0, 0, 0.1);
+      background: rgba(0, 0, 0, 0.18);
       backdrop-filter: blur(10px);
       border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 1rem;
-      text-align: center;
+      padding: 0.5rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
     }
 
-    .hand-container {
-      margin: 0 auto;
-      max-width: 400px;
+    .hand-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 480px;
+      margin: 0 auto 0.4rem;
+      font-size: 0.8rem;
+      opacity: 0.9;
     }
 
-    .hand-label {
-      font-size: 0.875rem;
-      margin-bottom: 0.5rem;
-      opacity: 0.8;
+    .action-pips {
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
     }
 
-    .cards-row {
+    .hand-row {
       display: flex;
       justify-content: center;
+      align-items: center;
       gap: 0.5rem;
       flex-wrap: wrap;
-      position: relative;
+      max-width: 480px;
+      margin: 0 auto;
     }
 
-    .hand-card {
-      position: relative;
-      cursor: grab;
-      transition: all 0.2s ease;
+    .btn-endturn {
+      min-height: 58px;
+      padding: 0 1rem;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 1rem;
+      background: linear-gradient(135deg, #7B1FA2, #512DA8);
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+      touch-action: manipulation;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
-    .hand-card:hover {
-      transform: translateY(-5px);
+    .btn-endturn:active { transform: scale(0.95); }
+
+    .btn-endturn.urge {
+      animation: pulse 0.9s ease infinite;
+      box-shadow: 0 0 14px rgba(255, 213, 79, 0.8);
+    }
+
+    /* Toast */
+    .toast {
+      position: absolute;
+      top: 0.75rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      max-width: min(92%, 460px);
+      background: rgba(15, 25, 20, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.85rem;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.85rem;
+      line-height: 1.35;
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
     }
 
     /* Overlays */
@@ -219,61 +320,183 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.5);
+      height: 100dvh;
+      background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(5px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
       animation: fadeIn 0.2s ease;
+      padding: 1rem;
     }
 
-    .overlay.show {
-      display: flex;
-    }
+    .overlay.show { display: flex; }
 
     .panel {
-      background: rgba(20, 20, 30, 0.95);
+      background: rgba(16, 28, 24, 0.97);
       backdrop-filter: blur(20px);
       border-radius: 1rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 2rem;
-      max-width: 90vw;
-      max-height: 90vh;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 1.25rem;
+      width: min(100%, 460px);
+      max-height: min(86vh, 86dvh);
       overflow-y: auto;
-      animation: slideUp 0.3s ease;
+      -webkit-overflow-scrolling: touch;
+      animation: slideUp 0.25s ease;
     }
 
     .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
       padding-bottom: 0.5rem;
     }
+
+    .panel-header h2 { font-size: 1.15rem; }
 
     .btn-close {
       background: none;
       border: none;
       color: white;
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       cursor: pointer;
-      padding: 0.25rem;
+      width: 2.6rem;
+      height: 2.6rem;
       border-radius: 50%;
-      transition: background 0.2s ease;
+      touch-action: manipulation;
     }
 
-    .btn-close:hover {
-      background: rgba(255, 255, 255, 0.1);
+    .btn-close:active { background: rgba(255, 255, 255, 0.15); }
+
+    .menu-btn {
+      display: block;
+      width: 100%;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.6rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.75rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .menu-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(0.98);
+    }
+
+    .menu-btn.primary {
+      background: linear-gradient(135deg, #43A047, #2E7D32);
+      border-color: rgba(255, 255, 255, 0.35);
+      text-align: center;
+    }
+
+    /* Field guide */
+    .guide-card {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 0.75rem;
+      padding: 0.7rem 0.8rem;
+      margin-bottom: 0.6rem;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .guide-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .guide-title .big { font-size: 1.4rem; }
+
+    .chip {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .guide-card p {
+      font-size: 0.8rem;
+      line-height: 1.4;
+      opacity: 0.92;
+      margin-bottom: 0.3rem;
+    }
+
+    .guide-controls {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .help-step {
+      display: flex;
+      gap: 0.7rem;
+      margin-bottom: 0.8rem;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      align-items: flex-start;
+    }
+
+    .help-step .big { font-size: 1.5rem; line-height: 1.2; }
+
+    .eco-note {
+      font-size: 0.78rem;
+      opacity: 0.8;
+      border-left: 3px solid #4CAF50;
+      padding-left: 0.6rem;
+      margin-top: 0.8rem;
+      line-height: 1.4;
+    }
+
+    /* Game over */
+    .go-hero {
+      text-align: center;
+      font-size: 3rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .go-title {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+
+    .go-stats {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .go-recap h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
     }
 
     /* Particle effects */
     .particle {
-      position: absolute;
+      position: fixed;
       border-radius: 50%;
       pointer-events: none;
       z-index: 9999;
+      width: 5px;
+      height: 5px;
     }
 
     /* Animations */
@@ -283,57 +506,34 @@
     }
 
     @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Mobile responsive */
-    @media (max-width: 768px) {
-      .app-header {
-        padding: 0.5rem;
-      }
-
-      .header-left h1 {
-        font-size: 1rem;
-      }
-
-      .btn-icon {
-        width: 2rem;
-        height: 2rem;
-        font-size: 1rem;
-      }
-
-      .card {
-        width: 45px;
-        height: 45px;
-        font-size: 1.3rem;
-      }
-
-      .panel {
-        padding: 1rem;
-        max-width: 95vw;
-      }
+    /* Narrow phones */
+    @media (max-width: 400px) {
+      .header-left h1 .title-text { display: none; }
+      .header-center { font-size: 0.8rem; gap: 0.6rem; }
+      .btn-icon { width: 2.4rem; height: 2.4rem; }
+      .card { width: 52px; height: 52px; font-size: 1.35rem; }
+      .btn-endturn { min-height: 52px; }
     }
 
-    @media (max-height: 600px) {
-      .app-header {
-        padding: 0.25rem 0.5rem;
-      }
-
+    /* Short landscape phones: hand docks to the side */
+    @media (orientation: landscape) and (max-height: 520px) {
+      .game-body { flex-direction: row; }
       .player-area {
+        border-top: none;
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        width: 168px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         padding: 0.5rem;
+        overflow-y: auto;
       }
-
-      .hand-label {
-        font-size: 0.75rem;
-        margin-bottom: 0.25rem;
-      }
+      .hand-row { gap: 0.4rem; }
+      .app-header { padding: 0.25rem 0.6rem; }
     }
   </style>
 </head>
@@ -342,524 +542,768 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <h1>🌿 Nature Defenders</h1>
+        <h1>🌿 <span class="title-text">Nature Defenders</span></h1>
       </div>
       <div class="header-center">
-        <div class="score-display">⭐ <span id="score">0</span></div>
-        <div class="turn-display">🌱 <span id="turn">1</span></div>
+        <div class="score-display" title="Score">⭐ <span id="score">0</span></div>
+        <div class="turn-display" title="Turn">🌱 <span id="turn">1</span></div>
       </div>
       <div class="header-right">
-        <button class="btn-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
-        <button class="btn-icon" onclick="toggleLegend()" title="Legend">📖</button>
-        <button class="btn-icon" onclick="toggleMenu()" title="Menu">☰</button>
+        <button class="btn-icon" id="btnGuide" title="Field Guide">📖</button>
+        <button class="btn-icon" id="btnMenu" title="Menu">☰</button>
       </div>
     </header>
 
-    <!-- Main Game Area -->
-    <main class="game-area">
-      <div class="hex-grid" id="hexGrid"></div>
-    </main>
+    <!-- Invasion meter -->
+    <div class="invasion-meter" title="Invasion level">
+      <div class="fill" id="invasionFill"></div>
+    </div>
 
-    <!-- Player Hand -->
-    <footer class="player-area">
-      <div class="hand-container">
-        <div class="hand-label">Your Hand</div>
-        <div class="cards-row" id="playerHand"></div>
-      </div>
-    </footer>
+    <div class="game-body">
+      <!-- Main Game Area -->
+      <main class="game-area" id="gameArea">
+        <div class="board" id="board"></div>
+        <div class="toast" id="toast"></div>
+      </main>
+
+      <!-- Player Hand -->
+      <footer class="player-area">
+        <div class="hand-header">
+          <span>Your hand — tap a card, then tap an invader</span>
+          <span class="action-pips" id="actionPips"></span>
+        </div>
+        <div class="hand-row" id="handRow"></div>
+      </footer>
+    </div>
 
     <!-- Menu Overlay -->
     <div class="overlay" id="menuOverlay">
       <div class="panel">
         <div class="panel-header">
           <h2>🌿 Menu</h2>
-          <button class="btn-close" onclick="toggleMenu()">×</button>
+          <button class="btn-close" data-close="menuOverlay">×</button>
         </div>
-        <div class="menu-content">
-          <button class="menu-btn" onclick="newGame()">🎮 New Game</button>
-          <button class="menu-btn" onclick="showHelp()">❓ How to Play</button>
-          <button class="menu-btn" onclick="showSettings()">⚙️ Settings</button>
-        </div>
+        <button class="menu-btn primary" id="btnNewGame">🎮 New Game</button>
+        <button class="menu-btn" id="btnHelp">❓ How to Play</button>
+        <button class="menu-btn" id="btnGuide2">📖 Field Guide</button>
+        <button class="menu-btn" id="btnSound">🔊 Sound: On</button>
+        <button class="menu-btn" id="btnFullscreen">⛶ Fullscreen</button>
+        <div class="eco-note">Best score: <span id="bestScore">0</span> ⭐</div>
       </div>
     </div>
 
-    <!-- Legend Overlay -->
-    <div class="overlay" id="legendOverlay">
+    <!-- Field Guide Overlay -->
+    <div class="overlay" id="guideOverlay">
       <div class="panel">
         <div class="panel-header">
-          <h2>📖 Legend</h2>
-          <button class="btn-close" onclick="toggleLegend()">×</button>
+          <h2>📖 Field Guide</h2>
+          <button class="btn-close" data-close="guideOverlay">×</button>
         </div>
-        <div class="legend-content">
-          <p>Drag cards from your hand onto the hexagonal grid</p>
-          <div style="margin: 1rem 0;">
-            <h3>Growth & Nature</h3>
-            <div style="display: flex; gap: 1rem; margin: 0.5rem 0;">
-              <div style="text-align: center;"><div class="card leaf">🌿</div><small>Growth</small></div>
-              <div style="text-align: center;"><div class="card pawprint">🐾</div><small>Predator</small></div>
-              <div style="text-align: center;"><div class="card flame">🔥</div><small>Fire</small></div>
-              <div style="text-align: center;"><div class="card shield">🛡️</div><small>Defense</small></div>
-            </div>
-            <h3>Control Methods</h3>
-            <div style="display: flex; gap: 1rem; margin: 0.5rem 0;">
-              <div style="text-align: center;"><div class="card rake">🔨</div><small>Manual</small></div>
-              <div style="text-align: center;"><div class="card shears">✂️</div><small>Cutting</small></div>
-              <div style="text-align: center;"><div class="card droplet">💧</div><small>Water</small></div>
-              <div style="text-align: center;"><div class="card toxin">☠️</div><small>Chemical</small></div>
-            </div>
-          </div>
-        </div>
+        <div id="guideContent"></div>
       </div>
     </div>
 
-    <!-- Particles Container -->
-    <div id="particles"></div>
+    <!-- How to Play Overlay -->
+    <div class="overlay" id="helpOverlay">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>❓ How to Play</h2>
+          <button class="btn-close" data-close="helpOverlay">×</button>
+        </div>
+        <div class="help-step"><span class="big">🃏</span><span>Tap a control card in your hand, then tap an <b>invasive species</b> on the board — or just drag the card onto it.</span></div>
+        <div class="help-step"><span class="big">🎯</span><span>Every invader has weaknesses based on <b>real conservation science</b>. Use the wrong method and the invader survives! Check the 📖 Field Guide.</span></div>
+        <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn — but beware: <b>invaders spread</b> to neighbouring cells.</span></div>
+        <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. Keep them alive!</span></div>
+        <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by clearing every invader. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
+        <div class="eco-note">Tip: tap any creature on the board to learn about it. All species and control methods in this game are real.</div>
+        <button class="menu-btn primary" data-close="helpOverlay" style="margin-top:0.8rem;">Let's go! 🌿</button>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="overlay" id="gameOverlay">
+      <div class="panel">
+        <div class="go-hero" id="goHero">🏆</div>
+        <div class="go-title" id="goTitle">Habitat saved!</div>
+        <div class="go-stats" id="goStats"></div>
+        <div class="go-recap">
+          <h3>🔬 What you learned</h3>
+          <div id="goRecap"></div>
+        </div>
+        <button class="menu-btn primary" id="btnPlayAgain" style="margin-top:0.8rem;">🎮 Play Again</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    // Nature Defenders v1.0 Game Engine
+    'use strict';
 
-    let gameState = {
-      field: new Array(100).fill(null), // 10x10 grid
-      hand: [],
-      score: 0,
-      turn: 1,
-      draggedCard: null,
-      dragOffset: { x: 0, y: 0 }
+    // ===== Game data ==========================================================
+    const COLS = 8, ROWS = 9, CELLS = COLS * ROWS;
+    const HAND_SIZE = 5, PLAYS_PER_TURN = 4;
+    const LOSE_CELLS = Math.floor(CELLS * 0.45); // invasion meter limit
+
+    const CONTROLS = {
+      manual: { icon: '🔨', short: 'Pull',  name: 'Manual Removal',
+        desc: 'Hand-pulling, trapping, harvesting and scraping. Hard work, but precise and chemical-free.' },
+      shears: { icon: '✂️', short: 'Cut',   name: 'Cutting & Mowing',
+        desc: 'Repeated cutting exhausts a plant’s root reserves until it can no longer regrow.' },
+      bio:    { icon: '🐾', short: 'Bio',   name: 'Biological Control',
+        desc: 'Carefully tested natural enemies from the invader’s homeland, like weevils or parasitoid wasps.' },
+      water:  { icon: '💧', short: 'Water', name: 'Water Management',
+        desc: 'Drawdowns, hot-water washes and barriers. "Clean, Drain, Dry" stops aquatic hitchhikers.' },
+      burn:   { icon: '🔥', short: 'Burn',  name: 'Prescribed Burn',
+        desc: 'Carefully planned fire clears invasive growth and helps fire-adapted native plants return.' },
+      chem:   { icon: '☠️', short: 'Spray', name: 'Targeted Pesticide',
+        desc: 'Precise, last-resort treatments. Spraying the wrong target harms natives too!' }
     };
 
-    const cardTypes = {
-      leaf: { icon: '🌿', color: '#4CAF50' },
-      pawprint: { icon: '🐾', color: '#8BC34A' },
-      flame: { icon: '🔥', color: '#FF5722' },
-      shield: { icon: '🛡️', color: '#607D8B' },
-      rake: { icon: '🔨', color: '#2196F3' },
-      shears: { icon: '✂️', color: '#3F51B5' },
-      droplet: { icon: '💧', color: '#00BCD4' },
-      wind: { icon: '💨', color: '#9C27B0' },
-      toxin: { icon: '☠️', color: '#E91E63' }
+    const INVADERS = {
+      kudzu: { icon: '🌿', name: 'Kudzu', color: '#558B2F', origin: 'East Asia',
+        controls: ['shears', 'burn'], spread: 0.5, points: 20,
+        harm: 'A vine that grows up to 30 cm per day, smothering whole forests by blocking sunlight — "the vine that ate the South".',
+        tip: 'Cut it back again and again, or use prescribed burns to expose its root crowns.' },
+      hyacinth: { icon: '🌺', name: 'Water Hyacinth', color: '#7B1FA2', origin: 'Amazon Basin',
+        controls: ['manual', 'bio'], spread: 0.4, points: 20,
+        harm: 'Floating mats double in size in two weeks, clogging waterways and starving fish of oxygen.',
+        tip: 'Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.' },
+      mussel: { icon: '🐚', name: 'Zebra Mussel', color: '#5D4037', origin: 'Caspian Sea region',
+        controls: ['manual', 'water'], spread: 0.35, points: 20,
+        harm: 'Stowaways in ship ballast water that clog pipes, coat boats and out-eat native mussels.',
+        tip: 'Scrape them off and Clean, Drain, Dry every boat — dried-out mussels can’t survive.' },
+      borer: { icon: '🪲', name: 'Emerald Ash Borer', color: '#00695C', origin: 'Northeast Asia',
+        controls: ['bio', 'chem'], spread: 0.3, points: 25,
+        harm: 'Larvae tunnel under ash bark and cut off the tree’s nutrients — tens of millions of trees lost.',
+        tip: 'Tiny parasitoid wasps hunt its larvae, and targeted trunk treatments protect single trees.' },
+      python: { icon: '🐍', name: 'Burmese Python', color: '#33691E', origin: 'Southeast Asia',
+        controls: ['manual'], spread: 0.2, points: 40,
+        harm: 'Released pets that ate their way through the Everglades — some mammal numbers fell over 90%.',
+        tip: 'No easy fix exists: trained trackers remove pythons one by one. Never release a pet!' }
     };
 
-    // Initialize game
-    function initGame() {
-      generateStartingField();
-      generatePlayerHand();
-      renderField();
-      renderHand();
-      updateUI();
+    const NATIVES = {
+      oak:     { icon: '🌳', name: 'White Oak',         fact: 'One oak can feed over 500 species of caterpillars — a whole food web in one tree.' },
+      monarch: { icon: '🦋', name: 'Monarch Butterfly', fact: 'Monarch caterpillars can only eat milkweed. Invasive plants that crowd it out starve them.' },
+      turtle:  { icon: '🐢', name: 'Box Turtle',        fact: 'Box turtles can live 100 years — but only if their woodland habitat survives.' },
+      bee:     { icon: '🐝', name: 'Native Bee',        fact: 'Native bees pollinate the wildflowers that invasive plants push out.' }
+    };
+
+    const STARTING_INVADERS = [
+      ['kudzu', 2], ['hyacinth', 2], ['mussel', 2], ['borer', 1], ['python', 1]
+    ];
+    const STARTING_NATIVES = ['oak', 'monarch', 'turtle', 'bee', 'oak'];
+
+    // ===== State ==============================================================
+    let S = null;
+    let soundOn = true;
+    let best = 0;
+    let cellSize = 40;
+
+    try {
+      soundOn = localStorage.getItem('nd-sound') !== 'off';
+      best = parseInt(localStorage.getItem('nd-best') || '0', 10) || 0;
+    } catch (e) { /* private mode */ }
+
+    function newState() {
+      return {
+        field: new Array(CELLS).fill(null),
+        hand: [],
+        score: 0,
+        turn: 1,
+        plays: PLAYS_PER_TURN,
+        selected: null,
+        over: false,
+        removed: {},
+        seenFacts: {},
+        totalNatives: 0
+      };
     }
 
-    function generateStartingField() {
-      // Place 4 random cards on field
-      const positions = [22, 27, 72, 77];
-      const types = ['leaf', 'pawprint', 'flame', 'shield'];
-
-      positions.forEach((pos, i) => {
-        gameState.field[pos] = {
-          id: 'start_' + i,
-          type: types[i],
-          ...cardTypes[types[i]]
-        };
-      });
+    // ===== Grid helpers (odd-r offset hex layout) =============================
+    function neighbors(i) {
+      const r = Math.floor(i / COLS), c = i % COLS;
+      const deltas = (r % 2)
+        ? [[0, -1], [0, 1], [-1, 0], [-1, 1], [1, 0], [1, 1]]
+        : [[0, -1], [0, 1], [-1, -1], [-1, 0], [1, -1], [1, 0]];
+      const out = [];
+      for (const [dr, dc] of deltas) {
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) out.push(nr * COLS + nc);
+      }
+      return out;
     }
 
-    function generatePlayerHand() {
-      const controlTypes = ['rake', 'shears', 'droplet', 'wind', 'toxin'];
-      gameState.hand = controlTypes.map((type, i) => ({
-        id: 'hand_' + i,
-        type: type,
-        ...cardTypes[type]
-      }));
+    function invaderCells() {
+      const out = [];
+      S.field.forEach((cell, i) => { if (cell && cell.kind === 'invader') out.push(i); });
+      return out;
     }
 
-    function renderField() {
-      const grid = document.getElementById('hexGrid');
-      grid.innerHTML = '';
+    function nativeCells() {
+      const out = [];
+      S.field.forEach((cell, i) => { if (cell && cell.kind === 'native') out.push(i); });
+      return out;
+    }
 
-      // Calculate grid layout
-      const containerRect = grid.getBoundingClientRect();
-      const cellSize = Math.min(containerRect.width / 12, containerRect.height / 12, 60);
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-      // Create hex cells
-      for (let row = 0; row < 10; row++) {
-        for (let col = 0; col < 10; col++) {
-          const index = row * 10 + col;
-          const cell = document.createElement('div');
-          cell.className = 'hex-cell';
-          cell.dataset.index = index;
+    function findCell(pred) {
+      for (let k = 0; k < 300; k++) {
+        const i = Math.floor(Math.random() * CELLS);
+        if (pred(i)) return i;
+      }
+      for (let i = 0; i < CELLS; i++) if (pred(i)) return i;
+      return -1;
+    }
 
-          // Calculate hexagonal offset
-          const offsetX = (col + (row % 2) * 0.5) * cellSize * 0.9;
-          const offsetY = row * cellSize * 0.8;
-
-          cell.style.left = offsetX + 'px';
-          cell.style.top = offsetY + 'px';
-          cell.style.width = cellSize + 'px';
-          cell.style.height = cellSize + 'px';
-
-          // Add drag events
-          cell.addEventListener('dragover', handleDragOver);
-          cell.addEventListener('drop', handleDrop);
-
-          // Render card if present
-          const card = gameState.field[index];
-          if (card) {
-            const cardEl = createCardElement(card);
-            cardEl.style.position = 'relative';
-            cardEl.style.width = (cellSize * 0.8) + 'px';
-            cardEl.style.height = (cellSize * 0.8) + 'px';
-            cardEl.style.fontSize = (cellSize * 0.3) + 'px';
-            cell.appendChild(cardEl);
-            cell.classList.add('occupied');
-          }
-
-          grid.appendChild(cell);
+    // ===== Setup ==============================================================
+    function setupBoard() {
+      // Natives in the middle, spaced apart
+      for (const type of STARTING_NATIVES) {
+        const i = findCell(j => {
+          const r = Math.floor(j / COLS), c = j % COLS;
+          if (r < 2 || r > ROWS - 3 || c < 1 || c > COLS - 2 || S.field[j]) return false;
+          return !neighbors(j).some(n => S.field[n] && S.field[n].kind === 'native');
+        });
+        if (i >= 0) { S.field[i] = { kind: 'native', type }; S.totalNatives++; }
+      }
+      // Invader clusters, not directly beside a native
+      const clearOfNatives = j => !S.field[j] &&
+        !neighbors(j).some(n => S.field[n] && S.field[n].kind === 'native');
+      for (const [type, count] of STARTING_INVADERS) {
+        const first = findCell(clearOfNatives);
+        if (first < 0) continue;
+        S.field[first] = { kind: 'invader', type };
+        for (let extra = 1; extra < count; extra++) {
+          const spots = neighbors(first).filter(clearOfNatives);
+          if (spots.length) S.field[pick(spots)] = { kind: 'invader', type };
         }
+      }
+    }
+
+    function refillHand() {
+      const allTypes = Object.keys(CONTROLS);
+      const present = [...new Set(invaderCells().map(i => S.field[i].type))];
+      while (S.hand.length < HAND_SIZE) {
+        const hasUseful = S.hand.some(h =>
+          present.some(t => INVADERS[t].controls.includes(h)));
+        if (present.length && !hasUseful) {
+          S.hand.push(pick(INVADERS[pick(present)].controls));
+        } else {
+          S.hand.push(pick(allTypes));
+        }
+      }
+    }
+
+    function initGame() {
+      S = newState();
+      setupBoard();
+      refillHand();
+      render();
+    }
+
+    // ===== Core rules =========================================================
+    function playCard(handIdx, cellIdx) {
+      if (S.over || handIdx == null || !S.hand[handIdx]) return false;
+      const cell = S.field[cellIdx];
+      if (!cell || cell.kind !== 'invader') {
+        toast('🚫 Aim for an invasive species — the ones with <b>red rings</b>.');
+        sound('error');
+        return false;
+      }
+      if (S.plays <= 0) {
+        toast('⚡ No actions left — tap <b>End Turn 🌙</b>.');
+        sound('error');
+        return false;
+      }
+
+      const ctrl = S.hand[handIdx];
+      const sp = INVADERS[cell.type];
+      S.hand.splice(handIdx, 1);
+      S.selected = null;
+      S.plays--;
+
+      if (sp.controls.includes(ctrl)) {
+        S.field[cellIdx] = null;
+        S.score += sp.points;
+        S.removed[cell.type] = (S.removed[cell.type] || 0) + 1;
+        vibrate([60, 40, 60]);
+        sound('good');
+        burst(cellIdx, '#4CAF50');
+        if (!S.seenFacts[cell.type]) {
+          S.seenFacts[cell.type] = true;
+          toast(`✅ <b>+${sp.points}</b> ${sp.icon} <b>${sp.name}</b> removed!<br>${sp.harm}`, 5200);
+        } else {
+          toast(`✅ <b>+${sp.points}</b> ${sp.icon} ${sp.name} removed!`);
+        }
+      } else {
+        S.score = Math.max(0, S.score - 5);
+        vibrate(150);
+        sound('error');
+        burst(cellIdx, '#F44336');
+        const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(' or ');
+        toast(`❌ ${CONTROLS[ctrl].icon} doesn’t stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}`, 5600);
+      }
+
+      render();
+      if (!invaderCells().length) endGame(true);
+      return true;
+    }
+
+    function endTurn() {
+      if (S.over) return;
+      S.selected = null;
+
+      // Invaders spread to a random empty neighbour
+      let spreadCount = 0;
+      for (const i of invaderCells()) {
+        const sp = INVADERS[S.field[i].type];
+        if (Math.random() < sp.spread) {
+          const empties = neighbors(i).filter(n => !S.field[n]);
+          if (empties.length) {
+            S.field[pick(empties)] = { kind: 'invader', type: S.field[i].type };
+            spreadCount++;
+          }
+        }
+      }
+
+      // Natives surrounded by 3+ invaders are lost
+      const lost = [];
+      for (const i of nativeCells()) {
+        const surrounded = neighbors(i)
+          .filter(n => S.field[n] && S.field[n].kind === 'invader').length;
+        if (surrounded >= 3) lost.push(i);
+      }
+      for (const i of lost) {
+        const nat = NATIVES[S.field[i].type];
+        S.field[i] = null;
+        S.score = Math.max(0, S.score - 25);
+        toast(`💔 The ${nat.icon} <b>${nat.name}</b> was overwhelmed by invaders! (−25)`, 5000);
+      }
+
+      S.turn++;
+      S.plays = PLAYS_PER_TURN;
+      refillHand();
+      render();
+
+      const invCount = invaderCells().length;
+      if (!nativeCells().length || invCount >= LOSE_CELLS) {
+        endGame(false);
+        return;
+      }
+      if (!lost.length) {
+        if (spreadCount > 0) {
+          sound('spread');
+          toast(`🌙 Turn ${S.turn} — the invasion spread to <b>${spreadCount}</b> new cell${spreadCount > 1 ? 's' : ''}!`);
+        } else {
+          toast(`🌙 Turn ${S.turn} — no spread. Great containment!`);
+        }
+      }
+    }
+
+    function endGame(won) {
+      S.over = true;
+      S.selected = null;
+      if (won) S.score += 50 + nativeCells().length * 10;
+      if (S.score > best) {
+        best = S.score;
+        try { localStorage.setItem('nd-best', String(best)); } catch (e) {}
+      }
+      render();
+      sound(won ? 'win' : 'lose');
+      vibrate(won ? [80, 60, 80, 60, 160] : [350]);
+
+      document.getElementById('goHero').textContent = won ? '🏆' : '🥀';
+      document.getElementById('goTitle').textContent = won
+        ? 'Habitat saved! Every invader cleared.'
+        : (nativeCells().length ? 'The invasion took over the habitat…' : 'All the native species were lost…');
+      document.getElementById('goStats').innerHTML =
+        `<span>⭐ ${S.score}</span><span>🏅 Best ${best}</span>` +
+        `<span>🌱 ${S.turn} turns</span><span>🦋 ${nativeCells().length}/${S.totalNatives} natives saved</span>`;
+
+      const recap = Object.keys(INVADERS)
+        .filter(t => S.removed[t] || invaderCells().some(i => S.field[i].type === t))
+        .map(t => {
+          const sp = INVADERS[t];
+          const icons = sp.controls.map(c => CONTROLS[c].icon).join(' ');
+          return `<div class="guide-card"><div class="guide-title">` +
+            `<span class="big">${sp.icon}</span> ${sp.name}` +
+            `<span class="chip">removed ×${S.removed[t] || 0}</span></div>` +
+            `<p>${sp.tip}</p><div class="guide-controls">Best control: ${icons}</div></div>`;
+        }).join('');
+      document.getElementById('goRecap').innerHTML =
+        recap || '<p style="font-size:0.85rem;opacity:0.85;">Play a few cards next time to learn about each invader!</p>';
+      openOverlay('gameOverlay');
+    }
+
+    // ===== Rendering ==========================================================
+    function cellPos(i) {
+      const r = Math.floor(i / COLS), c = i % COLS;
+      return { x: (c + (r % 2) * 0.5) * cellSize, y: r * cellSize * 0.87 };
+    }
+
+    function renderBoard() {
+      const area = document.getElementById('gameArea');
+      const board = document.getElementById('board');
+      const rect = area.getBoundingClientRect();
+      const pad = 12;
+      cellSize = Math.max(26, Math.min(
+        (rect.width - pad) / (COLS + 0.5),
+        (rect.height - pad) / (1 + (ROWS - 1) * 0.87),
+        64));
+      board.style.width = cellSize * (COLS + 0.5) + 'px';
+      board.style.height = cellSize * (1 + (ROWS - 1) * 0.87) + 'px';
+      board.innerHTML = '';
+
+      const targeting = S.selected != null && !S.over;
+      for (let i = 0; i < CELLS; i++) {
+        const cellEl = document.createElement('div');
+        cellEl.className = 'cell';
+        cellEl.dataset.index = i;
+        const { x, y } = cellPos(i);
+        cellEl.style.left = x + 'px';
+        cellEl.style.top = y + 'px';
+        cellEl.style.width = cellSize + 'px';
+        cellEl.style.height = cellSize + 'px';
+
+        const occ = S.field[i];
+        if (occ) {
+          const token = document.createElement('div');
+          const data = occ.kind === 'invader' ? INVADERS[occ.type] : NATIVES[occ.type];
+          token.className = 'token ' + occ.kind;
+          token.textContent = data.icon;
+          token.style.fontSize = cellSize * 0.42 + 'px';
+          token.style.background = occ.kind === 'invader' ? data.color : '#2E7D32';
+          cellEl.appendChild(token);
+          if (targeting && occ.kind === 'invader') cellEl.classList.add('valid-target');
+        }
+
+        cellEl.addEventListener('click', () => onCellTap(i));
+        board.appendChild(cellEl);
       }
     }
 
     function renderHand() {
-      const hand = document.getElementById('playerHand');
-      hand.innerHTML = '';
-
-      gameState.hand.forEach((card, index) => {
-        const cardEl = createCardElement(card);
-        cardEl.className += ' hand-card';
-        cardEl.draggable = true;
-        cardEl.dataset.cardIndex = index;
-
-        // Add drag events
-        cardEl.addEventListener('dragstart', handleDragStart);
-        cardEl.addEventListener('dragend', handleDragEnd);
-
-        // Touch events for mobile
-        cardEl.addEventListener('touchstart', handleTouchStart, { passive: false });
-        cardEl.addEventListener('touchmove', handleTouchMove, { passive: false });
-        cardEl.addEventListener('touchend', handleTouchEnd);
-
-        hand.appendChild(cardEl);
+      const row = document.getElementById('handRow');
+      row.innerHTML = '';
+      S.hand.forEach((type, idx) => {
+        const ctrl = CONTROLS[type];
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card ' + type + (S.selected === idx ? ' selected' : '');
+        cardEl.dataset.handIndex = idx;
+        cardEl.innerHTML = `<span>${ctrl.icon}</span><span class="card-label">${ctrl.short}</span>`;
+        cardEl.addEventListener('pointerdown', onCardPointerDown);
+        cardEl.addEventListener('contextmenu', e => e.preventDefault());
+        row.appendChild(cardEl);
       });
+
+      const endBtn = document.createElement('button');
+      endBtn.className = 'btn-endturn' + (S.plays <= 0 && !S.over ? ' urge' : '');
+      endBtn.id = 'btnEndTurn';
+      endBtn.innerHTML = 'End<br>Turn 🌙';
+      endBtn.addEventListener('click', endTurn);
+      row.appendChild(endBtn);
     }
 
-    function createCardElement(card) {
-      const cardEl = document.createElement('div');
-      cardEl.className = 'card ' + card.type;
-      cardEl.textContent = card.icon;
-      cardEl.dataset.cardId = card.id;
-      return cardEl;
+    function render() {
+      renderBoard();
+      renderHand();
+      document.getElementById('score').textContent = S.score;
+      document.getElementById('turn').textContent = S.turn;
+      document.getElementById('actionPips').textContent =
+        '●'.repeat(S.plays) + '○'.repeat(PLAYS_PER_TURN - S.plays);
+      document.getElementById('invasionFill').style.width =
+        Math.min(100, Math.round(invaderCells().length / LOSE_CELLS * 100)) + '%';
+      document.getElementById('bestScore').textContent = best;
     }
 
-    // Drag & Drop Events
-    function handleDragStart(e) {
-      const cardIndex = parseInt(e.target.dataset.cardIndex);
-      gameState.draggedCard = { ...gameState.hand[cardIndex], handIndex: cardIndex };
-
-      e.dataTransfer.setData('text/plain', '');
-
-      // Visual feedback
-      e.target.classList.add('dragging');
-      highlightValidDropZones();
-
-      // Haptic feedback
-      vibrate(50);
-      playSound('pickup');
-      createParticles(e.target, 'pickup');
-    }
-
-    function handleDragEnd(e) {
-      e.target.classList.remove('dragging');
-      clearValidDropZones();
-      gameState.draggedCard = null;
-    }
-
-    function handleDragOver(e) {
-      e.preventDefault();
-      const cell = e.target.closest('.hex-cell');
-      if (cell && isValidDrop(parseInt(cell.dataset.index))) {
-        cell.classList.add('valid-drop');
+    // ===== Interaction ========================================================
+    function onCellTap(i) {
+      if (S.over) return;
+      if (S.selected != null) {
+        playCard(S.selected, i);
+        return;
       }
-    }
-
-    function handleDrop(e) {
-      e.preventDefault();
-      const cell = e.target.closest('.hex-cell');
-      const index = parseInt(cell.dataset.index);
-
-      if (gameState.draggedCard && isValidDrop(index)) {
-        // Place card
-        gameState.field[index] = { ...gameState.draggedCard };
-        delete gameState.field[index].handIndex;
-
-        // Remove from hand
-        gameState.hand.splice(gameState.draggedCard.handIndex, 1);
-
-        // Feedback
-        vibrate([100, 50, 100]);
-        playSound('place');
-        createParticles(cell, 'place');
-
-        // Update score
-        gameState.score += 10;
-
-        // Re-render
-        renderField();
-        renderHand();
-        updateUI();
+      // Scouting: tap any creature to learn about it
+      const occ = S.field[i];
+      if (!occ) return;
+      sound('select');
+      if (occ.kind === 'invader') {
+        const sp = INVADERS[occ.type];
+        const icons = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].short}`).join(' / ');
+        toast(`${sp.icon} <b>${sp.name}</b> (from ${sp.origin}) — weak to <b>${icons}</b>`, 4500);
       } else {
-        // Invalid drop feedback
-        vibrate([200]);
-        playSound('error');
-        createParticles(cell, 'error');
+        const nat = NATIVES[occ.type];
+        toast(`${nat.icon} <b>${nat.name}</b> — ${nat.fact}`, 4500);
       }
-
-      clearValidDropZones();
     }
 
-    // Touch Events for Mobile
-    let touchStartPos = null;
-    let touchCard = null;
+    // Unified pointer handling: tap to select, or drag onto a target
+    let drag = null;
 
-    function handleTouchStart(e) {
+    function onCardPointerDown(e) {
+      if (S.over) return;
       e.preventDefault();
-      const touch = e.touches[0];
-      touchStartPos = { x: touch.clientX, y: touch.clientY };
-      touchCard = e.target.closest('.card');
-
-      if (touchCard) {
-        const cardIndex = parseInt(touchCard.dataset.cardIndex);
-        gameState.draggedCard = { ...gameState.hand[cardIndex], handIndex: cardIndex };
-
-        touchCard.classList.add('dragging');
-        highlightValidDropZones();
-
-        vibrate(50);
-        playSound('pickup');
-      }
-    }
-
-    function handleTouchMove(e) {
-      e.preventDefault();
-      if (touchCard && gameState.draggedCard) {
-        const touch = e.touches[0];
-        const rect = touchCard.getBoundingClientRect();
-
-        // Move card with finger
-        touchCard.style.position = 'fixed';
-        touchCard.style.left = (touch.clientX - rect.width / 2) + 'px';
-        touchCard.style.top = (touch.clientY - rect.height / 2) + 'px';
-        touchCard.style.zIndex = '1000';
-      }
-    }
-
-    function handleTouchEnd(e) {
-      if (touchCard && gameState.draggedCard) {
-        const touch = e.changedTouches[0];
-        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-        const cell = elementBelow ? elementBelow.closest('.hex-cell') : null;
-
-        if (cell) {
-          const index = parseInt(cell.dataset.index);
-          if (isValidDrop(index)) {
-            // Place card
-            gameState.field[index] = { ...gameState.draggedCard };
-            delete gameState.field[index].handIndex;
-
-            gameState.hand.splice(gameState.draggedCard.handIndex, 1);
-
-            vibrate([100, 50, 100]);
-            playSound('place');
-            createParticles(cell, 'place');
-
-            gameState.score += 10;
-
-            renderField();
-            renderHand();
-            updateUI();
-          } else {
-            vibrate([200]);
-            playSound('error');
-          }
-        }
-
-        // Reset card position
-        touchCard.style.position = '';
-        touchCard.style.left = '';
-        touchCard.style.top = '';
-        touchCard.style.zIndex = '';
-        touchCard.classList.remove('dragging');
-
-        clearValidDropZones();
-        gameState.draggedCard = null;
-        touchCard = null;
-        touchStartPos = null;
-      }
-    }
-
-    function isValidDrop(index) {
-      return gameState.field[index] === null; // Simple rule: only empty cells
-    }
-
-    function highlightValidDropZones() {
-      const cells = document.querySelectorAll('.hex-cell');
-      cells.forEach((cell, index) => {
-        if (isValidDrop(index)) {
-          cell.classList.add('valid-drop');
-        }
-      });
-    }
-
-    function clearValidDropZones() {
-      const cells = document.querySelectorAll('.hex-cell');
-      cells.forEach(cell => {
-        cell.classList.remove('valid-drop');
-      });
-    }
-
-    function updateUI() {
-      document.getElementById('score').textContent = gameState.score;
-      document.getElementById('turn').textContent = gameState.turn;
-    }
-
-    // Feedback Systems
-    function vibrate(pattern) {
-      if ('vibrate' in navigator) {
-        navigator.vibrate(pattern);
-      }
-    }
-
-    function playSound(type) {
-      // Web Audio API implementation would go here
-      // For now, just create audio context if available
-      if (window.AudioContext || window.webkitAudioContext) {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        const frequencies = {
-          pickup: 440,
-          place: 523,
-          error: 150
-        };
-
-        oscillator.frequency.value = frequencies[type] || 440;
-        oscillator.type = 'sine';
-
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
-
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.2);
-      }
-    }
-
-    function createParticles(element, type) {
-      const rect = element.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      const colors = {
-        pickup: '#4CAF50',
-        place: '#4CAF50',
-        error: '#F44336'
+      const source = e.currentTarget;
+      const idx = parseInt(source.dataset.handIndex, 10);
+      drag = {
+        idx, source,
+        startX: e.clientX, startY: e.clientY,
+        ghost: null
       };
+      window.addEventListener('pointermove', onCardPointerMove);
+      window.addEventListener('pointerup', onCardPointerUp);
+      window.addEventListener('pointercancel', onCardPointerCancel);
+    }
 
-      const count = type === 'place' ? 12 : 6;
-
-      for (let i = 0; i < count; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.position = 'fixed';
-        particle.style.left = centerX + 'px';
-        particle.style.top = centerY + 'px';
-        particle.style.width = '4px';
-        particle.style.height = '4px';
-        particle.style.background = colors[type] || '#4CAF50';
-        particle.style.borderRadius = '50%';
-        particle.style.pointerEvents = 'none';
-        particle.style.zIndex = '9999';
-
-        document.getElementById('particles').appendChild(particle);
-
-        // Animate particle
-        const angle = (i / count) * Math.PI * 2;
-        const speed = 50 + Math.random() * 50;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed - 50;
-
-        let x = centerX;
-        let y = centerY;
-        let velX = vx;
-        let velY = vy;
-        let opacity = 1;
-
-        const animate = () => {
-          x += velX * 0.016;
-          y += velY * 0.016;
-          velY += 0.5; // gravity
-          opacity -= 0.02;
-
-          particle.style.left = x + 'px';
-          particle.style.top = y + 'px';
-          particle.style.opacity = opacity;
-
-          if (opacity > 0) {
-            requestAnimationFrame(animate);
-          } else {
-            particle.remove();
-          }
-        };
-
-        requestAnimationFrame(animate);
+    function onCardPointerMove(e) {
+      if (!drag) return;
+      const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+      if (!drag.ghost && Math.hypot(dx, dy) > 10) {
+        // Start dragging: spawn a ghost card and highlight targets
+        const ghost = drag.source.cloneNode(true);
+        ghost.classList.add('drag-ghost');
+        ghost.classList.remove('selected');
+        document.body.appendChild(ghost);
+        drag.ghost = ghost;
+        drag.source.classList.add('drag-source');
+        S.selected = drag.idx;
+        markTargets(true);
+        vibrate(40);
+        sound('select');
+      }
+      if (drag.ghost) {
+        drag.ghost.style.left = (e.clientX - 29) + 'px';
+        drag.ghost.style.top = (e.clientY - 29) + 'px';
       }
     }
 
-    // UI Functions
-    function toggleMenu() {
-      const overlay = document.getElementById('menuOverlay');
-      overlay.classList.toggle('show');
-    }
-
-    function toggleLegend() {
-      const overlay = document.getElementById('legendOverlay');
-      overlay.classList.toggle('show');
-    }
-
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
+    function onCardPointerUp(e) {
+      if (!drag) return;
+      const wasDrag = !!drag.ghost;
+      const idx = drag.idx;
+      cleanupDrag();
+      if (wasDrag) {
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const cellEl = el && el.closest ? el.closest('.cell') : null;
+        S.selected = null;
+        markTargets(false);
+        if (cellEl) {
+          playCard(idx, parseInt(cellEl.dataset.index, 10));
+        }
       } else {
-        document.exitFullscreen();
+        // Tap: toggle selection
+        S.selected = (S.selected === idx) ? null : idx;
+        if (S.selected != null) { sound('select'); vibrate(30); }
+        render();
       }
     }
 
-    function newGame() {
-      gameState.field.fill(null);
-      gameState.score = 0;
-      gameState.turn = 1;
-      initGame();
-      toggleMenu();
+    function onCardPointerCancel() {
+      if (!drag) return;
+      cleanupDrag();
+      S.selected = null;
+      render();
     }
 
-    function showHelp() {
-      alert('Drag cards from your hand onto the grid to play them. Each card type has different effects!');
+    function cleanupDrag() {
+      if (drag && drag.ghost) drag.ghost.remove();
+      if (drag && drag.source) drag.source.classList.remove('drag-source');
+      window.removeEventListener('pointermove', onCardPointerMove);
+      window.removeEventListener('pointerup', onCardPointerUp);
+      window.removeEventListener('pointercancel', onCardPointerCancel);
+      drag = null;
     }
 
-    function showSettings() {
-      alert('Settings panel coming soon!');
+    function markTargets(on) {
+      document.querySelectorAll('.cell').forEach(cellEl => {
+        const i = parseInt(cellEl.dataset.index, 10);
+        const occ = S.field[i];
+        cellEl.classList.toggle('valid-target', !!(on && occ && occ.kind === 'invader'));
+      });
     }
 
-    // Initialize game when page loads
+    // ===== Feedback: toast, sound, haptics, particles =========================
+    let toastTimer = null;
+
+    function toast(html, ms) {
+      const el = document.getElementById('toast');
+      el.innerHTML = html;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), ms || 3200);
+      el.onclick = () => { clearTimeout(toastTimer); el.classList.remove('show'); };
+    }
+
+    function vibrate(pattern) {
+      if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
+    }
+
+    let audioCtx = null;
+
+    function sound(type) {
+      if (!soundOn) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try {
+        if (!audioCtx) audioCtx = new AC();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const t0 = audioCtx.currentTime;
+        const tone = (freq, start, dur, wave, vol) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = wave || 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, t0 + start);
+          gain.gain.linearRampToValueAtTime(vol || 0.08, t0 + start + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, t0 + start + dur);
+          osc.start(t0 + start);
+          osc.stop(t0 + start + dur + 0.02);
+        };
+        switch (type) {
+          case 'select': tone(440, 0, 0.12); break;
+          case 'good':   tone(523, 0, 0.12); tone(784, 0.1, 0.18); break;
+          case 'error':  tone(150, 0, 0.25, 'sawtooth', 0.06); break;
+          case 'spread': tone(220, 0, 0.15, 'triangle'); break;
+          case 'win':    [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.22)); break;
+          case 'lose':   [392, 330, 262].forEach((f, i) => tone(f, i * 0.18, 0.3, 'triangle')); break;
+        }
+      } catch (e) { /* audio unavailable */ }
+    }
+
+    function burst(cellIdx, color) {
+      const board = document.getElementById('board');
+      const rect = board.getBoundingClientRect();
+      const { x, y } = cellPos(cellIdx);
+      const cx = rect.left + x + cellSize / 2;
+      const cy = rect.top + y + cellSize / 2;
+      const count = 10;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.background = color;
+        document.body.appendChild(p);
+        const angle = (i / count) * Math.PI * 2;
+        let px = cx, py = cy, opacity = 1;
+        let vx = Math.cos(angle) * (60 + Math.random() * 60);
+        let vy = Math.sin(angle) * (60 + Math.random() * 60) - 60;
+        const step = () => {
+          px += vx * 0.016;
+          py += vy * 0.016;
+          vy += 30 * 0.016 * 9.8;
+          opacity -= 0.025;
+          p.style.left = px + 'px';
+          p.style.top = py + 'px';
+          p.style.opacity = opacity;
+          if (opacity > 0) requestAnimationFrame(step); else p.remove();
+        };
+        requestAnimationFrame(step);
+      }
+    }
+
+    // ===== Overlays & menu ====================================================
+    function openOverlay(id) { document.getElementById(id).classList.add('show'); }
+    function closeOverlay(id) { document.getElementById(id).classList.remove('show'); }
+
+    function buildGuide() {
+      let html = '<p style="font-size:0.8rem;opacity:0.85;margin-bottom:0.7rem;">' +
+        'These are real invasive species and the real methods used to control them.</p>';
+      for (const t of Object.keys(INVADERS)) {
+        const sp = INVADERS[t];
+        const icons = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(' · ');
+        const danger = '🔥'.repeat(Math.max(1, Math.round(sp.spread * 6)));
+        html += `<div class="guide-card"><div class="guide-title">` +
+          `<span class="big">${sp.icon}</span> ${sp.name}<span class="chip">from ${sp.origin}</span></div>` +
+          `<p>${sp.harm}</p><p>${sp.tip}</p>` +
+          `<div class="guide-controls">Weak to: ${icons}<br>Spread speed: ${danger}</div></div>`;
+      }
+      html += '<h3 style="margin:0.8rem 0 0.5rem;font-size:0.95rem;">🛠 Your control methods</h3>';
+      for (const t of Object.keys(CONTROLS)) {
+        const c = CONTROLS[t];
+        html += `<div class="guide-card"><div class="guide-title">` +
+          `<span class="big">${c.icon}</span> ${c.name}</div><p>${c.desc}</p></div>`;
+      }
+      html += '<h3 style="margin:0.8rem 0 0.5rem;font-size:0.95rem;">🦋 Natives to protect</h3>';
+      for (const t of Object.keys(NATIVES)) {
+        const n = NATIVES[t];
+        html += `<div class="guide-card"><div class="guide-title">` +
+          `<span class="big">${n.icon}</span> ${n.name}</div><p>${n.fact}</p></div>`;
+      }
+      document.getElementById('guideContent').innerHTML = html;
+    }
+
+    function updateSoundBtn() {
+      document.getElementById('btnSound').textContent =
+        soundOn ? '🔊 Sound: On' : '🔇 Sound: Off';
+    }
+
+    function bindUI() {
+      document.getElementById('btnMenu').addEventListener('click', () => openOverlay('menuOverlay'));
+      document.getElementById('btnGuide').addEventListener('click', () => openOverlay('guideOverlay'));
+      document.getElementById('btnGuide2').addEventListener('click', () => {
+        closeOverlay('menuOverlay');
+        openOverlay('guideOverlay');
+      });
+      document.getElementById('btnHelp').addEventListener('click', () => {
+        closeOverlay('menuOverlay');
+        openOverlay('helpOverlay');
+      });
+      document.getElementById('btnNewGame').addEventListener('click', () => {
+        closeOverlay('menuOverlay');
+        initGame();
+        toast('🎮 New game! Stop the invasion.');
+      });
+      document.getElementById('btnPlayAgain').addEventListener('click', () => {
+        closeOverlay('gameOverlay');
+        initGame();
+        toast('🎮 New game! Stop the invasion.');
+      });
+      document.getElementById('btnSound').addEventListener('click', () => {
+        soundOn = !soundOn;
+        try { localStorage.setItem('nd-sound', soundOn ? 'on' : 'off'); } catch (e) {}
+        updateSoundBtn();
+        sound('select');
+      });
+      document.getElementById('btnFullscreen').addEventListener('click', () => {
+        try {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+          } else {
+            document.exitFullscreen();
+          }
+        } catch (e) { /* unsupported */ }
+      });
+      // Close buttons and backdrop taps
+      document.querySelectorAll('[data-close]').forEach(btn => {
+        btn.addEventListener('click', () => closeOverlay(btn.dataset.close));
+      });
+      document.querySelectorAll('.overlay').forEach(ov => {
+        ov.addEventListener('click', e => {
+          if (e.target === ov && ov.id !== 'gameOverlay') ov.classList.remove('show');
+        });
+      });
+
+      let resizeTimer = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(render, 120);
+      });
+    }
+
+    // ===== Boot ===============================================================
     document.addEventListener('DOMContentLoaded', () => {
+      bindUI();
+      buildGuide();
+      updateSoundBtn();
       initGame();
-    });
-
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      setTimeout(renderField, 100);
+      let firstVisit = true;
+      try {
+        firstVisit = !localStorage.getItem('nd-visited');
+        localStorage.setItem('nd-visited', '1');
+      } catch (e) {}
+      if (firstVisit) openOverlay('helpOverlay');
     });
   </script>
 </body>
