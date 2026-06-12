@@ -542,11 +542,11 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <h1>🌿 <span class="title-text">Nature Defenders</span></h1>
+        <h1>🌿 <span class="title-text">Invasive Species: The Game!</span></h1>
       </div>
       <div class="header-center">
-        <div class="score-display" title="Score">⭐ <span id="score">0</span></div>
-        <div class="turn-display" title="Turn">🌱 <span id="turn">1</span></div>
+        <div class="score-display" title="Your management score">⭐ <span id="score">0</span></div>
+        <div class="turn-display" title="Turn number">🌍 <span id="turn">1</span></div>
       </div>
       <div class="header-right">
         <button class="btn-icon" id="btnGuide" title="Field Guide">📖</button>
@@ -555,7 +555,7 @@
     </header>
 
     <!-- Invasion meter -->
-    <div class="invasion-meter" title="Invasion level">
+    <div class="invasion-meter" id="invasionMeter" title="Invasion meter: fills as more invasive species spread. Fill it completely to lose!">
       <div class="fill" id="invasionFill"></div>
     </div>
 
@@ -569,8 +569,8 @@
       <!-- Player Hand -->
       <footer class="player-area">
         <div class="hand-header">
-          <span>Your hand — tap a card, then tap an invader</span>
-          <span class="action-pips" id="actionPips"></span>
+          <span>Your interventions — tap a card, then tap an invader</span>
+          <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
         </div>
         <div class="hand-row" id="handRow"></div>
       </footer>
@@ -586,6 +586,8 @@
         <button class="menu-btn primary" id="btnNewGame">🎮 New Game</button>
         <button class="menu-btn" id="btnHelp">❓ How to Play</button>
         <button class="menu-btn" id="btnGuide2">📖 Field Guide</button>
+        <button class="menu-btn" id="btnGlossary">📚 Glossary</button>
+        <button class="menu-btn" id="btnScience">🔬 Game Science</button>
         <button class="menu-btn" id="btnSound">🔊 Sound: On</button>
         <button class="menu-btn" id="btnFullscreen">⛶ Fullscreen</button>
         <div class="eco-note">Best score: <span id="bestScore">0</span> ⭐</div>
@@ -603,6 +605,28 @@
       </div>
     </div>
 
+    <!-- Glossary Overlay -->
+    <div class="overlay" id="glossaryOverlay">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>📚 Glossary</h2>
+          <button class="btn-close" data-close="glossaryOverlay">×</button>
+        </div>
+        <div id="glossaryContent"></div>
+      </div>
+    </div>
+
+    <!-- Game Science Overlay -->
+    <div class="overlay" id="scienceOverlay">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>🔬 Game Science</h2>
+          <button class="btn-close" data-close="scienceOverlay">×</button>
+        </div>
+        <div id="scienceContent"></div>
+      </div>
+    </div>
+
     <!-- How to Play Overlay -->
     <div class="overlay" id="helpOverlay">
       <div class="panel">
@@ -610,12 +634,13 @@
           <h2>❓ How to Play</h2>
           <button class="btn-close" data-close="helpOverlay">×</button>
         </div>
-        <div class="help-step"><span class="big">🃏</span><span>Tap a control card in your hand, then tap an <b>invasive species</b> on the board — or just drag the card onto it.</span></div>
-        <div class="help-step"><span class="big">🎯</span><span>Every invader has weaknesses based on <b>real conservation science</b>. Use the wrong method and the invader survives! Check the 📖 Field Guide.</span></div>
-        <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn — but beware: <b>invaders spread</b> to neighbouring cells.</span></div>
+        <div class="help-step"><span class="big">👨‍🌾</span><span>You are a <b>natural resource manager</b> responsible for protecting this habitat. Use science-based interventions to manage the invasive species invasion.</span></div>
+        <div class="help-step"><span class="big">🃏</span><span>Tap an intervention card in your hand, then tap an <b>invasive species</b> on the board — or drag the card onto it.</span></div>
+        <div class="help-step"><span class="big">🎯</span><span>Every invader has weaknesses based on <b>real conservation science</b>. Use the wrong method and it survives! Check the 📖 Field Guide.</span></div>
+        <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn — but beware: <b>invaders spread</b> to neighboring cells.</span></div>
         <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. Keep them alive!</span></div>
-        <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by clearing every invader. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
-        <div class="eco-note">Tip: tap any creature on the board to learn about it. All species and control methods in this game are real.</div>
+        <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining a healthy ecosystem (more natives than invaders) for 6 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
+        <div class="eco-note">💡 Once a species becomes invasive, complete eradication is nearly impossible. Management is about maintaining a balance. Tap any creature to learn about it.</div>
         <button class="menu-btn primary" data-close="helpOverlay" style="margin-top:0.8rem;">Let's go! 🌿</button>
       </div>
     </div>
@@ -642,56 +667,74 @@
     const COLS = 8, ROWS = 9, CELLS = COLS * ROWS;
     const HAND_SIZE = 5, PLAYS_PER_TURN = 4;
     const LOSE_CELLS = Math.floor(CELLS * 0.45); // invasion meter limit
+    const WIN_TURNS = 6; // turns to maintain healthy ratio to win (50 min session = ~6 turns)
 
     const CONTROLS = {
-      manual: { icon: '🔨', short: 'Pull',  name: 'Manual Removal',
-        desc: 'Hand-pulling, trapping, harvesting and scraping. Hard work, but precise and chemical-free.' },
-      shears: { icon: '✂️', short: 'Cut',   name: 'Cutting & Mowing',
-        desc: 'Repeated cutting exhausts a plant’s root reserves until it can no longer regrow.' },
-      bio:    { icon: '🐾', short: 'Bio',   name: 'Biological Control',
-        desc: 'Carefully tested natural enemies from the invader’s homeland, like weevils or parasitoid wasps.' },
-      water:  { icon: '💧', short: 'Water', name: 'Water Management',
-        desc: 'Drawdowns, hot-water washes and barriers. "Clean, Drain, Dry" stops aquatic hitchhikers.' },
-      burn:   { icon: '🔥', short: 'Burn',  name: 'Prescribed Burn',
-        desc: 'Carefully planned fire clears invasive growth and helps fire-adapted native plants return.' },
-      chem:   { icon: '☠️', short: 'Spray', name: 'Targeted Pesticide',
-        desc: 'Precise, last-resort treatments. Spraying the wrong target harms natives too!' }
+      manual: { icon: ‘🔨’, short: ‘Remove’,  name: ‘Manual Removal’,
+        desc: ‘Hand-pulling, trapping, harvesting and scraping. Hard work, but precise and chemical-free.’, class: ‘manual’ },
+      shears: { icon: ‘✂️’, short: ‘Cut’,   name: ‘Cutting & Mowing’,
+        desc: ‘Repeated cutting exhausts a plant’s root reserves until it can no longer regrow.’, class: ‘shears’ },
+      bio:    { icon: ‘🐾’, short: ‘Bio’,   name: ‘Biological Control’,
+        desc: ‘Carefully tested natural enemies from the invader’s homeland, like weevils or parasitoid wasps.’, class: ‘bio’ },
+      water:  { icon: ‘💧’, short: ‘Water’, name: ‘Water Management’,
+        desc: ‘Drawdowns, hot-water washes and barriers. "Clean, Drain, Dry" stops aquatic hitchhikers.’, class: ‘water’ },
+      burn:   { icon: ‘🔥’, short: ‘Burn’,  name: ‘Prescribed Burn’,
+        desc: ‘Carefully planned fire clears invasive growth and helps fire-adapted native plants return.’, class: ‘burn’ },
+      chem:   { icon: ‘💊’, short: ‘Spray’, name: ‘Targeted Treatment’,
+        desc: ‘Precise, last-resort treatments like targeted pesticides. Wrong target harms natives too!’, class: ‘chem’ }
     };
 
     const INVADERS = {
-      kudzu: { icon: '🌿', name: 'Kudzu', color: '#558B2F', origin: 'East Asia',
-        controls: ['shears', 'burn'], spread: 0.5, points: 20,
-        harm: 'A vine that grows up to 30 cm per day, smothering whole forests by blocking sunlight — "the vine that ate the South".',
-        tip: 'Cut it back again and again, or use prescribed burns to expose its root crowns.' },
-      hyacinth: { icon: '🌺', name: 'Water Hyacinth', color: '#7B1FA2', origin: 'Amazon Basin',
-        controls: ['manual', 'bio'], spread: 0.4, points: 20,
-        harm: 'Floating mats double in size in two weeks, clogging waterways and starving fish of oxygen.',
-        tip: 'Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.' },
-      mussel: { icon: '🐚', name: 'Zebra Mussel', color: '#5D4037', origin: 'Caspian Sea region',
-        controls: ['manual', 'water'], spread: 0.35, points: 20,
-        harm: 'Stowaways in ship ballast water that clog pipes, coat boats and out-eat native mussels.',
-        tip: 'Scrape them off and Clean, Drain, Dry every boat — dried-out mussels can’t survive.' },
-      borer: { icon: '🪲', name: 'Emerald Ash Borer', color: '#00695C', origin: 'Northeast Asia',
-        controls: ['bio', 'chem'], spread: 0.3, points: 25,
-        harm: 'Larvae tunnel under ash bark and cut off the tree’s nutrients — tens of millions of trees lost.',
-        tip: 'Tiny parasitoid wasps hunt its larvae, and targeted trunk treatments protect single trees.' },
-      python: { icon: '🐍', name: 'Burmese Python', color: '#33691E', origin: 'Southeast Asia',
-        controls: ['manual'], spread: 0.2, points: 40,
-        harm: 'Released pets that ate their way through the Everglades — some mammal numbers fell over 90%.',
-        tip: 'No easy fix exists: trained trackers remove pythons one by one. Never release a pet!' }
+      kudzu: { icon: ‘🌿’, name: ‘Kudzu’, color: ‘#558B2F’, origin: ‘East Asia’,
+        controls: [‘shears’, ‘burn’], spread: 0.5, points: 20,
+        harm: ‘A vine that grows up to 30 cm per day, smothering whole forests by blocking sunlight — "the vine that ate the South".’,
+        tip: ‘Cut it back again and again, or use prescribed burns to expose its root crowns.’,
+        fact: ‘Kudzu was brought to the US in 1876 as an ornamental plant and livestock feed. By the 1950s it covered millions of acres.’ },
+      hyacinth: { icon: ‘🌺’, name: ‘Water Hyacinth’, color: ‘#7B1FA2’, origin: ‘Amazon Basin’,
+        controls: [‘manual’, ‘bio’], spread: 0.4, points: 20,
+        harm: ‘Floating mats double in size in two weeks, clogging waterways and starving fish of oxygen.’,
+        tip: ‘Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.’,
+        fact: ‘Its beautiful purple flowers made it popular in ornamental ponds across the world—until it escaped into wild waterways.’ },
+      mussel: { icon: ‘🐚’, name: ‘Zebra Mussel’, color: ‘#5D4037’, origin: ‘Caspian Sea region’,
+        controls: [‘manual’, ‘water’], spread: 0.35, points: 20,
+        harm: ‘Stowaways in ship ballast water that clog pipes, coat boats and out-eat native mussels.’,
+        tip: ‘Scrape them off and Clean, Drain, Dry every boat — dried-out mussels can\’t survive.’,
+        fact: ‘A single zebra mussel can produce 30,000–100,000 offspring per year, and they can survive in freshwater for weeks out of water.’ },
+      borer: { icon: ‘🪲’, name: ‘Emerald Ash Borer’, color: ‘#00695C’, origin: ‘Northeast Asia’,
+        controls: [‘bio’, ‘chem’], spread: 0.3, points: 25,
+        harm: ‘Larvae tunnel under ash bark and cut off the tree’s nutrients — tens of millions of trees lost.’,
+        tip: ‘Tiny parasitoid wasps hunt its larvae, and targeted trunk treatments protect single trees.’,
+        fact: ‘Since 2002, Emerald Ash Borers have killed over 100 million ash trees. They likely arrived in shipping pallets from Asia.’ },
+      python: { icon: ‘🐍’, name: ‘Burmese Python’, color: ‘#33691E’, origin: ‘Southeast Asia’,
+        controls: [‘manual’], spread: 0.2, points: 40,
+        harm: ‘Released pets that ate their way through the Everglades — some mammal numbers fell over 90%.’,
+        tip: ‘No easy fix exists: trained trackers remove pythons one by one. Never release a pet!’,
+        fact: ‘Hurricane Andrew destroyed a python breeding facility in 1992, releasing dozens into the wild. Now tens of thousands roam the Everglades.’ },
+      carp: { icon: ‘🐟’, name: ‘Asian Carp’, color: ‘#1565C0’, origin: ‘East Asia’,
+        controls: [‘manual’, ‘water’], spread: 0.35, points: 22,
+        harm: ‘Voracious eaters that consume 40% of their body weight daily, out-competing native fish and destroying aquatic plants.’,
+        tip: ‘Electric barriers stop them in waterways; targeted removal by commercial fisheries reduces populations.’,
+        fact: ‘Introduced to the US in the 1970s for aquaculture, they escaped floods and now threaten the Great Lakes ecosystem.’ },
+      pathogen: { icon: ‘🦠’, name: ‘Chytrid Fungus’, color: ‘#C62828’, origin: ‘East Asia’,
+        controls: [‘water’, ‘chem’], spread: 0.4, points: 30,
+        harm: ‘A deadly fungus that infects amphibian skin, preventing them from breathing. Has wiped out entire frog species.’,
+        tip: ‘Quarantine and disinfect hiking gear; treat breeding habitats with antifungal compounds.’,
+        fact: ‘Chytrid fungus has caused more extinctions of vertebrate species than any other pathogen in recorded history.’ }
     };
 
     const NATIVES = {
       oak:     { icon: '🌳', name: 'White Oak',         fact: 'One oak can feed over 500 species of caterpillars — a whole food web in one tree.' },
       monarch: { icon: '🦋', name: 'Monarch Butterfly', fact: 'Monarch caterpillars can only eat milkweed. Invasive plants that crowd it out starve them.' },
       turtle:  { icon: '🐢', name: 'Box Turtle',        fact: 'Box turtles can live 100 years — but only if their woodland habitat survives.' },
-      bee:     { icon: '🐝', name: 'Native Bee',        fact: 'Native bees pollinate the wildflowers that invasive plants push out.' }
+      bee:     { icon: '🐝', name: 'Native Bee',        fact: 'Native bees pollinate the wildflowers that invasive plants push out.' },
+      heron:   { icon: '🦢', name: 'Great Blue Heron',  fact: 'These wading birds hunt fish and frogs. Clogged waterways from invasive plants block their habitat.' },
+      salamander: { icon: '🦎', name: 'Spotted Salamander', fact: 'Breeds only in pristine vernal pools. Invasive species degrade these critical breeding grounds.' }
     };
 
     const STARTING_INVADERS = [
-      ['kudzu', 2], ['hyacinth', 2], ['mussel', 2], ['borer', 1], ['python', 1]
+      ['kudzu', 2], ['hyacinth', 2], ['mussel', 1], ['borer', 1], ['python', 1]
     ];
-    const STARTING_NATIVES = ['oak', 'monarch', 'turtle', 'bee', 'oak'];
+    const STARTING_NATIVES = ['oak', 'monarch', 'turtle', 'bee', 'heron'];
 
     // ===== State ==============================================================
     let S = null;
@@ -715,7 +758,8 @@
         over: false,
         removed: {},
         seenFacts: {},
-        totalNatives: 0
+        totalNatives: 0,
+        healthyTurns: 0
       };
     }
 
@@ -854,19 +898,44 @@
       if (S.over) return;
       S.selected = null;
 
-      // Invaders spread to a random empty neighbour
-      let spreadCount = 0;
+      // Calculate what will spread (but don't do it yet)
+      const spreads = [];
       for (const i of invaderCells()) {
         const sp = INVADERS[S.field[i].type];
         if (Math.random() < sp.spread) {
           const empties = neighbors(i).filter(n => !S.field[n]);
           if (empties.length) {
-            S.field[pick(empties)] = { kind: 'invader', type: S.field[i].type };
-            spreadCount++;
+            spreads.push({ from: i, to: pick(empties), type: S.field[i].type });
           }
         }
       }
 
+      // Animate spreads one by one
+      let spreadIdx = 0;
+      const spreadNext = () => {
+        if (spreadIdx < spreads.length) {
+          const s = spreads[spreadIdx];
+          S.field[s.to] = { kind: 'invader', type: s.type };
+          burst(s.to, '#EF5350');
+          sound('spread');
+          render();
+          spreadIdx++;
+          setTimeout(spreadNext, 400);
+          return;
+        }
+        // All spreads done, check for native losses
+        continueEndTurn(spreads.length);
+      };
+
+      // Start the animation
+      if (spreads.length > 0) {
+        spreadNext();
+      } else {
+        continueEndTurn(0);
+      }
+    }
+
+    function continueEndTurn(spreadCount) {
       // Natives surrounded by 3+ invaders are lost
       const lost = [];
       for (const i of nativeCells()) {
@@ -887,16 +956,30 @@
       render();
 
       const invCount = invaderCells().length;
-      if (!nativeCells().length || invCount >= LOSE_CELLS) {
+      const nativeCount = nativeCells().length;
+      const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
+      const isHealthy = healthyRatio >= 0.5 && invCount < LOSE_CELLS;
+
+      if (isHealthy) {
+        S.healthyTurns++;
+        if (S.healthyTurns >= WIN_TURNS) {
+          endGame(true);
+          return;
+        }
+      } else {
+        S.healthyTurns = 0;
+      }
+
+      if (!nativeCount || invCount >= LOSE_CELLS) {
         endGame(false);
         return;
       }
       if (!lost.length) {
+        const healthStr = isHealthy ? `✓ Healthy ratio maintained (${S.healthyTurns}/${WIN_TURNS})` : `Ratio not yet healthy`;
         if (spreadCount > 0) {
-          sound('spread');
-          toast(`🌙 Turn ${S.turn} — the invasion spread to <b>${spreadCount}</b> new cell${spreadCount > 1 ? 's' : ''}!`);
+          toast(`🌙 Turn ${S.turn} — invasion spread to <b>${spreadCount}</b> cell${spreadCount > 1 ? 's' : ''}! ${healthStr}`);
         } else {
-          toast(`🌙 Turn ${S.turn} — no spread. Great containment!`);
+          toast(`🌙 Turn ${S.turn} — no spread! ${healthStr}`);
         }
       }
     }
@@ -915,8 +998,8 @@
 
       document.getElementById('goHero').textContent = won ? '🏆' : '🥀';
       document.getElementById('goTitle').textContent = won
-        ? 'Habitat saved! Every invader cleared.'
-        : (nativeCells().length ? 'The invasion took over the habitat…' : 'All the native species were lost…');
+        ? 'Invasion managed! The ecosystem is stable.'
+        : (nativeCells().length ? 'The invasion overwhelmed the habitat…' : 'All the native species were lost…');
       document.getElementById('goStats').innerHTML =
         `<span>⭐ ${S.score}</span><span>🏅 Best ${best}</span>` +
         `<span>🌱 ${S.turn} turns</span><span>🦋 ${nativeCells().length}/${S.totalNatives} natives saved</span>`;
@@ -991,6 +1074,7 @@
         const cardEl = document.createElement('div');
         cardEl.className = 'card ' + type + (S.selected === idx ? ' selected' : '');
         cardEl.dataset.handIndex = idx;
+        cardEl.title = `${ctrl.name}: ${ctrl.desc}`;
         cardEl.innerHTML = `<span>${ctrl.icon}</span><span class="card-label">${ctrl.short}</span>`;
         cardEl.addEventListener('pointerdown', onCardPointerDown);
         cardEl.addEventListener('contextmenu', e => e.preventDefault());
@@ -1030,11 +1114,11 @@
       sound('select');
       if (occ.kind === 'invader') {
         const sp = INVADERS[occ.type];
-        const icons = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].short}`).join(' / ');
-        toast(`${sp.icon} <b>${sp.name}</b> (from ${sp.origin}) — weak to <b>${icons}</b>`, 4500);
+        const icons = sp.controls.map(c => CONTROLS[c].icon).join(' ');
+        toast(`${sp.icon} <b>${sp.name}</b> (invasive) from ${sp.origin}<br>💡 ${sp.fact}<br>Weak to: ${icons}`, 5500);
       } else {
         const nat = NATIVES[occ.type];
-        toast(`${nat.icon} <b>${nat.name}</b> — ${nat.fact}`, 4500);
+        toast(`${nat.icon} <b>${nat.name}</b> (native)<br>💡 ${nat.fact}`, 4500);
       }
     }
 
@@ -1234,6 +1318,56 @@
       document.getElementById('guideContent').innerHTML = html;
     }
 
+    function buildGlossary() {
+      const glossary = {
+        'Invasive Species': 'A species that is not native to an ecosystem and causes economic, environmental, or health harm. Once established, they\'re nearly impossible to eradicate.',
+        'Native Species': 'Species that naturally occur in an ecosystem and have evolved with other species there. They\'re adapted to the local environment.',
+        'Biodiversity': 'The variety of all living things in an ecosystem. High biodiversity makes ecosystems resilient; invasive species reduce it.',
+        'Ecosystem': 'A community of living organisms (plants, animals, microorganisms) interacting with their physical environment.',
+        'Spread Rate': 'How fast an invasive species reproduces and colonizes new areas. Fast-spreading species are harder to control.',
+        'Control Method': 'A science-based technique to reduce or manage invasive species populations. No single method works for all species.',
+        'Biological Control': 'Using a natural predator or disease from the invader\'s homeland to control it. Takes time but is often sustainable.',
+        'Prescribed Burn': 'Intentionally set, carefully controlled fires that help fire-adapted native plants return and set back invasives.',
+        'Eradication': 'Completely removing a species from an area. This is almost impossible once a species is established as invasive.',
+        'Management': 'Controlling invasive species populations to maintain ecosystem health—the realistic goal once invasion is underway.',
+        'Ratio (natives:invaders)': 'The mathematical proportion of native species to invasive species. A healthy ecosystem maintains more natives than invaders.',
+        'Resilience': 'An ecosystem\'s ability to recover from disturbance. Native species diversity makes ecosystems more resilient to invasion.'
+      };
+      let html = '<p style="font-size:0.8rem;opacity:0.85;margin-bottom:0.7rem;">Terms and concepts used in this game:</p>';
+      for (const [term, def] of Object.entries(glossary)) {
+        html += `<div class="guide-card"><div class="guide-title" style="font-weight: 600; margin-bottom: 0.3rem;">${term}</div>` +
+          `<p style="margin: 0; font-size: 0.8rem;">${def}</p></div>`;
+      }
+      document.getElementById('glossaryContent').innerHTML = html;
+    }
+
+    function buildScience() {
+      const html = `
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🧮 Game Mathematics</h3>
+        <div class="guide-card">
+          <p><b>Win Condition:</b> Maintain a healthy ecosystem (more natives than invaders) for 6 consecutive turns.</p>
+          <p><b>Ratio:</b> Native count ÷ Invasive count ≥ 0.5 (at least half as many natives as invaders)</p>
+          <p><b>Lose Condition:</b> Invasion meter fills (${LOSE_CELLS} invasive cells), or all natives are eliminated.</p>
+          <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.4rem;">A 50-minute workshop allows time for 1–2 complete games with explanations.</p>
+        </div>
+
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🔬 Real-World Science</h3>
+        <div class="guide-card">
+          <p><b>Why no eradication?</b> Once a species is established, complete eradication is nearly impossible. The "winner-take-all" mentality of real conservation teaches us this hard lesson.</p>
+          <p><b>Spread mechanics:</b> Invasive species spread based on realistic reproduction rates. Species with higher spread rates (more dangerous) are harder to control.</p>
+          <p><b>Prevention beats cure:</b> The single most effective invasive species control is prevention—never introducing them in the first place.</p>
+        </div>
+
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">📊 Scoring & Difficulty</h3>
+        <div class="guide-card">
+          <p><b>Points:</b> Correct control methods award points (20–40 depending on species difficulty). Wrong methods cost 5 points. Losing natives costs 25 points each.</p>
+          <p><b>Difficulty comes from complexity:</b> Each invasive species has unique weaknesses. Success requires learning which methods work, not from memorization but from understanding real ecology.</p>
+          <p><b>Balanced not easy:</b> Players who consistently pick correct controls win ~75% of games in about 6 turns. The complexity is intentional!</p>
+        </div>
+      `;
+      document.getElementById('scienceContent').innerHTML = html;
+    }
+
     function updateSoundBtn() {
       document.getElementById('btnSound').textContent =
         soundOn ? '🔊 Sound: On' : '🔇 Sound: Off';
@@ -1249,6 +1383,14 @@
       document.getElementById('btnHelp').addEventListener('click', () => {
         closeOverlay('menuOverlay');
         openOverlay('helpOverlay');
+      });
+      document.getElementById('btnGlossary').addEventListener('click', () => {
+        closeOverlay('menuOverlay');
+        openOverlay('glossaryOverlay');
+      });
+      document.getElementById('btnScience').addEventListener('click', () => {
+        closeOverlay('menuOverlay');
+        openOverlay('scienceOverlay');
       });
       document.getElementById('btnNewGame').addEventListener('click', () => {
         closeOverlay('menuOverlay');
@@ -1296,6 +1438,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       bindUI();
       buildGuide();
+      buildGlossary();
+      buildScience();
       updateSoundBtn();
       initGame();
       let firstVisit = true;
