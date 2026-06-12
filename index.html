@@ -411,6 +411,81 @@
       text-align: center;
     }
 
+    /* Workshop mode */
+    .ws-input {
+      display: block;
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 0.6rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      font-size: 1rem;
+      -webkit-appearance: none;
+    }
+    .ws-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .ws-input:focus { outline: none; border-color: #43A047; background: rgba(255, 255, 255, 0.14); }
+
+    .ws-code-box {
+      text-align: center;
+      background: rgba(67, 160, 71, 0.18);
+      border: 1px solid rgba(67, 160, 71, 0.5);
+      border-radius: 0.8rem;
+      padding: 0.7rem;
+      margin-bottom: 0.7rem;
+    }
+    .ws-code-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
+    .ws-code { font-size: 2.2rem; font-weight: 800; letter-spacing: 0.25em; margin-top: 0.1rem; }
+
+    .ws-qr {
+      display: block;
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 0.6rem;
+      background: #fff;
+      border-radius: 0.6rem;
+      padding: 6px;
+    }
+    .ws-link {
+      font-size: 0.72rem;
+      text-align: center;
+      opacity: 0.85;
+      word-break: break-all;
+      margin-bottom: 0.4rem;
+    }
+
+    .ws-leaderboard { display: flex; flex-direction: column; gap: 0.4rem; }
+    .ws-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 0.6rem;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      animation: slideUp 0.2s ease;
+    }
+    .ws-row.lead { background: rgba(255, 213, 79, 0.18); border-color: rgba(255, 213, 79, 0.55); }
+    .ws-rank { font-size: 1.1rem; font-weight: 800; width: 1.7rem; text-align: center; }
+    .ws-team { flex: 1; font-weight: 700; }
+    .ws-team small { display: block; font-weight: 400; font-size: 0.7rem; opacity: 0.7; }
+    .ws-score { font-size: 1.15rem; font-weight: 800; }
+    .ws-empty { text-align: center; opacity: 0.6; font-size: 0.85rem; padding: 0.8rem; }
+    .ws-status { font-size: 0.78rem; margin-top: 0.6rem; min-height: 1.1rem; opacity: 0.9; }
+    .ws-status.err { color: #ff8a80; }
+    .ws-status.ok { color: #b9f6ca; }
+
+    /* Live workshop badge on the header */
+    .ws-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.12rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(67, 160, 71, 0.85);
+      white-space: nowrap;
+    }
+
     /* Field guide */
     .guide-card {
       border: 1px solid rgba(255, 255, 255, 0.14);
@@ -548,6 +623,9 @@
       .app-header { padding: 0.25rem 0.6rem; }
     }
   </style>
+  <!-- PeerJS: free peer-to-peer signaling for Workshop Mode. Optional —
+       single-player works fully without it (graceful degradation). -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
   <div class="app">
@@ -559,6 +637,7 @@
       <div class="header-center">
         <div class="score-display" title="Your management score">⭐ <span id="score">0</span></div>
         <div class="turn-display" title="Turn number">🌍 <span id="turn">1</span></div>
+        <span class="ws-badge" id="wsBadge" style="display:none;" title="Connected to a workshop room"></span>
       </div>
       <div class="header-right">
         <button class="btn-icon" id="btnGuide" title="Field Guide">📖</button>
@@ -596,6 +675,7 @@
           <button class="btn-close" data-close="menuOverlay">×</button>
         </div>
         <button class="menu-btn primary" id="btnNewGame">🎮 New Game</button>
+        <button class="menu-btn" id="btnWorkshop">👥 Workshop Mode</button>
         <button class="menu-btn" id="btnHelp">❓ How to Play</button>
         <button class="menu-btn" id="btnGuide2">📖 Field Guide</button>
         <button class="menu-btn" id="btnGlossary">📚 Glossary</button>
@@ -637,6 +717,66 @@
           <button class="btn-close" data-close="scienceOverlay">×</button>
         </div>
         <div id="scienceContent"></div>
+      </div>
+    </div>
+
+    <!-- Workshop Overlay -->
+    <div class="overlay" id="workshopOverlay">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>👥 Workshop Mode</h2>
+          <button class="btn-close" data-close="workshopOverlay">×</button>
+        </div>
+
+        <!-- Lobby: choose host or join -->
+        <div id="wsLobby">
+          <p style="font-size:0.82rem;opacity:0.88;margin-bottom:0.8rem;">
+            Run a high-energy group session. One device <b>hosts</b> the room and shows a
+            live scoreboard (great on a projector). Each team joins from their phones with a
+            <b>team name</b> and competes to manage the best ecosystem.
+          </p>
+          <button class="menu-btn primary" id="btnHostRoom">📺 Host a room (projector)</button>
+          <div style="margin:0.9rem 0 0.4rem;font-size:0.85rem;font-weight:600;">Or join a team:</div>
+          <input class="ws-input" id="wsRoomInput" maxlength="12" placeholder="Room code (e.g. ABCD)" autocomplete="off" />
+          <input class="ws-input" id="wsTeamInput" maxlength="20" placeholder="Team name (like bar trivia!)" autocomplete="off" />
+          <input class="ws-input" id="wsNameInput" maxlength="16" placeholder="Your name (optional)" autocomplete="off" />
+          <button class="menu-btn" id="btnJoinRoom">🙋 Join team</button>
+          <div class="ws-status" id="wsLobbyStatus"></div>
+        </div>
+
+        <!-- Host view: code, link, QR, live leaderboard -->
+        <div id="wsHostView" style="display:none;">
+          <div class="ws-code-box">
+            <div class="ws-code-label">Room code</div>
+            <div class="ws-code" id="wsHostCode">····</div>
+          </div>
+          <img id="wsQR" class="ws-qr" alt="Join QR code" />
+          <div class="ws-link" id="wsHostLink"></div>
+          <h3 style="margin:0.9rem 0 0.4rem;font-size:0.95rem;">🏆 Live leaderboard</h3>
+          <div id="wsLeaderboard" class="ws-leaderboard">
+            <div class="ws-empty">Waiting for teams to join…</div>
+          </div>
+          <div class="ws-status" id="wsHostStatus"></div>
+        </div>
+
+        <!-- Client view: connected, playing -->
+        <div id="wsClientView" style="display:none;">
+          <div class="ws-code-box">
+            <div class="ws-code-label">You're on team</div>
+            <div class="ws-code" id="wsClientTeam">—</div>
+          </div>
+          <p style="font-size:0.82rem;opacity:0.88;margin:0.6rem 0;">
+            Your score streams live to the host scoreboard. Close this panel and keep playing —
+            work together as a team!
+          </p>
+          <h3 style="margin:0.6rem 0 0.4rem;font-size:0.9rem;">Standings</h3>
+          <div id="wsClientBoard" class="ws-leaderboard">
+            <div class="ws-empty">Connecting…</div>
+          </div>
+          <button class="menu-btn primary" data-close="workshopOverlay" style="margin-top:0.8rem;">▶ Keep playing</button>
+          <button class="menu-btn" id="btnLeaveRoom" style="margin-top:0.4rem;">🚪 Leave team</button>
+          <div class="ws-status" id="wsClientStatus"></div>
+        </div>
       </div>
     </div>
 
@@ -1148,6 +1288,7 @@
         try { localStorage.setItem('nd-best', String(best)); } catch (e) {}
       }
       render();
+      netPushScore(true);
       sound(won ? 'win' : 'lose');
       vibrate(won ? [80, 60, 80, 60, 160] : [350]);
 
@@ -1272,6 +1413,7 @@
       document.getElementById('invasionFill').style.width =
         Math.min(100, Math.round(invaderCells().length / LOSE_CELLS * 100)) + '%';
       document.getElementById('bestScore').textContent = best;
+      netPushScore();
     }
 
     // ===== Interaction ========================================================
@@ -1565,6 +1707,232 @@
         soundOn ? '🔊 Sound: On' : '🔇 Sound: Off';
     }
 
+    // ===== Workshop / multiplayer (PeerJS, optional) ==========================
+    // Topology: one host device (projector) is the hub. Phones connect as clients,
+    // join a named team, and stream their score to the host's live leaderboard.
+    // Single-player is unaffected and works with no network.
+    const NET = { peer: null, role: null, code: null, team: null, name: null,
+                  host: null, conns: [], scores: {}, joined: false, lastSent: 0 };
+
+    function genCode() {
+      const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I/O to avoid confusion
+      let s = '';
+      for (let i = 0; i < 4; i++) s += a[Math.floor(Math.random() * a.length)];
+      return s;
+    }
+
+    function wsSetStatus(id, msg, cls) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = msg || '';
+      el.className = 'ws-status' + (cls ? ' ' + cls : '');
+    }
+
+    function joinUrl(code) {
+      return location.origin + location.pathname + '?room=' + code;
+    }
+
+    function peerMissing(statusId) {
+      if (typeof Peer === 'undefined') {
+        wsSetStatus(statusId, '⚠️ Multiplayer library could not load (offline?). Single-player still works.', 'err');
+        return true;
+      }
+      return false;
+    }
+
+    // ---- Host ----
+    function hostWorkshop() {
+      if (peerMissing('wsLobbyStatus')) return;
+      NET.role = 'host';
+      NET.scores = {};
+      NET.conns = [];
+      createHostPeer(genCode(), 1);
+      wsSetStatus('wsLobbyStatus', 'Creating room…', 'ok');
+    }
+
+    function createHostPeer(code, triesLeft) {
+      NET.code = code;
+      NET.peer = new Peer('istg-' + code);
+      NET.peer.on('open', () => { showHostView(); updateWsBadge(); });
+      NET.peer.on('connection', conn => {
+        NET.conns.push(conn);
+        conn.on('data', d => hostOnData(conn, d));
+        conn.on('close', () => { hostForget(conn); broadcastScores(); });
+      });
+      NET.peer.on('error', e => {
+        if (e.type === 'unavailable-id' && triesLeft > 0) {
+          try { NET.peer.destroy(); } catch (_) {}
+          createHostPeer(genCode(), triesLeft - 1);
+        } else {
+          wsSetStatus('wsHostStatus', 'Connection error: ' + e.type, 'err');
+        }
+      });
+    }
+
+    function hostForget(conn) {
+      const t = NET.scores[conn.team];
+      if (t && t.players) delete t.players[conn.peer];
+      NET.conns = NET.conns.filter(c => c !== conn);
+    }
+
+    function hostOnData(conn, d) {
+      if (!d || !d.type) return;
+      if (d.type === 'hello') {
+        const isNewTeam = !NET.scores[d.team];
+        if (isNewTeam && Object.keys(NET.scores).length >= 5) {
+          try { conn.send({ type: 'full' }); } catch (_) {}
+          return;
+        }
+        conn.team = d.team;
+        conn.pname = d.name || 'Player';
+        if (isNewTeam) NET.scores[d.team] = { players: {} };
+        NET.scores[d.team].players[conn.peer] = { name: conn.pname, score: 0, turn: 1, over: false };
+        try { conn.send({ type: 'welcome', team: d.team }); } catch (_) {}
+        broadcastScores();
+        wsSetStatus('wsHostStatus', conn.pname + ' joined team "' + d.team + '"', 'ok');
+      } else if (d.type === 'score' && conn.team) {
+        const t = NET.scores[conn.team];
+        if (!t) return;
+        t.players[conn.peer] = { name: conn.pname, score: d.score, turn: d.turn, over: d.over };
+        broadcastScores();
+      }
+    }
+
+    function teamTotals() {
+      return Object.entries(NET.scores).map(([team, info]) => {
+        const players = Object.values(info.players || {});
+        const total = players.reduce((s, p) => s + (p.score || 0), 0);
+        return { team, total, count: players.length };
+      }).sort((a, b) => b.total - a.total);
+    }
+
+    function broadcastScores() {
+      const totals = teamTotals();
+      NET.conns.forEach(c => { try { c.send({ type: 'scores', totals }); } catch (_) {} });
+      renderLeaderboard('wsLeaderboard', totals);
+    }
+
+    function showHostView() {
+      document.getElementById('wsLobby').style.display = 'none';
+      document.getElementById('wsClientView').style.display = 'none';
+      document.getElementById('wsHostView').style.display = 'block';
+      document.getElementById('wsHostCode').textContent = NET.code;
+      const url = joinUrl(NET.code);
+      document.getElementById('wsHostLink').textContent = url;
+      document.getElementById('wsQR').src =
+        'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=' + encodeURIComponent(url);
+      renderLeaderboard('wsLeaderboard', teamTotals());
+      wsSetStatus('wsHostStatus', 'Room is live. Share the code or QR to let teams join.', 'ok');
+    }
+
+    // ---- Client ----
+    function joinWorkshop(code, team, name) {
+      if (peerMissing('wsLobbyStatus')) return;
+      code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      team = (team || '').trim();
+      if (!code) { wsSetStatus('wsLobbyStatus', 'Enter the room code.', 'err'); return; }
+      if (!team) { wsSetStatus('wsLobbyStatus', 'Enter a team name.', 'err'); return; }
+      NET.role = 'client';
+      NET.code = code;
+      NET.team = team;
+      NET.name = (name || '').trim() || 'Player';
+      NET.joined = false;
+      wsSetStatus('wsLobbyStatus', 'Connecting to room "' + code + '"…', 'ok');
+      NET.peer = new Peer();
+      NET.peer.on('open', () => {
+        const conn = NET.peer.connect('istg-' + code, { reliable: true });
+        NET.host = conn;
+        conn.on('open', () => { try { conn.send({ type: 'hello', team: NET.team, name: NET.name }); } catch (_) {} });
+        conn.on('data', d => clientOnData(d));
+        conn.on('close', () => wsSetStatus('wsClientStatus', 'Disconnected from host.', 'err'));
+        setTimeout(() => {
+          if (!NET.joined) wsSetStatus('wsLobbyStatus', 'Could not reach room "' + code + '". Double-check the code.', 'err');
+        }, 9000);
+      });
+      NET.peer.on('error', e => {
+        const msg = e.type === 'peer-unavailable'
+          ? 'No room found with code "' + code + '".'
+          : 'Connection error: ' + e.type;
+        wsSetStatus('wsLobbyStatus', msg, 'err');
+      });
+    }
+
+    function clientOnData(d) {
+      if (!d || !d.type) return;
+      if (d.type === 'welcome') {
+        NET.joined = true;
+        showClientView();
+        updateWsBadge();
+        netPushScore(true);
+      } else if (d.type === 'full') {
+        wsSetStatus('wsLobbyStatus', 'That room already has 5 teams (the maximum).', 'err');
+      } else if (d.type === 'scores') {
+        renderLeaderboard('wsClientBoard', d.totals);
+      }
+    }
+
+    function showClientView() {
+      document.getElementById('wsLobby').style.display = 'none';
+      document.getElementById('wsHostView').style.display = 'none';
+      document.getElementById('wsClientView').style.display = 'block';
+      document.getElementById('wsClientTeam').textContent = NET.team;
+      wsSetStatus('wsClientStatus', 'Connected! Your score is now live on the host board.', 'ok');
+    }
+
+    function netPushScore(force) {
+      if (NET.role !== 'client' || !NET.host || !NET.joined) return;
+      const now = Date.now();
+      if (!force && now - NET.lastSent < 700) return;
+      NET.lastSent = now;
+      try {
+        NET.host.send({ type: 'score', score: S ? S.score : 0, turn: S ? S.turn : 1, over: S ? S.over : false });
+      } catch (_) {}
+    }
+
+    function leaveWorkshop() {
+      try { if (NET.peer) NET.peer.destroy(); } catch (_) {}
+      NET.peer = null; NET.role = null; NET.host = null; NET.joined = false;
+      NET.conns = []; NET.scores = {};
+      updateWsBadge();
+      document.getElementById('wsHostView').style.display = 'none';
+      document.getElementById('wsClientView').style.display = 'none';
+      document.getElementById('wsLobby').style.display = 'block';
+      wsSetStatus('wsLobbyStatus', '', '');
+    }
+
+    function renderLeaderboard(id, totals) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!totals || !totals.length) {
+        el.innerHTML = '<div class="ws-empty">Waiting for teams to join…</div>';
+        return;
+      }
+      const medals = ['🥇', '🥈', '🥉'];
+      el.innerHTML = totals.map((t, i) => {
+        const rank = medals[i] || (i + 1);
+        const players = t.count + (t.count === 1 ? ' player' : ' players');
+        const safeTeam = String(t.team).replace(/[<>&]/g, '');
+        return `<div class="ws-row${i === 0 ? ' lead' : ''}">` +
+          `<span class="ws-rank">${rank}</span>` +
+          `<span class="ws-team">${safeTeam}<small>${players}</small></span>` +
+          `<span class="ws-score">${t.total}</span></div>`;
+      }).join('');
+    }
+
+    function updateWsBadge() {
+      const badge = document.getElementById('wsBadge');
+      if (!badge) return;
+      if (NET.role === 'host') {
+        badge.style.display = '';
+        badge.textContent = '📺 Hosting ' + NET.code;
+      } else if (NET.role === 'client' && NET.joined) {
+        badge.style.display = '';
+        badge.textContent = '👥 ' + NET.team;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
     function bindUI() {
       document.getElementById('btnMenu').addEventListener('click', () => openOverlay('menuOverlay'));
       document.getElementById('btnGuide').addEventListener('click', () => openOverlay('guideOverlay'));
@@ -1583,6 +1951,23 @@
       document.getElementById('btnScience').addEventListener('click', () => {
         closeOverlay('menuOverlay');
         openOverlay('scienceOverlay');
+      });
+      document.getElementById('btnWorkshop').addEventListener('click', () => {
+        closeOverlay('menuOverlay');
+        openOverlay('workshopOverlay');
+      });
+      document.getElementById('btnHostRoom').addEventListener('click', hostWorkshop);
+      document.getElementById('btnJoinRoom').addEventListener('click', () => {
+        joinWorkshop(
+          document.getElementById('wsRoomInput').value,
+          document.getElementById('wsTeamInput').value,
+          document.getElementById('wsNameInput').value
+        );
+      });
+      document.getElementById('btnLeaveRoom').addEventListener('click', () => {
+        leaveWorkshop();
+        closeOverlay('workshopOverlay');
+        toast('🚪 Left the workshop room.');
       });
       document.getElementById('btnNewGame').addEventListener('click', () => {
         closeOverlay('menuOverlay');
@@ -1642,6 +2027,19 @@
       updateHintsBtn();
       updateSoundBtn();
       initGame();
+
+      // Deep link: ?room=CODE opens Workshop Mode pre-filled to join
+      let roomParam = null;
+      try { roomParam = new URLSearchParams(location.search).get('room'); } catch (e) {}
+      if (roomParam) {
+        const rc = roomParam.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+        const input = document.getElementById('wsRoomInput');
+        if (input) input.value = rc;
+        openOverlay('workshopOverlay');
+        wsSetStatus('wsLobbyStatus', 'Enter a team name to join room "' + rc + '".', 'ok');
+        return;
+      }
+
       let firstVisit = true;
       try {
         firstVisit = !localStorage.getItem('nd-visited');
