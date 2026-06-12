@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#064e3b" />
   <meta name="description" content="Nature Defenders — an educational strategy game about stopping real invasive species with real control methods." />
 
-  <title>🌿 Nature Defenders</title>
+  <title>🌿 Invasive Species: The Game!</title>
 
   <style>
     /* Nature Defenders Styles */
@@ -232,6 +232,18 @@
     .card.water  { background: #00ACC1; }
     .card.burn   { background: #F4511E; }
     .card.chem   { background: #D81B60; }
+
+    /* Enhancement card colors (warm/green palette to read as "help natives") */
+    .card.plant     { background: #2E7D32; }
+    .card.seedbomb  { background: #7CB342; }
+    .card.restore   { background: #00897B; }
+    .card.community { background: #F9A825; color: #3a2e00; }
+    .card.enhance-card { border-color: rgba(255, 235, 150, 0.55); }
+
+    /* Shielded native indicator */
+    .token.shielded {
+      box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.95), 0 0 10px rgba(255, 213, 79, 0.7), 0 3px 8px rgba(0, 0, 0, 0.4);
+    }
 
     /* Player Area */
     .player-area {
@@ -569,7 +581,7 @@
       <!-- Player Hand -->
       <footer class="player-area">
         <div class="hand-header">
-          <span>Your interventions — tap a card, then tap an invader</span>
+          <span>Your interventions — tap a card, then tap a target</span>
           <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
         </div>
         <div class="hand-row" id="handRow"></div>
@@ -636,10 +648,10 @@
           <button class="btn-close" data-close="helpOverlay">×</button>
         </div>
         <div class="help-step"><span class="big">👨‍🌾</span><span>You are a <b>natural resource manager</b> responsible for protecting this habitat. Use science-based interventions to manage the invasive species invasion.</span></div>
-        <div class="help-step"><span class="big">🃏</span><span>Tap an intervention card in your hand, then tap an <b>invasive species</b> on the board — or drag the card onto it.</span></div>
+        <div class="help-step"><span class="big">🃏</span><span>Your hand holds two kinds of cards: <b>controls</b> (🔨✂️🐾💧🔥💊) that remove invaders, and green <b>native enhancements</b> (🌱🌻🌾🤝) that plant and protect natives. Tap a card, then tap its target — or drag it.</span></div>
         <div class="help-step"><span class="big">🎯</span><span>Every invader has weaknesses based on <b>real conservation science</b>. Use the wrong method and it survives! Check the 📖 Field Guide.</span></div>
         <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn — but beware: <b>invaders spread</b> to neighboring cells.</span></div>
-        <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. Keep them alive!</span></div>
+        <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. <b>Plant</b> more and <b>restore</b> habitat to keep your ratio healthy!</span></div>
         <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining a healthy ecosystem (more natives than invaders) for 6 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
         <div class="eco-note">💡 Once a species becomes invasive, complete eradication is nearly impossible. Management is about maintaining a balance. Tap any creature to learn about it.</div>
         <button class="menu-btn primary" data-close="helpOverlay" style="margin-top:0.8rem;">Let's go! 🌿</button>
@@ -732,6 +744,33 @@
       heron:   { icon: '🦢', name: 'Great Blue Heron',  fact: 'These wading birds hunt fish and frogs. Clogged waterways from invasive plants block their habitat.' },
       salamander: { icon: '🦎', name: 'Spotted Salamander', fact: 'Breeds only in pristine vernal pools. Invasive species degrade these critical breeding grounds.' }
     };
+
+    // Native enhancement cards — interventions that build up natives instead of
+    // removing invaders. target: 'empty' | 'native' | 'any'
+    const ENHANCEMENTS = {
+      plant:     { icon: '🌱', short: 'Plant', name: 'Native Planting', target: 'empty',
+        desc: 'Plant a new native species in an empty cell to rebuild biodiversity and improve the native-to-invader ratio.' },
+      seedbomb:  { icon: '🌻', short: 'Seeds', name: 'Seed Bombing', target: 'empty',
+        desc: 'Scatter native seeds — establishes natives in an empty cell and its empty neighbours at once.' },
+      restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'native',
+        desc: 'Restore the habitat around a native so invaders cannot overwhelm it for the next two turns.' },
+      community: { icon: '🤝', short: 'Rally', name: 'Community Day', target: 'any',
+        desc: 'Rally volunteers: shields every native from being overwhelmed this turn and energizes the team (+1 action).' }
+    };
+
+    // Unified card lookups across controls + enhancements
+    function cardDef(type) { return CONTROLS[type] || ENHANCEMENTS[type]; }
+    function isEnhance(type) { return !!ENHANCEMENTS[type]; }
+    function validTargetForCard(type, i) {
+      const occ = S.field[i];
+      if (isEnhance(type)) {
+        const tgt = ENHANCEMENTS[type].target;
+        if (tgt === 'empty') return !occ;
+        if (tgt === 'native') return !!(occ && occ.kind === 'native');
+        return true; // 'any'
+      }
+      return !!(occ && occ.kind === 'invader');
+    }
 
     const STARTING_INVADERS = [
       ['kudzu', 2], ['hyacinth', 2], ['mussel', 1], ['borer', 1], ['python', 1]
@@ -830,15 +869,20 @@
     }
 
     function refillHand() {
-      const allTypes = Object.keys(CONTROLS);
+      const controlTypes = Object.keys(CONTROLS);
+      const enhanceTypes = Object.keys(ENHANCEMENTS);
       const present = [...new Set(invaderCells().map(i => S.field[i].type))];
       while (S.hand.length < HAND_SIZE) {
         const hasUseful = S.hand.some(h =>
-          present.some(t => INVADERS[t].controls.includes(h)));
+          !isEnhance(h) && present.some(t => INVADERS[t].controls.includes(h)));
         if (present.length && !hasUseful) {
+          // Guarantee at least one control that works on a present invader
           S.hand.push(pick(INVADERS[pick(present)].controls));
+        } else if (Math.random() < 0.3) {
+          // Mix in a native enhancement card
+          S.hand.push(pick(enhanceTypes));
         } else {
-          S.hand.push(pick(allTypes));
+          S.hand.push(pick(controlTypes));
         }
       }
     }
@@ -853,9 +897,17 @@
     // ===== Core rules =========================================================
     function playCard(handIdx, cellIdx) {
       if (S.over || handIdx == null || !S.hand[handIdx]) return false;
-      const cell = S.field[cellIdx];
-      if (!cell || cell.kind !== 'invader') {
-        toast('🚫 Aim for an invasive species — the ones with <b>red rings</b>.');
+      const type = S.hand[handIdx];
+
+      if (!validTargetForCard(type, cellIdx)) {
+        if (isEnhance(type)) {
+          const tgt = ENHANCEMENTS[type].target;
+          if (tgt === 'empty') toast('🌱 Plant this on an <b>empty</b> cell (highlighted green).');
+          else if (tgt === 'native') toast('🌾 Use this on one of your <b>native species</b> (gold rings).');
+          else toast('Tap a highlighted cell to use this card.');
+        } else {
+          toast('🚫 Aim for an <b>invasive species</b> — the ones with <b>red rings</b>.');
+        }
         sound('error');
         return false;
       }
@@ -865,12 +917,20 @@
         return false;
       }
 
-      const ctrl = S.hand[handIdx];
-      const sp = INVADERS[cell.type];
       S.hand.splice(handIdx, 1);
       S.selected = null;
       S.plays--;
 
+      if (isEnhance(type)) applyEnhancement(type, cellIdx);
+      else applyControl(type, cellIdx);
+
+      render();
+      return true;
+    }
+
+    function applyControl(ctrl, cellIdx) {
+      const cell = S.field[cellIdx];
+      const sp = INVADERS[cell.type];
       if (sp.controls.includes(ctrl)) {
         S.field[cellIdx] = null;
         S.score += sp.points;
@@ -892,10 +952,46 @@
         const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(' or ');
         toast(`❌ ${CONTROLS[ctrl].icon} doesn’t stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}`, 5600);
       }
+    }
 
-      render();
-      if (!invaderCells().length) endGame(true);
-      return true;
+    function applyEnhancement(type, cellIdx) {
+      vibrate([40, 30, 40]);
+      sound('good');
+      if (type === 'plant') {
+        const t = pick(Object.keys(NATIVES));
+        S.field[cellIdx] = { kind: 'native', type: t };
+        S.totalNatives++;
+        S.score += 8;
+        burst(cellIdx, '#66BB6A');
+        toast(`🌱 Planted a ${NATIVES[t].icon} <b>${NATIVES[t].name}</b>! Healthy natives improve your ratio.`, 4200);
+      } else if (type === 'seedbomb') {
+        const targets = [cellIdx, ...neighbors(cellIdx).filter(n => !S.field[n])].slice(0, 3);
+        let planted = 0;
+        for (const c of targets) {
+          if (!S.field[c]) {
+            const t = pick(Object.keys(NATIVES));
+            S.field[c] = { kind: 'native', type: t };
+            S.totalNatives++;
+            burst(c, '#9CCC65');
+            planted++;
+          }
+        }
+        S.score += planted * 6;
+        toast(`🌻 Seed bomb! Established <b>${planted}</b> new native${planted !== 1 ? 's' : ''}.`, 4200);
+      } else if (type === 'restore') {
+        const occ = S.field[cellIdx];
+        occ.shield = 2;
+        S.score += 5;
+        burst(cellIdx, '#26A69A');
+        toast(`🌾 Restored habitat around the ${NATIVES[occ.type].icon} <b>${NATIVES[occ.type].name}</b> — shielded for 2 turns.`, 4200);
+      } else if (type === 'community') {
+        let n = 0;
+        for (const i of nativeCells()) { S.field[i].shield = Math.max(S.field[i].shield || 0, 1); n++; }
+        S.plays += 2; // refund this card's cost and grant a bonus action
+        S.score += 10;
+        burst(cellIdx, '#FBC02D');
+        toast(`🤝 Community Day! Volunteers shielded <b>${n}</b> native${n !== 1 ? 's' : ''} this turn (+1 action).`, 4600);
+      }
     }
 
     function endTurn() {
@@ -983,18 +1079,30 @@
         }
       }
 
-      // Natives surrounded by 3+ invaders are lost
+      // Natives surrounded by 3+ invaders are lost — unless restoration shields them
       const lost = [];
       for (const i of nativeCells()) {
+        const occ = S.field[i];
         const surrounded = neighbors(i)
           .filter(n => S.field[n] && S.field[n].kind === 'invader').length;
-        if (surrounded >= 3) lost.push(i);
+        if (surrounded >= 3) {
+          if (occ.shield) {
+            toast(`🛡️ The ${NATIVES[occ.type].icon} <b>${NATIVES[occ.type].name}</b> was shielded from the invasion!`, 4000);
+          } else {
+            lost.push(i);
+          }
+        }
       }
       for (const i of lost) {
         const nat = NATIVES[S.field[i].type];
         S.field[i] = null;
         S.score = Math.max(0, S.score - 25);
         toast(`💔 The ${nat.icon} <b>${nat.name}</b> was overwhelmed by invaders! (−25)`, 5000);
+      }
+
+      // Restoration shields wear off by one turn
+      for (const i of nativeCells()) {
+        if (S.field[i].shield) S.field[i].shield--;
       }
 
       S.turn++;
@@ -1086,6 +1194,7 @@
       board.innerHTML = '';
 
       const targeting = S.selected != null && !S.over;
+      const selType = targeting ? S.hand[S.selected] : null;
       for (let i = 0; i < CELLS; i++) {
         const cellEl = document.createElement('div');
         cellEl.className = 'cell';
@@ -1100,13 +1209,13 @@
         if (occ) {
           const token = document.createElement('div');
           const data = occ.kind === 'invader' ? INVADERS[occ.type] : NATIVES[occ.type];
-          token.className = 'token ' + occ.kind;
+          token.className = 'token ' + occ.kind + (occ.shield ? ' shielded' : '');
           token.textContent = data.icon;
           token.style.fontSize = cellSize * 0.42 + 'px';
           token.style.background = occ.kind === 'invader' ? data.color : '#2E7D32';
           cellEl.appendChild(token);
-          if (targeting && occ.kind === 'invader') cellEl.classList.add('valid-target');
         }
+        if (targeting && validTargetForCard(selType, i)) cellEl.classList.add('valid-target');
 
         cellEl.addEventListener('click', () => onCellTap(i));
         board.appendChild(cellEl);
@@ -1117,13 +1226,20 @@
       const row = document.getElementById('handRow');
       row.innerHTML = '';
       S.hand.forEach((type, idx) => {
-        const ctrl = CONTROLS[type];
+        const def = cardDef(type);
+        const enhance = isEnhance(type);
         const cardEl = document.createElement('div');
-        cardEl.className = 'card ' + type + (S.selected === idx ? ' selected' : '');
+        cardEl.className = 'card ' + type + (enhance ? ' enhance-card' : '') +
+          (S.selected === idx ? ' selected' : '');
         cardEl.dataset.handIndex = idx;
 
-        let tooltip = `${ctrl.name}: ${ctrl.desc}`;
-        if (hintsOn) {
+        let tooltip = `${def.name}: ${def.desc}`;
+        if (enhance) {
+          const tgt = def.target === 'empty' ? 'an empty cell'
+            : def.target === 'native' ? 'a native species'
+            : 'any cell';
+          tooltip += `\n\nUse on: ${tgt}`;
+        } else if (hintsOn) {
           const effective = Object.entries(INVADERS)
             .filter(([_, sp]) => sp.controls.includes(type))
             .map(([_, sp]) => sp.icon)
@@ -1132,7 +1248,7 @@
         }
         cardEl.title = tooltip;
 
-        cardEl.innerHTML = `<span>${ctrl.icon}</span><span class="card-label">${ctrl.short}</span>`;
+        cardEl.innerHTML = `<span>${def.icon}</span><span class="card-label">${def.short}</span>`;
         cardEl.addEventListener('pointerdown', onCardPointerDown);
         cardEl.addEventListener('contextmenu', e => e.preventDefault());
         row.appendChild(cardEl);
@@ -1152,7 +1268,7 @@
       document.getElementById('score').textContent = S.score;
       document.getElementById('turn').textContent = S.turn;
       document.getElementById('actionPips').textContent =
-        '●'.repeat(S.plays) + '○'.repeat(PLAYS_PER_TURN - S.plays);
+        '●'.repeat(Math.max(0, S.plays)) + '○'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
       document.getElementById('invasionFill').style.width =
         Math.min(100, Math.round(invaderCells().length / LOSE_CELLS * 100)) + '%';
       document.getElementById('bestScore').textContent = best;
@@ -1257,10 +1373,10 @@
     }
 
     function markTargets(on) {
+      const type = S.selected != null ? S.hand[S.selected] : null;
       document.querySelectorAll('.cell').forEach(cellEl => {
         const i = parseInt(cellEl.dataset.index, 10);
-        const occ = S.field[i];
-        cellEl.classList.toggle('valid-target', !!(on && occ && occ.kind === 'invader'));
+        cellEl.classList.toggle('valid-target', !!(on && type != null && validTargetForCard(type, i)));
       });
     }
 
@@ -1366,6 +1482,18 @@
         html += `<div class="guide-card"><div class="guide-title">` +
           `<span class="big">${c.icon}</span> ${c.name}</div><p>${c.desc}</p></div>`;
       }
+      html += '<h3 style="margin:0.8rem 0 0.5rem;font-size:0.95rem;">🌱 Native enhancement cards</h3>';
+      html += '<p style="font-size:0.78rem;opacity:0.85;margin-bottom:0.5rem;">' +
+        'Real conservation is not only about removing invaders — it also means actively rebuilding native ' +
+        'communities. These cards raise and protect your natives, helping you hold a healthy ratio.</p>';
+      for (const t of Object.keys(ENHANCEMENTS)) {
+        const e = ENHANCEMENTS[t];
+        const tgt = e.target === 'empty' ? 'an empty cell'
+          : e.target === 'native' ? 'a native species' : 'any cell';
+        html += `<div class="guide-card"><div class="guide-title">` +
+          `<span class="big">${e.icon}</span> ${e.name}</div><p>${e.desc}</p>` +
+          `<div class="guide-controls">Use on: ${tgt}</div></div>`;
+      }
       html += '<h3 style="margin:0.8rem 0 0.5rem;font-size:0.95rem;">🦋 Natives to protect</h3>';
       for (const t of Object.keys(NATIVES)) {
         const n = NATIVES[t];
@@ -1383,6 +1511,8 @@
         'Ecosystem': 'A community of living organisms (plants, animals, microorganisms) interacting with their physical environment.',
         'Spread Rate': 'How fast an invasive species reproduces and colonizes new areas. Fast-spreading species are harder to control.',
         'Control Method': 'A science-based technique to reduce or manage invasive species populations. No single method works for all species.',
+        'Restoration': 'Actively rebuilding native habitat — planting natives, propagating seeds, and protecting them — so the ecosystem can recover and resist re-invasion.',
+        'Propagation': 'Growing and spreading native plants (from seed, cuttings, or transplants) to re-establish them across a landscape.',
         'Biological Control': 'Using a natural predator or disease from the invader\'s homeland to control it. Takes time but is often sustainable.',
         'Prescribed Burn': 'Intentionally set, carefully controlled fires that help fire-adapted native plants return and set back invasives.',
         'Eradication': 'Completely removing a species from an area. This is almost impossible once a species is established as invasive.',
