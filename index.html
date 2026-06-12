@@ -588,6 +588,7 @@
         <button class="menu-btn" id="btnGuide2">📖 Field Guide</button>
         <button class="menu-btn" id="btnGlossary">📚 Glossary</button>
         <button class="menu-btn" id="btnScience">🔬 Game Science</button>
+        <button class="menu-btn" id="btnHints">💡 Hints: Off</button>
         <button class="menu-btn" id="btnSound">🔊 Sound: On</button>
         <button class="menu-btn" id="btnFullscreen">⛶ Fullscreen</button>
         <div class="eco-note">Best score: <span id="bestScore">0</span> ⭐</div>
@@ -668,6 +669,7 @@
     const HAND_SIZE = 5, PLAYS_PER_TURN = 4;
     const LOSE_CELLS = Math.floor(CELLS * 0.45); // invasion meter limit
     const WIN_TURNS = 6; // turns to maintain healthy ratio to win (50 min session = ~6 turns)
+    const RANDOM_EVENT_CHANCE = 0.25; // 25% chance per turn
 
     const CONTROLS = {
       manual: { icon: ‘🔨’, short: ‘Remove’,  name: ‘Manual Removal’,
@@ -739,11 +741,13 @@
     // ===== State ==============================================================
     let S = null;
     let soundOn = true;
+    let hintsOn = false;
     let best = 0;
     let cellSize = 40;
 
     try {
       soundOn = localStorage.getItem('nd-sound') !== 'off';
+      hintsOn = localStorage.getItem('nd-hints') === 'on';
       best = parseInt(localStorage.getItem('nd-best') || '0', 10) || 0;
     } catch (e) { /* private mode */ }
 
@@ -936,6 +940,49 @@
     }
 
     function continueEndTurn(spreadCount) {
+      // Random events
+      if (Math.random() < RANDOM_EVENT_CHANCE && S.turn > 1) {
+        const eventType = Math.random() < 0.5 ? 'hurricane' : 'wildfire';
+        if (eventType === 'hurricane') {
+          // Hurricane destroys some invaders but damages all cells
+          const invadersBeforeEvent = invaderCells().length;
+          const cellsToHit = Math.max(2, Math.floor(CELLS * 0.15));
+          for (let i = 0; i < cellsToHit; i++) {
+            const idx = Math.floor(Math.random() * CELLS);
+            if (S.field[idx]) {
+              S.field[idx] = null;
+            }
+          }
+          const invadersAfterEvent = invaderCells().length;
+          const invadersDestroyed = invadersBeforeEvent - invadersAfterEvent;
+          sound('spread');
+          if (invadersDestroyed > 0) {
+            toast(`🌀 Hurricane swept through! <b>${invadersDestroyed}</b> invasive species were destroyed!`, 4000);
+            S.score += invadersDestroyed * 10;
+          } else {
+            toast(`🌀 A hurricane struck, destroying habitat but not many invaders.`, 4000);
+          }
+        } else {
+          // Wildfire kills invasive plants but also damages native habitat
+          const plantInvaders = invaderCells().filter(i =>
+            ['kudzu', 'hyacinth'].includes(S.field[i].type));
+          const cellsToHit = Math.max(2, Math.floor(CELLS * 0.12));
+          let wildscapeInvaders = 0;
+          for (let i = 0; i < cellsToHit; i++) {
+            const idx = Math.floor(Math.random() * CELLS);
+            if (S.field[idx]) {
+              if (S.field[idx].kind === 'invader' && ['kudzu', 'hyacinth'].includes(S.field[idx].type)) {
+                wildscapeInvaders++;
+              }
+              S.field[idx] = null;
+            }
+          }
+          sound('spread');
+          toast(`🔥 Prescribed fire! <b>${wildscapeInvaders}</b> invasive plants were burned. (Some natives lost too.)`, 4500);
+          S.score += wildscapeInvaders * 15;
+        }
+      }
+
       // Natives surrounded by 3+ invaders are lost
       const lost = [];
       for (const i of nativeCells()) {
@@ -1074,7 +1121,17 @@
         const cardEl = document.createElement('div');
         cardEl.className = 'card ' + type + (S.selected === idx ? ' selected' : '');
         cardEl.dataset.handIndex = idx;
-        cardEl.title = `${ctrl.name}: ${ctrl.desc}`;
+
+        let tooltip = `${ctrl.name}: ${ctrl.desc}`;
+        if (hintsOn) {
+          const effective = Object.entries(INVADERS)
+            .filter(([_, sp]) => sp.controls.includes(type))
+            .map(([_, sp]) => sp.icon)
+            .join(' ');
+          if (effective) tooltip += `\n\nWorks against: ${effective}`;
+        }
+        cardEl.title = tooltip;
+
         cardEl.innerHTML = `<span>${ctrl.icon}</span><span class="card-label">${ctrl.short}</span>`;
         cardEl.addEventListener('pointerdown', onCardPointerDown);
         cardEl.addEventListener('contextmenu', e => e.preventDefault());
@@ -1368,6 +1425,11 @@
       document.getElementById('scienceContent').innerHTML = html;
     }
 
+    function updateHintsBtn() {
+      document.getElementById('btnHints').textContent =
+        hintsOn ? '💡 Hints: On' : '💡 Hints: Off';
+    }
+
     function updateSoundBtn() {
       document.getElementById('btnSound').textContent =
         soundOn ? '🔊 Sound: On' : '🔇 Sound: Off';
@@ -1402,6 +1464,12 @@
         initGame();
         toast('🎮 New game! Stop the invasion.');
       });
+      document.getElementById('btnHints').addEventListener('click', () => {
+        hintsOn = !hintsOn;
+        try { localStorage.setItem('nd-hints', hintsOn ? 'on' : 'off'); } catch (e) {}
+        updateHintsBtn();
+        sound('select');
+      });
       document.getElementById('btnSound').addEventListener('click', () => {
         soundOn = !soundOn;
         try { localStorage.setItem('nd-sound', soundOn ? 'on' : 'off'); } catch (e) {}
@@ -1411,7 +1479,8 @@
       document.getElementById('btnFullscreen').addEventListener('click', () => {
         try {
           if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
+            toast('⛶ Press ESC to exit fullscreen', 2000);
+            setTimeout(() => document.documentElement.requestFullscreen(), 300);
           } else {
             document.exitFullscreen();
           }
@@ -1440,6 +1509,7 @@
       buildGuide();
       buildGlossary();
       buildScience();
+      updateHintsBtn();
       updateSoundBtn();
       initGame();
       let firstVisit = true;
