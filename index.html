@@ -266,7 +266,7 @@
     .card.manual { background: #2196F3; }
     .card.shears { background: #3F51B5; }
     .card.bio    { background: #689F38; }
-    .card.water  { background: #00ACC1; }
+    .card.cdd    { background: #00ACC1; }
     .card.burn   { background: #F4511E; }
     .card.chem   { background: #D81B60; }
 
@@ -722,10 +722,21 @@
         <button class="menu-btn" id="btnGuide2">📖 Field Guide</button>
         <button class="menu-btn" id="btnGlossary">📚 Glossary</button>
         <button class="menu-btn" id="btnScience">🔬 Game Science</button>
+        <button class="menu-btn" id="btnSettings">⚙️ Settings</button>
+        <div class="eco-note">Best score: <span id="bestScore">0</span> ⭐</div>
+      </div>
+    </div>
+
+    <!-- Settings Submenu -->
+    <div class="overlay" id="settingsOverlay">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>⚙️ Settings</h2>
+          <button class="btn-close" data-close="settingsOverlay">×</button>
+        </div>
         <button class="menu-btn" id="btnHints">💡 Hints: Off</button>
         <button class="menu-btn" id="btnSound">🔊 Sound: On</button>
         <button class="menu-btn" id="btnFullscreen">⛶ Fullscreen</button>
-        <div class="eco-note">Best score: <span id="bestScore">0</span> ⭐</div>
       </div>
     </div>
 
@@ -872,8 +883,8 @@
         desc: 'Repeated cutting exhausts a plant’s root reserves until it can no longer regrow.', class: 'shears' },
       bio:    { icon: '🐾', short: 'Bio', name: 'Biological Control',
         desc: 'Carefully tested natural enemies from the invader’s homeland, like weevils or parasitoid wasps.', class: 'bio' },
-      water:  { icon: '💧', short: 'Water', name: 'Water Management',
-        desc: 'Drawdowns, hot-water washes and barriers. "Clean, Drain, Dry" stops aquatic hitchhikers.', class: 'water' },
+      cdd:    { icon: '💧', short: 'CDD', name: 'Clean, Drain, Dry',
+        desc: 'Drawdowns, hot-water washes and barriers. The proven prevention strategy for aquatic hitchhikers.', class: 'cdd' },
       burn:   { icon: '🔥', short: 'Burn', name: 'Prescribed Burn',
         desc: 'Carefully planned fire clears invasive growth and helps fire-adapted native plants return.', class: 'burn' },
       chem:   { icon: '💊', short: 'Spray', name: 'Targeted Treatment',
@@ -892,7 +903,7 @@
         tip: 'Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.',
         fact: 'Its beautiful purple flowers made it popular in ornamental ponds across the world—until it escaped into wild waterways.' },
       mussel: { icon: '🐚', name: 'Zebra Mussel', color: '#5D4037', origin: 'Caspian Sea region',
-        controls: ['manual', 'water'], spread: 0.35, points: 20,
+        controls: ['manual', 'cdd'], spread: 0.35, points: 20,
         harm: 'Stowaways in ship ballast water that clog pipes, coat boats and out-eat native mussels.',
         tip: 'Scrape them off and Clean, Drain, Dry every boat — dried-out mussels can’t survive.',
         fact: 'A single zebra mussel can produce 30,000–100,000 offspring per year, and they can survive in freshwater for weeks out of water.' },
@@ -907,12 +918,12 @@
         tip: 'No easy fix exists: trained trackers remove pythons one by one. Never release a pet!',
         fact: 'Hurricane Andrew destroyed a python breeding facility in 1992, releasing dozens into the wild. Now tens of thousands roam the Everglades.' },
       carp: { icon: '🐟', name: 'Asian Carp', color: '#1565C0', origin: 'East Asia',
-        controls: ['manual', 'water'], spread: 0.35, points: 22,
+        controls: ['manual', 'cdd'], spread: 0.35, points: 22,
         harm: 'Voracious eaters that consume 40% of their body weight daily, out-competing native fish and destroying aquatic plants.',
         tip: 'Electric barriers stop them in waterways; targeted removal by commercial fisheries reduces populations.',
         fact: 'Introduced to the US in the 1970s for aquaculture, they escaped floods and now threaten the Great Lakes ecosystem.' },
       pathogen: { icon: '🦠', name: 'Chytrid Fungus', color: '#C62828', origin: 'East Asia',
-        controls: ['water', 'chem'], spread: 0.4, points: 30,
+        controls: ['cdd', 'chem'], spread: 0.4, points: 30,
         harm: 'A deadly fungus that infects amphibian skin, preventing them from breathing. Has wiped out entire frog species.',
         tip: 'Quarantine and disinfect hiking gear; treat breeding habitats with antifungal compounds.',
         fact: 'Chytrid fungus has caused more extinctions of vertebrate species than any other pathogen in recorded history.' }
@@ -2061,6 +2072,10 @@
       document.getElementById('btnScience').addEventListener('click', () => {
         closeOverlay('menuOverlay');
         openOverlay('scienceOverlay');
+      });
+      document.getElementById('btnSettings').addEventListener('click', () => {
+        closeOverlay('menuOverlay');
+        openOverlay('settingsOverlay');
       });
       document.getElementById('btnWorkshop').addEventListener('click', () => {
         closeOverlay('menuOverlay');
