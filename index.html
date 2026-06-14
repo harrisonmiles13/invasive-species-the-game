@@ -967,8 +967,8 @@
         desc: 'Plant a new native species in an empty cell to rebuild biodiversity and improve the native-to-invader ratio.' },
       seedbomb:  { icon: '🌻', short: 'Seeds', name: 'Seed Bombing', target: 'empty',
         desc: 'Scatter native seeds — establishes natives in an empty cell and its empty neighbours at once.' },
-      restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'native',
-        desc: 'Restore the habitat around a native so invaders cannot overwhelm it for the next two turns.' },
+      restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'empty',
+        desc: 'Restore habitat by planting natives in empty cells nearby — rebuilds the ecosystem one patch at a time.' },
       community: { icon: '🤝', short: 'Rally', name: 'Community Day', target: 'any',
         desc: 'Rally volunteers: shields every native from being overwhelmed this turn and energizes the team (+1 action).' }
     };
@@ -1204,11 +1204,18 @@
         S.score += planted * 6;
         toast(`🌻 Seed bomb! Established <b>${planted}</b> new native${planted !== 1 ? 's' : ''}.`, 4200);
       } else if (type === 'restore') {
-        const occ = S.field[cellIdx];
-        occ.shield = 2;
-        S.score += 5;
-        burst(cellIdx, '#26A69A');
-        toast(`🌾 Restored habitat around the ${NATIVES[occ.type].icon} <b>${NATIVES[occ.type].name}</b> — shielded for 2 turns.`, 4200);
+        let planted = 0;
+        const empties = neighbors(cellIdx).filter(n => !S.field[n]);
+        for (const i of empties) {
+          if (Math.random() < 0.6) { // 60% chance to plant in each neighbor
+            const t = pick(Object.keys(NATIVES));
+            S.field[i] = { kind: 'native', type: t };
+            burst(i, '#26A69A');
+            planted++;
+          }
+        }
+        S.score += planted * 8;
+        toast(`🌾 Habitat restored! Established <b>${planted}</b> new native${planted !== 1 ? 's' : ''} nearby.`, 4200);
       } else if (type === 'community') {
         let n = 0;
         for (const i of nativeCells()) { S.field[i].shield = Math.max(S.field[i].shield || 0, 1); n++; }
@@ -1821,8 +1828,8 @@
         <div class="guide-card">
           <p style="margin: 0.3rem 0;"><b>Plant 🌱:</b> Create new native on empty cell</p>
           <p style="margin: 0.3rem 0;"><b>Seed Bomb 🌻:</b> Plant natives on 3 random cells (spread effect)</p>
-          <p style="margin: 0.3rem 0;"><b>Restore 🌾:</b> Shield native from overwhelm for 2 turns (block adjacent invader kill)</p>
-          <p style="margin: 0.3rem 0;"><b>Community Day 🤝:</b> Protect all natives + gain 1 bonus action</p>
+          <p style="margin: 0.3rem 0;"><b>Restore 🌾:</b> Plant natives in nearby empty cells (~60% success rate per neighbor)</p>
+          <p style="margin: 0.3rem 0;"><b>Community Day 🤝:</b> Protect all natives from overwhelm + gain 1 bonus action</p>
         </div>
 
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌪️ Random Events</h3>
