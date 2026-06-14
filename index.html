@@ -2217,6 +2217,16 @@
       } catch (e) {}
       if (firstVisit) openOverlay('helpOverlay');
     });
+
+    // Warn on accidental refresh during active game
+    window.addEventListener('beforeunload', (e) => {
+      // Only warn if game is active (not in menu, not game over)
+      if (!S.over && S.turn > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    });
   </script>
 </body>
 </html>
