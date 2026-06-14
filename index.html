@@ -1825,7 +1825,7 @@
       for (const t of Object.keys(INVADERS)) {
         const sp = INVADERS[t];
         const icons = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(' · ');
-        const danger = '🔥'.repeat(Math.max(1, Math.round(sp.spread * 6)));
+        const danger = '👟'.repeat(Math.max(1, Math.round(sp.spread * 6)));
         html += `<div class="guide-card"><div class="guide-title">` +
           `<span class="big">${sp.icon}</span> ${sp.name}<span class="chip">from ${sp.origin}</span></div>` +
           `<p>${sp.harm}</p><p>${sp.tip}</p>` +
