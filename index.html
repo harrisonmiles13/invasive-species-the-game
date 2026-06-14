@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, orientation=portrait" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -17,6 +17,25 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    /* Portrait mode only */
+    @media (orientation: landscape) {
+      .app {
+        display: none;
+      }
+      body::after {
+        content: "📱 Please rotate to portrait mode to play.";
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-size: 1.2rem;
+        color: white;
+        text-align: center;
+        padding: 2rem;
+      }
     }
 
     html, body {
@@ -112,6 +131,43 @@
       width: 0%;
       background: linear-gradient(90deg, #4CAF50, #FFC107 60%, #F44336);
       transition: width 0.4s ease;
+    }
+
+    .invasion-meter .healthy-zone {
+      position: absolute;
+      height: 100%;
+      top: 0;
+      background: rgba(76, 175, 80, 0.2);
+      border-right: 2px solid rgba(76, 175, 80, 0.6);
+    }
+
+    .invasion-meter .danger-line {
+      position: absolute;
+      height: 100%;
+      top: 0;
+      width: 2px;
+      background: #F44336;
+      opacity: 0.7;
+    }
+
+    /* Win ticker */
+    .win-ticker {
+      display: flex;
+      gap: 0.2rem;
+      align-items: center;
+      padding: 0 0.4rem;
+    }
+
+    .win-ticker .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .win-ticker .dot.healthy {
+      background: #4CAF50;
+      box-shadow: 0 0 4px rgba(76, 175, 80, 0.8);
     }
 
     /* Body: board + hand (column on portrait, row on short landscape) */
@@ -229,7 +285,7 @@
     .card.manual { background: #2196F3; }
     .card.shears { background: #3F51B5; }
     .card.bio    { background: #689F38; }
-    .card.water  { background: #00ACC1; }
+    .card.cdd    { background: #00ACC1; }
     .card.burn   { background: #F4511E; }
     .card.chem   { background: #D81B60; }
 
@@ -647,6 +703,8 @@
 
     <!-- Invasion meter -->
     <div class="invasion-meter" id="invasionMeter" title="Invasion meter: fills as more invasive species spread. Fill it completely to lose!">
+      <div class="healthy-zone" id="healthyZone"></div>
+      <div class="danger-line" id="dangerLine"></div>
       <div class="fill" id="invasionFill"></div>
     </div>
 
@@ -661,7 +719,13 @@
       <footer class="player-area">
         <div class="hand-header">
           <span>Your interventions — tap a card, then tap a target</span>
-          <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.3rem;">
+              <span style="font-size: 0.8rem; opacity: 0.8;">Interventions remaining:</span>
+              <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
+            </div>
+            <div class="win-ticker" id="winTicker" title="Healthy turns toward victory (6 consecutive needed)"></div>
+          </div>
         </div>
         <div class="hand-row" id="handRow"></div>
       </footer>
@@ -680,10 +744,21 @@
         <button class="menu-btn" id="btnGuide2">📖 Field Guide</button>
         <button class="menu-btn" id="btnGlossary">📚 Glossary</button>
         <button class="menu-btn" id="btnScience">🔬 Game Science</button>
+        <button class="menu-btn" id="btnSettings">⚙️ Settings</button>
+        <div class="eco-note">Best score: <span id="bestScore">0</span> ⭐</div>
+      </div>
+    </div>
+
+    <!-- Settings Submenu -->
+    <div class="overlay" id="settingsOverlay">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>⚙️ Settings</h2>
+          <button class="btn-close" data-close="settingsOverlay">×</button>
+        </div>
         <button class="menu-btn" id="btnHints">💡 Hints: Off</button>
         <button class="menu-btn" id="btnSound">🔊 Sound: On</button>
         <button class="menu-btn" id="btnFullscreen">⛶ Fullscreen</button>
-        <div class="eco-note">Best score: <span id="bestScore">0</span> ⭐</div>
       </div>
     </div>
 
@@ -738,7 +813,7 @@
           <button class="menu-btn primary" id="btnHostRoom">📺 Host a room (projector)</button>
           <div style="margin:0.9rem 0 0.4rem;font-size:0.85rem;font-weight:600;">Or join a team:</div>
           <input class="ws-input" id="wsRoomInput" maxlength="12" placeholder="Room code (e.g. ABCD)" autocomplete="off" />
-          <input class="ws-input" id="wsTeamInput" maxlength="20" placeholder="Team name (like bar trivia!)" autocomplete="off" />
+          <input class="ws-input" id="wsTeamInput" maxlength="20" placeholder="Team name" autocomplete="off" />
           <input class="ws-input" id="wsNameInput" maxlength="16" placeholder="Your name (optional)" autocomplete="off" />
           <button class="menu-btn" id="btnJoinRoom">🙋 Join team</button>
           <div class="ws-status" id="wsLobbyStatus"></div>
@@ -824,14 +899,14 @@
     const RANDOM_EVENT_CHANCE = 0.25; // 25% chance per turn
 
     const CONTROLS = {
-      manual: { icon: '🔨', short: 'Remove', name: 'Manual Removal',
+      manual: { icon: '🔨', short: 'Hand Pull', name: 'Hand Pulling',
         desc: 'Hand-pulling, trapping, harvesting and scraping. Hard work, but precise and chemical-free.', class: 'manual' },
       shears: { icon: '✂️', short: 'Cut', name: 'Cutting & Mowing',
         desc: 'Repeated cutting exhausts a plant’s root reserves until it can no longer regrow.', class: 'shears' },
       bio:    { icon: '🐾', short: 'Bio', name: 'Biological Control',
         desc: 'Carefully tested natural enemies from the invader’s homeland, like weevils or parasitoid wasps.', class: 'bio' },
-      water:  { icon: '💧', short: 'Water', name: 'Water Management',
-        desc: 'Drawdowns, hot-water washes and barriers. "Clean, Drain, Dry" stops aquatic hitchhikers.', class: 'water' },
+      cdd:    { icon: '💧', short: 'CDD', name: 'Clean, Drain, Dry',
+        desc: 'Drawdowns, hot-water washes and barriers. The proven prevention strategy for aquatic hitchhikers.', class: 'cdd' },
       burn:   { icon: '🔥', short: 'Burn', name: 'Prescribed Burn',
         desc: 'Carefully planned fire clears invasive growth and helps fire-adapted native plants return.', class: 'burn' },
       chem:   { icon: '💊', short: 'Spray', name: 'Targeted Treatment',
@@ -850,7 +925,7 @@
         tip: 'Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.',
         fact: 'Its beautiful purple flowers made it popular in ornamental ponds across the world—until it escaped into wild waterways.' },
       mussel: { icon: '🐚', name: 'Zebra Mussel', color: '#5D4037', origin: 'Caspian Sea region',
-        controls: ['manual', 'water'], spread: 0.35, points: 20,
+        controls: ['manual', 'cdd'], spread: 0.35, points: 20,
         harm: 'Stowaways in ship ballast water that clog pipes, coat boats and out-eat native mussels.',
         tip: 'Scrape them off and Clean, Drain, Dry every boat — dried-out mussels can’t survive.',
         fact: 'A single zebra mussel can produce 30,000–100,000 offspring per year, and they can survive in freshwater for weeks out of water.' },
@@ -865,12 +940,12 @@
         tip: 'No easy fix exists: trained trackers remove pythons one by one. Never release a pet!',
         fact: 'Hurricane Andrew destroyed a python breeding facility in 1992, releasing dozens into the wild. Now tens of thousands roam the Everglades.' },
       carp: { icon: '🐟', name: 'Asian Carp', color: '#1565C0', origin: 'East Asia',
-        controls: ['manual', 'water'], spread: 0.35, points: 22,
+        controls: ['manual', 'cdd'], spread: 0.35, points: 22,
         harm: 'Voracious eaters that consume 40% of their body weight daily, out-competing native fish and destroying aquatic plants.',
         tip: 'Electric barriers stop them in waterways; targeted removal by commercial fisheries reduces populations.',
         fact: 'Introduced to the US in the 1970s for aquaculture, they escaped floods and now threaten the Great Lakes ecosystem.' },
       pathogen: { icon: '🦠', name: 'Chytrid Fungus', color: '#C62828', origin: 'East Asia',
-        controls: ['water', 'chem'], spread: 0.4, points: 30,
+        controls: ['cdd', 'chem'], spread: 0.4, points: 30,
         harm: 'A deadly fungus that infects amphibian skin, preventing them from breathing. Has wiped out entire frog species.',
         tip: 'Quarantine and disinfect hiking gear; treat breeding habitats with antifungal compounds.',
         fact: 'Chytrid fungus has caused more extinctions of vertebrate species than any other pathogen in recorded history.' }
@@ -892,8 +967,8 @@
         desc: 'Plant a new native species in an empty cell to rebuild biodiversity and improve the native-to-invader ratio.' },
       seedbomb:  { icon: '🌻', short: 'Seeds', name: 'Seed Bombing', target: 'empty',
         desc: 'Scatter native seeds — establishes natives in an empty cell and its empty neighbours at once.' },
-      restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'native',
-        desc: 'Restore the habitat around a native so invaders cannot overwhelm it for the next two turns.' },
+      restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'empty',
+        desc: 'Restore habitat by planting natives in empty cells nearby — rebuilds the ecosystem one patch at a time.' },
       community: { icon: '🤝', short: 'Rally', name: 'Community Day', target: 'any',
         desc: 'Rally volunteers: shields every native from being overwhelmed this turn and energizes the team (+1 action).' }
     };
@@ -1087,10 +1162,20 @@
       } else {
         S.score = Math.max(0, S.score - 5);
         vibrate(150);
-        sound('error');
-        burst(cellIdx, '#F44336');
-        const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(' or ');
-        toast(`❌ ${CONTROLS[ctrl].icon} doesn’t stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}`, 5600);
+        sound(‘error’);
+        burst(cellIdx, ‘#F44336’);
+        const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(‘ or ‘);
+        toast(`❌ ${CONTROLS[ctrl].icon} doesn’t stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}<br><span style="font-size:0.75rem;opacity:0.7;">Tap to dismiss</span>`, 0);
+
+        // Failed control: invasive spreads immediately
+        const empties = neighbors(cellIdx).filter(n => !S.field[n]);
+        if (empties.length) {
+          const spreadTo = pick(empties);
+          S.field[spreadTo] = { kind: ‘invader’, type: cell.type };
+          burst(spreadTo, ‘#EF5350’);
+          sound(‘spread’);
+          render();
+        }
       }
     }
 
@@ -1119,11 +1204,18 @@
         S.score += planted * 6;
         toast(`🌻 Seed bomb! Established <b>${planted}</b> new native${planted !== 1 ? 's' : ''}.`, 4200);
       } else if (type === 'restore') {
-        const occ = S.field[cellIdx];
-        occ.shield = 2;
-        S.score += 5;
-        burst(cellIdx, '#26A69A');
-        toast(`🌾 Restored habitat around the ${NATIVES[occ.type].icon} <b>${NATIVES[occ.type].name}</b> — shielded for 2 turns.`, 4200);
+        let planted = 0;
+        const empties = neighbors(cellIdx).filter(n => !S.field[n]);
+        for (const i of empties) {
+          if (Math.random() < 0.6) { // 60% chance to plant in each neighbor
+            const t = pick(Object.keys(NATIVES));
+            S.field[i] = { kind: 'native', type: t };
+            burst(i, '#26A69A');
+            planted++;
+          }
+        }
+        S.score += planted * 8;
+        toast(`🌾 Habitat restored! Established <b>${planted}</b> new native${planted !== 1 ? 's' : ''} nearby.`, 4200);
       } else if (type === 'community') {
         let n = 0;
         for (const i of nativeCells()) { S.field[i].shield = Math.max(S.field[i].shield || 0, 1); n++; }
@@ -1380,12 +1472,17 @@
             : def.target === 'native' ? 'a native species'
             : 'any cell';
           tooltip += `\n\nUse on: ${tgt}`;
-        } else if (hintsOn) {
-          const effective = Object.entries(INVADERS)
+        } else {
+          const works = Object.entries(INVADERS)
             .filter(([_, sp]) => sp.controls.includes(type))
             .map(([_, sp]) => sp.icon)
             .join(' ');
-          if (effective) tooltip += `\n\nWorks against: ${effective}`;
+          const fails = Object.entries(INVADERS)
+            .filter(([_, sp]) => !sp.controls.includes(type))
+            .map(([_, sp]) => sp.icon)
+            .join(' ');
+          if (works) tooltip += `\n\n✓ Works: ${works}`;
+          if (fails) tooltip += `\n\n✗ Won't work: ${fails}`;
         }
         cardEl.title = tooltip;
 
@@ -1410,8 +1507,30 @@
       document.getElementById('turn').textContent = S.turn;
       document.getElementById('actionPips').textContent =
         '●'.repeat(Math.max(0, S.plays)) + '○'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
+
+      const invCount = invaderCells().length;
+      const nativeCount = nativeCells().length;
+      const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
+      const isHealthy = healthyRatio >= 0.5 && invCount < LOSE_CELLS;
+
       document.getElementById('invasionFill').style.width =
-        Math.min(100, Math.round(invaderCells().length / LOSE_CELLS * 100)) + '%';
+        Math.min(100, Math.round(invCount / LOSE_CELLS * 100)) + '%';
+
+      document.getElementById('dangerLine').style.left = Math.round(LOSE_CELLS / CELLS * 100) + '%';
+
+      const healthyStart = invCount > 0 ? 0 : 0;
+      const healthyEnd = LOSE_CELLS / CELLS * 100;
+      document.getElementById('healthyZone').style.left = healthyStart + '%';
+      document.getElementById('healthyZone').style.width = healthyEnd + '%';
+
+      const ticker = document.getElementById('winTicker');
+      ticker.innerHTML = '';
+      for (let i = 0; i < WIN_TURNS; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot' + (i < S.healthyTurns ? ' healthy' : '');
+        ticker.appendChild(dot);
+      }
+
       document.getElementById('bestScore').textContent = best;
       netPushScore();
     }
@@ -1530,7 +1649,9 @@
       el.innerHTML = html;
       el.classList.add('show');
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.remove('show'), ms || 3200);
+      if (ms !== 0) {
+        toastTimer = setTimeout(() => el.classList.remove('show'), ms || 3200);
+      }
       el.onclick = () => { clearTimeout(toastTimer); el.classList.remove('show'); };
     }
 
@@ -1671,27 +1792,68 @@
     }
 
     function buildScience() {
+      let spreadTable = '<table style="width:100%; font-size:0.85rem; border-collapse:collapse;">';
+      spreadTable += '<tr style="border-bottom:1px solid rgba(255,255,255,0.2);"><th style="text-align:left;padding:0.3rem;">Species</th><th style="text-align:center;">Spread Rate</th><th style="text-align:right;">Chance/Turn</th></tr>';
+      for (const [key, sp] of Object.entries(INVADERS)) {
+        spreadTable += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td>${sp.icon} ${sp.name}</td><td style="text-align:center;">${sp.spread}</td><td style="text-align:right;">${Math.round(sp.spread * 100)}%</td></tr>`;
+      }
+      spreadTable += '</table>';
+
       const html = `
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🧮 Game Mathematics</h3>
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🎯 Victory & Defeat</h3>
         <div class="guide-card">
-          <p><b>Win Condition:</b> Maintain a healthy ecosystem (more natives than invaders) for 6 consecutive turns.</p>
-          <p><b>Ratio:</b> Native count ÷ Invasive count ≥ 0.5 (at least half as many natives as invaders)</p>
-          <p><b>Lose Condition:</b> Invasion meter fills (${LOSE_CELLS} invasive cells), or all natives are eliminated.</p>
-          <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.4rem;">A 50-minute workshop allows time for 1–2 complete games with explanations.</p>
+          <p><b>Win:</b> Maintain healthy ratio for 6 consecutive turns</p>
+          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Healthy = Natives ÷ Invaders ≥ 0.5 AND Invaders < ${LOSE_CELLS} cells</p>
+          <p><b>Lose (either):</b></p>
+          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Invasion meter fills: ${LOSE_CELLS}+ invasive cells (45% of board)</p>
+          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• All natives eliminated</p>
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🔬 Real-World Science</h3>
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🧬 Invasive Spread Rates</h3>
         <div class="guide-card">
-          <p><b>Why no eradication?</b> Once a species is established, complete eradication is nearly impossible. The "winner-take-all" mentality of real conservation teaches us this hard lesson.</p>
-          <p><b>Spread mechanics:</b> Invasive species spread based on realistic reproduction rates. Species with higher spread rates (more dangerous) are harder to control.</p>
-          <p><b>Prevention beats cure:</b> The single most effective invasive species control is prevention—never introducing them in the first place.</p>
+          <p style="font-size: 0.85rem; margin: 0 0 0.4rem;">Each turn, every invasive cell has a <b>probability</b> to spread to an empty neighbor:</p>
+          ${spreadTable}
+          <p style="font-size: 0.8rem; margin-top: 0.4rem; opacity: 0.9;">Math: <code>if (Math.random() &lt; spread_rate)</code> → spreads to random empty neighbor</p>
+          <p style="font-size: 0.8rem; opacity: 0.8;">Example: Kudzu (0.5) spreads ~50% of the time per cell. With 10 Kudzu cells, expect ~5 to spread per turn.</p>
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">📊 Scoring & Difficulty</h3>
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">💊 Control Card Effectiveness</h3>
         <div class="guide-card">
-          <p><b>Points:</b> Correct control methods award points (20–40 depending on species difficulty). Wrong methods cost 5 points. Losing natives costs 25 points each.</p>
-          <p><b>Difficulty comes from complexity:</b> Each invasive species has unique weaknesses. Success requires learning which methods work, not from memorization but from understanding real ecology.</p>
-          <p><b>Balanced not easy:</b> Players who consistently pick correct controls win ~75% of games in about 6 turns. The complexity is intentional!</p>
+          <p style="margin: 0.3rem 0;"><b>✓ Correct method:</b> Remove invader + gain points (20–40 depending on species)</p>
+          <p style="margin: 0.3rem 0;"><b>✗ Wrong method:</b> Invader survives − 5 points</p>
+          <p style="margin: 0.3rem 0; font-size: 0.85rem;">Each species works with specific controls based on real biology (e.g., aquatic species immune to spray).</p>
+        </div>
+
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌱 Native Enhancement Effects</h3>
+        <div class="guide-card">
+          <p style="margin: 0.3rem 0;"><b>Plant 🌱:</b> Create new native on empty cell</p>
+          <p style="margin: 0.3rem 0;"><b>Seed Bomb 🌻:</b> Plant natives on 3 random cells (spread effect)</p>
+          <p style="margin: 0.3rem 0;"><b>Restore 🌾:</b> Plant natives in nearby empty cells (~60% success rate per neighbor)</p>
+          <p style="margin: 0.3rem 0;"><b>Community Day 🤝:</b> Protect all natives from overwhelm + gain 1 bonus action</p>
+        </div>
+
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌪️ Random Events</h3>
+        <div class="guide-card">
+          <p style="margin: 0.3rem 0;"><b>Chance:</b> 25% per turn (after turn 1)</p>
+          <p style="margin: 0.3rem 0;"><b>Hurricane:</b> Removes 30–50% of invasives randomly</p>
+          <p style="margin: 0.3rem 0;"><b>Wildfire:</b> Removes plants only (Kudzu, Hyacinth); helps burn-adapted natives</p>
+          <p style="font-size: 0.85rem; opacity: 0.8;">Real climate disturbances can help or hurt depending on your ecosystem composition.</p>
+        </div>
+
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">📊 Scoring</h3>
+        <div class="guide-card">
+          <p style="margin: 0.3rem 0;"><b>Correct control:</b> +20 to +40 points (harder species = more)</p>
+          <p style="margin: 0.3rem 0;"><b>Wrong control:</b> −5 points</p>
+          <p style="margin: 0.3rem 0;"><b>Native lost:</b> −25 points</p>
+          <p style="font-size: 0.85rem; opacity: 0.8;">Strategy matters: Learning species ≈ winning consistently.</p>
+        </div>
+
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🔬 Real-World Parallels</h3>
+        <div class="guide-card">
+          <p><b>No quick fix:</b> Invasive control is a never-ending management problem, not a puzzle to solve.</p>
+          <p><b>Species unique:</b> Each invasive needs different strategies (biology matters).</p>
+          <p><b>Prevention first:</b> Preventing introduction beats any control method.</p>
+          <p><b>Native rebuilding:</b> Restoration and community engagement matter as much as removal.</p>
         </div>
       `;
       document.getElementById('scienceContent').innerHTML = html;
@@ -1864,6 +2026,8 @@
         showClientView();
         updateWsBadge();
         netPushScore(true);
+        closeOverlay('workshopOverlay');
+        openOverlay('helpOverlay');
       } else if (d.type === 'full') {
         wsSetStatus('wsLobbyStatus', 'That room already has 5 teams (the maximum).', 'err');
       } else if (d.type === 'scores') {
@@ -1952,12 +2116,17 @@
         closeOverlay('menuOverlay');
         openOverlay('scienceOverlay');
       });
+      document.getElementById('btnSettings').addEventListener('click', () => {
+        closeOverlay('menuOverlay');
+        openOverlay('settingsOverlay');
+      });
       document.getElementById('btnWorkshop').addEventListener('click', () => {
         closeOverlay('menuOverlay');
         openOverlay('workshopOverlay');
       });
       document.getElementById('btnHostRoom').addEventListener('click', hostWorkshop);
       document.getElementById('btnJoinRoom').addEventListener('click', () => {
+        document.getElementById('btnHostRoom').style.display = 'none';
         joinWorkshop(
           document.getElementById('wsRoomInput').value,
           document.getElementById('wsTeamInput').value,
@@ -1966,6 +2135,7 @@
       });
       document.getElementById('btnLeaveRoom').addEventListener('click', () => {
         leaveWorkshop();
+        document.getElementById('btnHostRoom').style.display = 'block';
         closeOverlay('workshopOverlay');
         toast('🚪 Left the workshop room.');
       });
@@ -2020,6 +2190,13 @@
 
     // ===== Boot ===============================================================
     document.addEventListener('DOMContentLoaded', () => {
+      // Request portrait orientation lock
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait-primary').catch(e => {
+          // Some devices don't support orientation lock - continue anyway
+        });
+      }
+
       bindUI();
       buildGuide();
       buildGlossary();
@@ -2046,6 +2223,16 @@
         localStorage.setItem('nd-visited', '1');
       } catch (e) {}
       if (firstVisit) openOverlay('helpOverlay');
+    });
+
+    // Warn on accidental refresh during active game
+    window.addEventListener('beforeunload', (e) => {
+      // Only warn if game is active (not in menu, not game over)
+      if (!S.over && S.turn > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
     });
   </script>
 </body>
