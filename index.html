@@ -947,37 +947,37 @@
 
     const INVADERS = {
       kudzu: { icon: '🍃', name: 'Kudzu', color: '#558B2F', origin: 'East Asia',
-        controls: ['shears', 'burn'], spread: 0.5, points: 20,
+        controls: ['shears', 'burn'], spread: 0.75, points: 20,
         harm: 'A vine that grows up to 30 cm per day, smothering whole forests by blocking sunlight - "the vine that ate the South".',
         tip: 'Cut it back again and again, or use prescribed burns to expose its root crowns.',
         fact: 'Kudzu was brought to the US in 1876 as an ornamental plant and livestock feed. By the 1950s it covered millions of acres.' },
       hyacinth: { icon: '🌺', name: 'Water Hyacinth', color: '#7B1FA2', origin: 'Amazon Basin',
-        controls: ['manual', 'bio'], spread: 0.4, points: 20,
+        controls: ['manual', 'bio'], spread: 0.6, points: 20,
         harm: 'Floating mats double in size in two weeks, clogging waterways and starving fish of oxygen.',
         tip: "Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.",
         fact: 'A single plant produces thousands of seeds and floats to colonize new waterways. Mats can double in biomass within weeks.' },
       mussel: { icon: '🐚', name: 'Zebra Mussel', color: '#5D4037', origin: 'Caspian Sea region',
-        controls: ['manual', 'cdd'], spread: 0.35, points: 20,
+        controls: ['manual', 'cdd'], spread: 0.525, points: 20,
         harm: 'Stowaways in ship ballast water that clog pipes, coat boats and out-eat native mussels.',
         tip: "Scrape them off and Clean, Drain, Dry every boat - dried-out mussels can't survive.",
         fact: 'A single zebra mussel can produce 30,000-100,000 offspring per year, and they can survive in freshwater for weeks out of water.' },
       borer: { icon: '🪲', name: 'Emerald Ash Borer', color: '#00695C', origin: 'Northeast Asia',
-        controls: ['bio', 'chem'], spread: 0.3, points: 25,
+        controls: ['bio', 'chem'], spread: 0.45, points: 25,
         harm: "Larvae tunnel under ash bark and cut off the tree's nutrients - tens of millions of trees lost.",
         tip: 'Tiny parasitoid wasps hunt its larvae, and targeted trunk treatments protect single trees.',
         fact: 'Since 2002, Emerald Ash Borers have killed over 100 million ash trees. A single adult can produce 50-100 offspring in its lifetime.' },
       python: { icon: '🐍', name: 'Burmese Python', color: '#33691E', origin: 'Southeast Asia',
-        controls: ['manual'], spread: 0.2, points: 40,
+        controls: ['manual'], spread: 0.3, points: 40,
         harm: 'Released pets that ate their way through the Everglades - some mammal numbers fell over 90%.',
         tip: "No easy fix exists: trained trackers remove pythons one by one. Never release a pet!",
         fact: 'A single female can lay 50-100+ eggs. With no natural predators in Florida, populations exploded from a few released pets to tens of thousands.' },
       carp: { icon: '🐟', name: 'Asian Carp', color: '#1565C0', origin: 'East Asia',
-        controls: ['manual', 'cdd'], spread: 0.35, points: 22,
+        controls: ['manual', 'cdd'], spread: 0.525, points: 22,
         harm: 'Voracious eaters that consume 40% of their body weight daily, out-competing native fish and destroying aquatic plants.',
         tip: 'Electric barriers stop them in waterways; targeted removal by commercial fisheries reduces populations.',
         fact: 'Adults reach 4 feet long and can survive in many water conditions. A single carp eats 40% of its body weight daily, depleting food for native fish.' },
       pathogen: { icon: '🦠', name: 'Chytrid Fungus', color: '#C62828', origin: 'East Asia',
-        controls: ['cdd', 'chem'], spread: 0.4, points: 30,
+        controls: ['cdd', 'chem'], spread: 0.6, points: 30,
         harm: 'A deadly fungus that infects amphibian skin, preventing them from breathing. Has wiped out entire frog species.',
         tip: 'Quarantine and disinfect hiking gear; treat breeding habitats with antifungal compounds.',
         fact: 'Chytrid fungus has caused more extinctions of vertebrate species than any other pathogen in recorded history.' }
@@ -1182,20 +1182,9 @@
     function applyControl(ctrl, cellIdx) {
       const cell = S.field[cellIdx];
       const sp = INVADERS[cell.type];
-      if (sp.controls.includes(ctrl)) {
-        S.field[cellIdx] = null;
-        S.score += sp.points;
-        S.removed[cell.type] = (S.removed[cell.type] || 0) + 1;
-        vibrate([60, 40, 60]);
-        sound('good');
-        burst(cellIdx, '#4CAF50');
-        if (!S.seenFacts[cell.type]) {
-          S.seenFacts[cell.type] = true;
-          toast(`✅ <b>+${sp.points}</b> ${sp.icon} <b>${sp.name}</b> removed!<br>${sp.harm}`, 5200);
-        } else {
-          toast(`✅ <b>+${sp.points}</b> ${sp.icon} ${sp.name} removed!`);
-        }
-      } else {
+
+      if (!sp.controls.includes(ctrl)) {
+        // Failed control
         S.score = Math.max(0, S.score - 5);
         vibrate(150);
         sound('error');
@@ -1208,11 +1197,109 @@
         if (empties.length) {
           const spreadTo = pick(empties);
           S.field[spreadTo] = { kind: 'invader', type: cell.type };
-          S.newInvaders.add(spreadTo);  // Mark as new - won't spread again this turn
+          S.newInvaders.add(spreadTo);
           burst(spreadTo, '#EF5350');
           sound('spread');
           render();
         }
+        return;
+      }
+
+      // Successful control
+      vibrate([60, 40, 60]);
+      sound('good');
+      let removed = 0;
+      let totalScore = 0;
+
+      if (ctrl === 'manual') {
+        // Hand Pull: single target only
+        S.field[cellIdx] = null;
+        removed = 1;
+        totalScore = sp.points;
+        burst(cellIdx, '#4CAF50');
+      } else if (ctrl === 'shears') {
+        // Cutting: target + adjacent if present
+        const toRemove = [cellIdx];
+        const adjCells = neighbors(cellIdx);
+        for (const adjIdx of adjCells) {
+          if (S.field[adjIdx] && S.field[adjIdx].kind === 'invader' && S.field[adjIdx].type === cell.type) {
+            toRemove.push(adjIdx);
+            break;  // Only one adjacent
+          }
+        }
+        for (const idx of toRemove) {
+          S.field[idx] = null;
+          burst(idx, '#4CAF50');
+          removed++;
+          totalScore += sp.points;
+        }
+      } else if (ctrl === 'burn') {
+        // Prescribed Burn: flood-fill connected patch of same type
+        const visited = new Set();
+        const toRemove = [];
+        const queue = [cellIdx];
+        while (queue.length > 0) {
+          const idx = queue.shift();
+          if (visited.has(idx)) continue;
+          visited.add(idx);
+          if (S.field[idx] && S.field[idx].kind === 'invader' && S.field[idx].type === cell.type) {
+            toRemove.push(idx);
+            for (const neighbor of neighbors(idx)) {
+              if (!visited.has(neighbor)) queue.push(neighbor);
+            }
+          }
+        }
+        for (const idx of toRemove) {
+          S.field[idx] = null;
+          burst(idx, '#FF9800');
+          removed++;
+          totalScore += sp.points;
+        }
+      } else if (ctrl === 'chem') {
+        // Spray: target + adjacent same-type + 35% chance to damage adjacent natives
+        const toRemove = [cellIdx];
+        const damagedNatives = [];
+
+        const adjCells = neighbors(cellIdx);
+        for (const adjIdx of adjCells) {
+          if (S.field[adjIdx]) {
+            if (S.field[adjIdx].kind === 'invader' && S.field[adjIdx].type === cell.type) {
+              toRemove.push(adjIdx);
+            } else if (S.field[adjIdx].kind === 'native' && Math.random() < 0.35) {
+              damagedNatives.push(adjIdx);
+            }
+          }
+        }
+
+        for (const idx of toRemove) {
+          S.field[idx] = null;
+          burst(idx, '#4CAF50');
+          removed++;
+          totalScore += sp.points;
+        }
+        for (const idx of damagedNatives) {
+          const nat = NATIVES[S.field[idx].type];
+          S.field[idx] = null;
+          burst(idx, '#FF6B6B');
+          toast(`💔 Spray damage: <b>${nat.name}</b> harmed!`, 2500);
+          S.score = Math.max(0, S.score - 15);
+        }
+      } else {
+        // Bio, CDD: single target
+        S.field[cellIdx] = null;
+        removed = 1;
+        totalScore = sp.points;
+        burst(cellIdx, '#4CAF50');
+      }
+
+      S.score += totalScore;
+      S.removed[cell.type] = (S.removed[cell.type] || 0) + removed;
+
+      if (!S.seenFacts[cell.type]) {
+        S.seenFacts[cell.type] = true;
+        toast(`✅ <b>+${totalScore}</b> ${sp.icon} <b>${sp.name}</b> removed (${removed})!<br>${sp.harm}`, 5200);
+      } else {
+        toast(`✅ <b>+${totalScore}</b> ${sp.icon} ${sp.name} removed (${removed})!`);
       }
     }
 
