@@ -1263,6 +1263,9 @@
       if (S.over) return;
       S.selected = null;
 
+      // Start invasive phase with announcement
+      toast(`🌙 Turn ${S.turn} - Invasive species spreading...`, 2000);
+
       // Calculate what will spread (but don't do it yet)
       const spreads = [];
       for (const i of invaderCells()) {
@@ -1275,29 +1278,34 @@
         }
       }
 
-      // Animate spreads one by one
+      // Animate spreads one by one with announcements
       let spreadIdx = 0;
       const spreadNext = () => {
         if (spreadIdx < spreads.length) {
           const s = spreads[spreadIdx];
+          const sp = INVADERS[s.type];
           S.field[s.to] = { kind: 'invader', type: s.type };
           burst(s.to, '#EF5350');
           sound('spread');
+          toast(`${sp.icon} <b>${sp.name}</b> spreads to a new cell!`, 1500);
           render();
           spreadIdx++;
-          setTimeout(spreadNext, 400);
+          setTimeout(spreadNext, 1200);
           return;
         }
         // All spreads done, check for native losses
         continueEndTurn(spreads.length);
       };
 
-      // Start the animation
-      if (spreads.length > 0) {
-        spreadNext();
-      } else {
-        continueEndTurn(0);
-      }
+      // Start the animation after a brief delay
+      setTimeout(() => {
+        if (spreads.length > 0) {
+          spreadNext();
+        } else {
+          toast(`No invasive spread this turn.`, 1500);
+          setTimeout(() => continueEndTurn(0), 1500);
+        }
+      }, 1500);
     }
 
     function continueEndTurn(spreadCount) {
@@ -2268,6 +2276,7 @@
       updateHintsBtn();
       updateSoundBtn();
       initGame();
+      openOverlay('helpOverlay');  // Show tutorial on every game start
 
       // Deep link: ?room=CODE opens Workshop Mode pre-filled to join
       let roomParam = null;
@@ -2276,17 +2285,11 @@
         const rc = roomParam.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
         const input = document.getElementById('wsRoomInput');
         if (input) input.value = rc;
+        closeOverlay('helpOverlay');  // Close tutorial before opening workshop
         openOverlay('workshopOverlay');
         wsSetStatus('wsLobbyStatus', 'Enter a team name to join room "' + rc + '".', 'ok');
         return;
       }
-
-      let firstVisit = true;
-      try {
-        firstVisit = !localStorage.getItem('nd-visited');
-        localStorage.setItem('nd-visited', '1');
-      } catch (e) {}
-      if (firstVisit) openOverlay('helpOverlay');
     });
 
     // Warn on accidental refresh during active game
