@@ -924,7 +924,7 @@
 
     // ===== Game data ==========================================================
     const COLS = 8, ROWS = 9, CELLS = COLS * ROWS;
-    const HAND_SIZE = 5, PLAYS_PER_TURN = 4;
+    const HAND_SIZE = 5, PLAYS_PER_TURN = 3;
     const LOSE_CELLS = Math.floor(CELLS * 0.45); // invasion meter limit
     const WIN_TURNS = 6; // turns to maintain healthy ratio to win (50 min session = ~6 turns)
     const RANDOM_EVENT_CHANCE = 0.25; // 25% chance per turn
@@ -1050,7 +1050,8 @@
         removed: {},
         seenFacts: {},
         totalNatives: 0,
-        healthyTurns: 0
+        healthyTurns: 0,
+        newInvaders: new Set()  // Track invaders placed this turn (don't spread yet)
       };
     }
 
@@ -1205,6 +1206,7 @@
         if (empties.length) {
           const spreadTo = pick(empties);
           S.field[spreadTo] = { kind: 'invader', type: cell.type };
+          S.newInvaders.add(spreadTo);  // Mark as new - won't spread again this turn
           burst(spreadTo, '#EF5350');
           sound('spread');
           render();
@@ -1264,11 +1266,14 @@
       S.selected = null;
 
       // Start invasive phase with announcement
-      toast(`🌙 Turn ${S.turn} - Invasive species spreading...`, 2000);
+      toast(`🌙 Turn ${S.turn} - Invasive species spreading...`, 1500);
 
-      // Calculate what will spread (but don't do it yet)
+      // Calculate what will spread - only old invaders (not placed this turn)
       const spreads = [];
       for (const i of invaderCells()) {
+        // Skip newly placed invaders - they don't spread until next turn
+        if (S.newInvaders.has(i)) continue;
+
         const sp = INVADERS[S.field[i].type];
         if (Math.random() < sp.spread) {
           const empties = neighbors(i).filter(n => !S.field[n]);
@@ -1285,15 +1290,17 @@
           const s = spreads[spreadIdx];
           const sp = INVADERS[s.type];
           S.field[s.to] = { kind: 'invader', type: s.type };
+          S.newInvaders.add(s.to);  // Mark newly spread invader
           burst(s.to, '#EF5350');
           sound('spread');
-          toast(`${sp.icon} <b>${sp.name}</b> spreads to a new cell!`, 1500);
+          toast(`${sp.icon} <b>${sp.name}</b> spreads to a new cell!`, 1000);
           render();
           spreadIdx++;
-          setTimeout(spreadNext, 1200);
+          setTimeout(spreadNext, 1000);
           return;
         }
-        // All spreads done, check for native losses
+        // All spreads done, clear new invaders and check for native losses
+        S.newInvaders.clear();  // Next turn, all are eligible to spread
         continueEndTurn(spreads.length);
       };
 
@@ -1303,7 +1310,10 @@
           spreadNext();
         } else {
           toast(`No invasive spread this turn.`, 1500);
-          setTimeout(() => continueEndTurn(0), 1500);
+          setTimeout(() => {
+            S.newInvaders.clear();
+            continueEndTurn(0);
+          }, 1500);
         }
       }, 1500);
     }
@@ -1548,6 +1558,12 @@
       document.getElementById('turn').textContent = S.turn;
       document.getElementById('actionPips').textContent =
         '●'.repeat(Math.max(0, S.plays)) + '○'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
+
+      // Show End Turn button only when all actions are used (or game over)
+      const endBtn = document.getElementById('btnEndTurn');
+      if (endBtn) {
+        endBtn.style.display = (S.plays <= 0 || S.over) ? 'block' : 'none';
+      }
 
       const invCount = invaderCells().length;
       const nativeCount = nativeCells().length;
