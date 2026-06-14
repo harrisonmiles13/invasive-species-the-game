@@ -1142,8 +1142,8 @@
         vibrate(150);
         sound('error');
         burst(cellIdx, '#F44336');
-        const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(' or ');
-        toast(`❌ ${CONTROLS[ctrl].icon} doesn’t stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}`, 5600);
+        const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(‘ or ‘);
+        toast(`❌ ${CONTROLS[ctrl].icon} doesn’t stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}<br><span style="font-size:0.75rem;opacity:0.7;">Tap to dismiss</span>`, 0);
       }
     }
 
@@ -1610,7 +1610,9 @@
       el.innerHTML = html;
       el.classList.add('show');
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.remove('show'), ms || 3200);
+      if (ms !== 0) {
+        toastTimer = setTimeout(() => el.classList.remove('show'), ms || 3200);
+      }
       el.onclick = () => { clearTimeout(toastTimer); el.classList.remove('show'); };
     }
 
