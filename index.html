@@ -753,9 +753,9 @@
         <div class="hand-header">
           <span>Your interventions - tap a card, then tap a target</span>
           <div style="display: flex; gap: 1rem; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 0.3rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
               <span style="font-size: 0.8rem; opacity: 0.8;">Interventions remaining:</span>
-              <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
+              <span class="action-pips" id="actionPips" title="Actions remaining this turn (▲ = available, △ = used)"></span>
             </div>
           </div>
         </div>
@@ -1557,7 +1557,7 @@
       renderHand();
       document.getElementById('score').textContent = S.score;
       document.getElementById('actionPips').textContent =
-        '●'.repeat(Math.max(0, S.plays)) + '○'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
+        '▲'.repeat(Math.max(0, S.plays)) + '△'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
 
       // Show End Turn button only when all actions are used (or game over)
       const endBtn = document.getElementById('btnEndTurn');
