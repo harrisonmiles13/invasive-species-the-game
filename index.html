@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#064e3b" />
-  <meta name="description" content="Nature Defenders — an educational strategy game about stopping real invasive species with real control methods." />
+  <meta name="description" content="Nature Defenders - an educational strategy game about stopping real invasive species with real control methods." />
 
   <title>🌿 Invasive Species: The Game!</title>
 
@@ -679,7 +679,7 @@
       .app-header { padding: 0.25rem 0.6rem; }
     }
   </style>
-  <!-- PeerJS: free peer-to-peer signaling for Workshop Mode. Optional —
+  <!-- PeerJS: free peer-to-peer signaling for Workshop Mode. Optional -
        single-player works fully without it (graceful degradation). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
@@ -718,7 +718,7 @@
       <!-- Player Hand -->
       <footer class="player-area">
         <div class="hand-header">
-          <span>Your interventions — tap a card, then tap a target</span>
+          <span>Your interventions - tap a card, then tap a target</span>
           <div style="display: flex; gap: 1rem; align-items: center;">
             <div style="display: flex; align-items: center; gap: 0.3rem;">
               <span style="font-size: 0.8rem; opacity: 0.8;">Interventions remaining:</span>
@@ -838,10 +838,10 @@
         <div id="wsClientView" style="display:none;">
           <div class="ws-code-box">
             <div class="ws-code-label">You're on team</div>
-            <div class="ws-code" id="wsClientTeam">—</div>
+            <div class="ws-code" id="wsClientTeam">-</div>
           </div>
           <p style="font-size:0.82rem;opacity:0.88;margin:0.6rem 0;">
-            Your score streams live to the host scoreboard. Close this panel and keep playing —
+            Your score streams live to the host scoreboard. Close this panel and keep playing -
             work together as a team!
           </p>
           <h3 style="margin:0.6rem 0 0.4rem;font-size:0.9rem;">Standings</h3>
@@ -863,9 +863,9 @@
           <button class="btn-close" data-close="helpOverlay">×</button>
         </div>
         <div class="help-step"><span class="big">👨‍🌾</span><span>You are a <b>natural resource manager</b> responsible for protecting this habitat. Use science-based interventions to manage the invasive species invasion.</span></div>
-        <div class="help-step"><span class="big">🃏</span><span>Your hand holds two kinds of cards: <b>controls</b> (🔨✂️🐾💧🔥💊) that remove invaders, and green <b>native enhancements</b> (🌱🌻🌾🤝) that plant and protect natives. Tap a card, then tap its target — or drag it.</span></div>
+        <div class="help-step"><span class="big">🃏</span><span>Your hand holds two kinds of cards: <b>controls</b> (🔨✂️🐾💧🔥💊) that remove invaders, and green <b>native enhancements</b> (🌱🌻🌾🤝) that plant and protect natives. Tap a card, then tap its target - or drag it.</span></div>
         <div class="help-step"><span class="big">🎯</span><span>Every invader has weaknesses based on <b>real conservation science</b>. Use the wrong method and it survives! Check the 📖 Field Guide.</span></div>
-        <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn — but beware: <b>invaders spread</b> to neighboring cells.</span></div>
+        <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn - but beware: <b>invaders spread</b> to neighboring cells.</span></div>
         <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. <b>Plant</b> more and <b>restore</b> habitat to keep your ratio healthy!</span></div>
         <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining a healthy ecosystem (more natives than invaders) for 6 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
         <div class="eco-note">💡 Once a species becomes invasive, complete eradication is nearly impossible. Management is about maintaining a balance. Tap any creature to learn about it.</div>
@@ -902,9 +902,9 @@
       manual: { icon: '🔨', short: 'Hand Pull', name: 'Hand Pulling',
         desc: 'Hand-pulling, trapping, harvesting and scraping. Hard work, but precise and chemical-free.', class: 'manual' },
       shears: { icon: '✂️', short: 'Cut', name: 'Cutting & Mowing',
-        desc: 'Repeated cutting exhausts a plant’s root reserves until it can no longer regrow.', class: 'shears' },
+        desc: "Repeated cutting exhausts a plant's root reserves until it can no longer regrow.", class: 'shears' },
       bio:    { icon: '🐾', short: 'Bio', name: 'Biological Control',
-        desc: 'Carefully tested natural enemies from the invader’s homeland, like weevils or parasitoid wasps.', class: 'bio' },
+        desc: "Carefully tested natural enemies from the invader's homeland, like weevils or parasitoid wasps.", class: 'bio' },
       cdd:    { icon: '💧', short: 'CDD', name: 'Clean, Drain, Dry',
         desc: 'Drawdowns, hot-water washes and barriers. The proven prevention strategy for aquatic hitchhikers.', class: 'cdd' },
       burn:   { icon: '🔥', short: 'Burn', name: 'Prescribed Burn',
@@ -916,28 +916,28 @@
     const INVADERS = {
       kudzu: { icon: '🌿', name: 'Kudzu', color: '#558B2F', origin: 'East Asia',
         controls: ['shears', 'burn'], spread: 0.5, points: 20,
-        harm: 'A vine that grows up to 30 cm per day, smothering whole forests by blocking sunlight — "the vine that ate the South".',
+        harm: 'A vine that grows up to 30 cm per day, smothering whole forests by blocking sunlight - "the vine that ate the South".',
         tip: 'Cut it back again and again, or use prescribed burns to expose its root crowns.',
         fact: 'Kudzu was brought to the US in 1876 as an ornamental plant and livestock feed. By the 1950s it covered millions of acres.' },
       hyacinth: { icon: '🌺', name: 'Water Hyacinth', color: '#7B1FA2', origin: 'Amazon Basin',
         controls: ['manual', 'bio'], spread: 0.4, points: 20,
         harm: 'Floating mats double in size in two weeks, clogging waterways and starving fish of oxygen.',
-        tip: 'Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.',
-        fact: 'Its beautiful purple flowers made it popular in ornamental ponds across the world—until it escaped into wild waterways.' },
+        tip: "Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.",
+        fact: 'Its beautiful purple flowers made it popular in ornamental ponds across the world-until it escaped into wild waterways.' },
       mussel: { icon: '🐚', name: 'Zebra Mussel', color: '#5D4037', origin: 'Caspian Sea region',
         controls: ['manual', 'cdd'], spread: 0.35, points: 20,
         harm: 'Stowaways in ship ballast water that clog pipes, coat boats and out-eat native mussels.',
-        tip: 'Scrape them off and Clean, Drain, Dry every boat — dried-out mussels can’t survive.',
-        fact: 'A single zebra mussel can produce 30,000–100,000 offspring per year, and they can survive in freshwater for weeks out of water.' },
+        tip: "Scrape them off and Clean, Drain, Dry every boat - dried-out mussels can't survive.",
+        fact: 'A single zebra mussel can produce 30,000-100,000 offspring per year, and they can survive in freshwater for weeks out of water.' },
       borer: { icon: '🪲', name: 'Emerald Ash Borer', color: '#00695C', origin: 'Northeast Asia',
         controls: ['bio', 'chem'], spread: 0.3, points: 25,
-        harm: 'Larvae tunnel under ash bark and cut off the tree’s nutrients — tens of millions of trees lost.',
+        harm: "Larvae tunnel under ash bark and cut off the tree's nutrients - tens of millions of trees lost.",
         tip: 'Tiny parasitoid wasps hunt its larvae, and targeted trunk treatments protect single trees.',
         fact: 'Since 2002, Emerald Ash Borers have killed over 100 million ash trees. They likely arrived in shipping pallets from Asia.' },
       python: { icon: '🐍', name: 'Burmese Python', color: '#33691E', origin: 'Southeast Asia',
         controls: ['manual'], spread: 0.2, points: 40,
-        harm: 'Released pets that ate their way through the Everglades — some mammal numbers fell over 90%.',
-        tip: 'No easy fix exists: trained trackers remove pythons one by one. Never release a pet!',
+        harm: 'Released pets that ate their way through the Everglades - some mammal numbers fell over 90%.',
+        tip: "No easy fix exists: trained trackers remove pythons one by one. Never release a pet!",
         fact: 'Hurricane Andrew destroyed a python breeding facility in 1992, releasing dozens into the wild. Now tens of thousands roam the Everglades.' },
       carp: { icon: '🐟', name: 'Asian Carp', color: '#1565C0', origin: 'East Asia',
         controls: ['manual', 'cdd'], spread: 0.35, points: 22,
@@ -952,23 +952,23 @@
     };
 
     const NATIVES = {
-      oak:     { icon: '🌳', name: 'White Oak',         fact: 'One oak can feed over 500 species of caterpillars — a whole food web in one tree.' },
+      oak:     { icon: '🌳', name: 'White Oak',         fact: 'One oak can feed over 500 species of caterpillars - a whole food web in one tree.' },
       monarch: { icon: '🦋', name: 'Monarch Butterfly', fact: 'Monarch caterpillars can only eat milkweed. Invasive plants that crowd it out starve them.' },
-      turtle:  { icon: '🐢', name: 'Box Turtle',        fact: 'Box turtles can live 100 years — but only if their woodland habitat survives.' },
+      turtle:  { icon: '🐢', name: 'Box Turtle',        fact: 'Box turtles can live 100 years - but only if their woodland habitat survives.' },
       bee:     { icon: '🐝', name: 'Native Bee',        fact: 'Native bees pollinate the wildflowers that invasive plants push out.' },
       heron:   { icon: '🦢', name: 'Great Blue Heron',  fact: 'These wading birds hunt fish and frogs. Clogged waterways from invasive plants block their habitat.' },
       salamander: { icon: '🦎', name: 'Spotted Salamander', fact: 'Breeds only in pristine vernal pools. Invasive species degrade these critical breeding grounds.' }
     };
 
-    // Native enhancement cards — interventions that build up natives instead of
+    // Native enhancement cards - interventions that build up natives instead of
     // removing invaders. target: 'empty' | 'native' | 'any'
     const ENHANCEMENTS = {
       plant:     { icon: '🌱', short: 'Plant', name: 'Native Planting', target: 'empty',
         desc: 'Plant a new native species in an empty cell to rebuild biodiversity and improve the native-to-invader ratio.' },
       seedbomb:  { icon: '🌻', short: 'Seeds', name: 'Seed Bombing', target: 'empty',
-        desc: 'Scatter native seeds — establishes natives in an empty cell and its empty neighbours at once.' },
+        desc: 'Scatter native seeds - establishes natives in an empty cell and its empty neighbours at once.' },
       restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'empty',
-        desc: 'Restore habitat by planting natives in empty cells nearby — rebuilds the ecosystem one patch at a time.' },
+        desc: 'Restore habitat by planting natives in empty cells nearby - rebuilds the ecosystem one patch at a time.' },
       community: { icon: '🤝', short: 'Rally', name: 'Community Day', target: 'any',
         desc: 'Rally volunteers: shields every native from being overwhelmed this turn and energizes the team (+1 action).' }
     };
@@ -1121,13 +1121,13 @@
           else if (tgt === 'native') toast('🌾 Use this on one of your <b>native species</b> (gold rings).');
           else toast('Tap a highlighted cell to use this card.');
         } else {
-          toast('🚫 Aim for an <b>invasive species</b> — the ones with <b>red rings</b>.');
+          toast('🚫 Aim for an <b>invasive species</b> - the ones with <b>red rings</b>.');
         }
         sound('error');
         return false;
       }
       if (S.plays <= 0) {
-        toast('⚡ No actions left — tap <b>End Turn 🌙</b>.');
+        toast('⚡ No actions left - tap <b>End Turn 🌙</b>.');
         sound('error');
         return false;
       }
@@ -1162,18 +1162,18 @@
       } else {
         S.score = Math.max(0, S.score - 5);
         vibrate(150);
-        sound(‘error’);
-        burst(cellIdx, ‘#F44336’);
-        const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(‘ or ‘);
-        toast(`❌ ${CONTROLS[ctrl].icon} doesn’t stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}<br><span style="font-size:0.75rem;opacity:0.7;">Tap to dismiss</span>`, 0);
+        sound('error');
+        burst(cellIdx, '#F44336');
+        const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(' or ');
+        toast(`❌ ${CONTROLS[ctrl].icon} doesn't stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}<br><span style="font-size:0.75rem;opacity:0.7;">Tap to dismiss</span>`, 0);
 
         // Failed control: invasive spreads immediately
         const empties = neighbors(cellIdx).filter(n => !S.field[n]);
         if (empties.length) {
           const spreadTo = pick(empties);
-          S.field[spreadTo] = { kind: ‘invader’, type: cell.type };
-          burst(spreadTo, ‘#EF5350’);
-          sound(‘spread’);
+          S.field[spreadTo] = { kind: 'invader', type: cell.type };
+          burst(spreadTo, '#EF5350');
+          sound('spread');
           render();
         }
       }
@@ -1311,7 +1311,7 @@
         }
       }
 
-      // Natives surrounded by 3+ invaders are lost — unless restoration shields them
+      // Natives surrounded by 3+ invaders are lost - unless restoration shields them
       const lost = [];
       for (const i of nativeCells()) {
         const occ = S.field[i];
@@ -1329,7 +1329,7 @@
         const nat = NATIVES[S.field[i].type];
         S.field[i] = null;
         S.score = Math.max(0, S.score - 25);
-        toast(`💔 The ${nat.icon} <b>${nat.name}</b> was overwhelmed by invaders! (−25)`, 5000);
+        toast(`💔 The ${nat.icon} <b>${nat.name}</b> was overwhelmed by invaders! (-25)`, 5000);
       }
 
       // Restoration shields wear off by one turn
@@ -1364,9 +1364,9 @@
       if (!lost.length) {
         const healthStr = isHealthy ? `✓ Healthy ratio maintained (${S.healthyTurns}/${WIN_TURNS})` : `Ratio not yet healthy`;
         if (spreadCount > 0) {
-          toast(`🌙 Turn ${S.turn} — invasion spread to <b>${spreadCount}</b> cell${spreadCount > 1 ? 's' : ''}! ${healthStr}`);
+          toast(`🌙 Turn ${S.turn} - invasion spread to <b>${spreadCount}</b> cell${spreadCount > 1 ? 's' : ''}! ${healthStr}`);
         } else {
-          toast(`🌙 Turn ${S.turn} — no spread! ${healthStr}`);
+          toast(`🌙 Turn ${S.turn} - no spread! ${healthStr}`);
         }
       }
     }
@@ -1747,7 +1747,7 @@
       }
       html += '<h3 style="margin:0.8rem 0 0.5rem;font-size:0.95rem;">🌱 Native enhancement cards</h3>';
       html += '<p style="font-size:0.78rem;opacity:0.85;margin-bottom:0.5rem;">' +
-        'Real conservation is not only about removing invaders — it also means actively rebuilding native ' +
+        'Real conservation is not only about removing invaders - it also means actively rebuilding native ' +
         'communities. These cards raise and protect your natives, helping you hold a healthy ratio.</p>';
       for (const t of Object.keys(ENHANCEMENTS)) {
         const e = ENHANCEMENTS[t];
@@ -1774,12 +1774,12 @@
         'Ecosystem': 'A community of living organisms (plants, animals, microorganisms) interacting with their physical environment.',
         'Spread Rate': 'How fast an invasive species reproduces and colonizes new areas. Fast-spreading species are harder to control.',
         'Control Method': 'A science-based technique to reduce or manage invasive species populations. No single method works for all species.',
-        'Restoration': 'Actively rebuilding native habitat — planting natives, propagating seeds, and protecting them — so the ecosystem can recover and resist re-invasion.',
+        'Restoration': 'Actively rebuilding native habitat - planting natives, propagating seeds, and protecting them - so the ecosystem can recover and resist re-invasion.',
         'Propagation': 'Growing and spreading native plants (from seed, cuttings, or transplants) to re-establish them across a landscape.',
         'Biological Control': 'Using a natural predator or disease from the invader\'s homeland to control it. Takes time but is often sustainable.',
         'Prescribed Burn': 'Intentionally set, carefully controlled fires that help fire-adapted native plants return and set back invasives.',
         'Eradication': 'Completely removing a species from an area. This is almost impossible once a species is established as invasive.',
-        'Management': 'Controlling invasive species populations to maintain ecosystem health—the realistic goal once invasion is underway.',
+        'Management': 'Controlling invasive species populations to maintain ecosystem health-the realistic goal once invasion is underway.',
         'Ratio (natives:invaders)': 'The mathematical proportion of native species to invasive species. A healthy ecosystem maintains more natives than invaders.',
         'Resilience': 'An ecosystem\'s ability to recover from disturbance. Native species diversity makes ecosystems more resilient to invasion.'
       };
@@ -1819,8 +1819,8 @@
 
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">💊 Control Card Effectiveness</h3>
         <div class="guide-card">
-          <p style="margin: 0.3rem 0;"><b>✓ Correct method:</b> Remove invader + gain points (20–40 depending on species)</p>
-          <p style="margin: 0.3rem 0;"><b>✗ Wrong method:</b> Invader survives − 5 points</p>
+          <p style="margin: 0.3rem 0;"><b>✓ Correct method:</b> Remove invader + gain points (20-40 depending on species)</p>
+          <p style="margin: 0.3rem 0;"><b>✗ Wrong method:</b> Invader survives - 5 points</p>
           <p style="margin: 0.3rem 0; font-size: 0.85rem;">Each species works with specific controls based on real biology (e.g., aquatic species immune to spray).</p>
         </div>
 
@@ -1835,7 +1835,7 @@
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌪️ Random Events</h3>
         <div class="guide-card">
           <p style="margin: 0.3rem 0;"><b>Chance:</b> 25% per turn (after turn 1)</p>
-          <p style="margin: 0.3rem 0;"><b>Hurricane:</b> Removes 30–50% of invasives randomly</p>
+          <p style="margin: 0.3rem 0;"><b>Hurricane:</b> Removes 30-50% of invasives randomly</p>
           <p style="margin: 0.3rem 0;"><b>Wildfire:</b> Removes plants only (Kudzu, Hyacinth); helps burn-adapted natives</p>
           <p style="font-size: 0.85rem; opacity: 0.8;">Real climate disturbances can help or hurt depending on your ecosystem composition.</p>
         </div>
@@ -1843,8 +1843,8 @@
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">📊 Scoring</h3>
         <div class="guide-card">
           <p style="margin: 0.3rem 0;"><b>Correct control:</b> +20 to +40 points (harder species = more)</p>
-          <p style="margin: 0.3rem 0;"><b>Wrong control:</b> −5 points</p>
-          <p style="margin: 0.3rem 0;"><b>Native lost:</b> −25 points</p>
+          <p style="margin: 0.3rem 0;"><b>Wrong control:</b> -5 points</p>
+          <p style="margin: 0.3rem 0;"><b>Native lost:</b> -25 points</p>
           <p style="font-size: 0.85rem; opacity: 0.8;">Strategy matters: Learning species ≈ winning consistently.</p>
         </div>
 
