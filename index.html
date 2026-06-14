@@ -114,6 +114,43 @@
       transition: width 0.4s ease;
     }
 
+    .invasion-meter .healthy-zone {
+      position: absolute;
+      height: 100%;
+      top: 0;
+      background: rgba(76, 175, 80, 0.2);
+      border-right: 2px solid rgba(76, 175, 80, 0.6);
+    }
+
+    .invasion-meter .danger-line {
+      position: absolute;
+      height: 100%;
+      top: 0;
+      width: 2px;
+      background: #F44336;
+      opacity: 0.7;
+    }
+
+    /* Win ticker */
+    .win-ticker {
+      display: flex;
+      gap: 0.2rem;
+      align-items: center;
+      padding: 0 0.4rem;
+    }
+
+    .win-ticker .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .win-ticker .dot.healthy {
+      background: #4CAF50;
+      box-shadow: 0 0 4px rgba(76, 175, 80, 0.8);
+    }
+
     /* Body: board + hand (column on portrait, row on short landscape) */
     .game-body {
       flex: 1;
@@ -647,6 +684,8 @@
 
     <!-- Invasion meter -->
     <div class="invasion-meter" id="invasionMeter" title="Invasion meter: fills as more invasive species spread. Fill it completely to lose!">
+      <div class="healthy-zone" id="healthyZone"></div>
+      <div class="danger-line" id="dangerLine"></div>
       <div class="fill" id="invasionFill"></div>
     </div>
 
@@ -661,7 +700,10 @@
       <footer class="player-area">
         <div class="hand-header">
           <span>Your interventions — tap a card, then tap a target</span>
-          <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
+            <div class="win-ticker" id="winTicker" title="Healthy turns toward victory (6 consecutive needed)"></div>
+          </div>
         </div>
         <div class="hand-row" id="handRow"></div>
       </footer>
@@ -1380,12 +1422,17 @@
             : def.target === 'native' ? 'a native species'
             : 'any cell';
           tooltip += `\n\nUse on: ${tgt}`;
-        } else if (hintsOn) {
-          const effective = Object.entries(INVADERS)
+        } else {
+          const works = Object.entries(INVADERS)
             .filter(([_, sp]) => sp.controls.includes(type))
             .map(([_, sp]) => sp.icon)
             .join(' ');
-          if (effective) tooltip += `\n\nWorks against: ${effective}`;
+          const fails = Object.entries(INVADERS)
+            .filter(([_, sp]) => !sp.controls.includes(type))
+            .map(([_, sp]) => sp.icon)
+            .join(' ');
+          if (works) tooltip += `\n\n✓ Works: ${works}`;
+          if (fails) tooltip += `\n\n✗ Won't work: ${fails}`;
         }
         cardEl.title = tooltip;
 
@@ -1410,8 +1457,30 @@
       document.getElementById('turn').textContent = S.turn;
       document.getElementById('actionPips').textContent =
         '●'.repeat(Math.max(0, S.plays)) + '○'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
+
+      const invCount = invaderCells().length;
+      const nativeCount = nativeCells().length;
+      const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
+      const isHealthy = healthyRatio >= 0.5 && invCount < LOSE_CELLS;
+
       document.getElementById('invasionFill').style.width =
-        Math.min(100, Math.round(invaderCells().length / LOSE_CELLS * 100)) + '%';
+        Math.min(100, Math.round(invCount / LOSE_CELLS * 100)) + '%';
+
+      document.getElementById('dangerLine').style.left = Math.round(LOSE_CELLS / CELLS * 100) + '%';
+
+      const healthyStart = invCount > 0 ? 0 : 0;
+      const healthyEnd = LOSE_CELLS / CELLS * 100;
+      document.getElementById('healthyZone').style.left = healthyStart + '%';
+      document.getElementById('healthyZone').style.width = healthyEnd + '%';
+
+      const ticker = document.getElementById('winTicker');
+      ticker.innerHTML = '';
+      for (let i = 0; i < WIN_TURNS; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot' + (i < S.healthyTurns ? ' healthy' : '');
+        ticker.appendChild(dot);
+      }
+
       document.getElementById('bestScore').textContent = best;
       netPushScore();
     }
