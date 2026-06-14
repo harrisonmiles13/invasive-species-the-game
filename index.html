@@ -724,7 +724,8 @@
       </div>
       <div class="header-center">
         <div class="score-display" title="Your management score">⭐ <span id="score">0</span></div>
-        <div class="turn-display" title="Turn number">🌍 <span id="turn">1</span></div>
+        <div title="Native species remaining">🦋 <span id="nativeCount">0</span></div>
+        <div title="Invasive species present">🌿 <span id="invasiveCount">0</span></div>
         <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
           <span style="opacity: 0.9;">Healthy turns:</span>
           <div class="win-ticker-header" id="winTickerHeader"></div>
@@ -1555,7 +1556,6 @@
       renderBoard();
       renderHand();
       document.getElementById('score').textContent = S.score;
-      document.getElementById('turn').textContent = S.turn;
       document.getElementById('actionPips').textContent =
         '●'.repeat(Math.max(0, S.plays)) + '○'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
 
@@ -1567,6 +1567,8 @@
 
       const invCount = invaderCells().length;
       const nativeCount = nativeCells().length;
+      document.getElementById('nativeCount').textContent = nativeCount;
+      document.getElementById('invasiveCount').textContent = invCount;
       const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
       const isHealthy = healthyRatio >= 0.5;
 
