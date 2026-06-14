@@ -151,6 +151,32 @@
     }
 
     /* Win ticker */
+    .win-ticker-header {
+      display: flex;
+      gap: 0.15rem;
+      align-items: center;
+    }
+
+    .win-ticker-header .check {
+      width: 0.8rem;
+      height: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: bold;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 3px;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .win-ticker-header .check.healthy {
+      background: #4CAF50;
+      border-color: #4CAF50;
+      color: white;
+      box-shadow: 0 0 4px rgba(76, 175, 80, 0.8);
+    }
+
     .win-ticker {
       display: flex;
       gap: 0.2rem;
@@ -693,6 +719,10 @@
       <div class="header-center">
         <div class="score-display" title="Your management score">⭐ <span id="score">0</span></div>
         <div class="turn-display" title="Turn number">🌍 <span id="turn">1</span></div>
+        <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
+          <span style="opacity: 0.9;">Healthy turns:</span>
+          <div class="win-ticker-header" id="winTickerHeader"></div>
+        </div>
         <span class="ws-badge" id="wsBadge" style="display:none;" title="Connected to a workshop room"></span>
       </div>
       <div class="header-right">
@@ -724,7 +754,6 @@
               <span style="font-size: 0.8rem; opacity: 0.8;">Interventions remaining:</span>
               <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
             </div>
-            <div class="win-ticker" id="winTicker" title="Healthy turns toward victory (6 consecutive needed)"></div>
           </div>
         </div>
         <div class="hand-row" id="handRow"></div>
@@ -1524,6 +1553,15 @@
       const healthyEnd = LOSE_CELLS / CELLS * 100;
       document.getElementById('healthyZone').style.left = healthyStart + '%';
       document.getElementById('healthyZone').style.width = healthyEnd + '%';
+
+      const tickerHeader = document.getElementById('winTickerHeader');
+      tickerHeader.innerHTML = '';
+      for (let i = 0; i < WIN_TURNS; i++) {
+        const check = document.createElement('div');
+        check.className = 'check' + (i < S.healthyTurns ? ' healthy' : '');
+        check.textContent = i < S.healthyTurns ? '✓' : '';
+        tickerHeader.appendChild(check);
+      }
 
       const ticker = document.getElementById('winTicker');
       ticker.innerHTML = '';
