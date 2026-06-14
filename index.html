@@ -1284,8 +1284,18 @@
           toast(`💔 Spray damage: <b>${nat.name}</b> harmed!`, 2500);
           S.score = Math.max(0, S.score - 15);
         }
+      } else if (ctrl === 'bio') {
+        // Bio Control: remove all of that species
+        for (let i = 0; i < CELLS; i++) {
+          if (S.field[i] && S.field[i].kind === 'invader' && S.field[i].type === cell.type) {
+            S.field[i] = null;
+            burst(i, '#4CAF50');
+            removed++;
+            totalScore += sp.points;
+          }
+        }
       } else {
-        // Bio, CDD: single target
+        // CDD: single target
         S.field[cellIdx] = null;
         removed = 1;
         totalScore = sp.points;
