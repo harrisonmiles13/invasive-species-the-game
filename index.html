@@ -1614,7 +1614,31 @@
       } else {
         // Tap: toggle selection
         S.selected = (S.selected === idx) ? null : idx;
-        if (S.selected != null) { sound('select'); vibrate(30); }
+        if (S.selected != null) {
+          sound('select');
+          vibrate(30);
+          const type = S.hand[S.selected];
+          const def = cardDef(type);
+          let msg = `<b>${def.name}</b><br>${def.desc}`;
+          if (isEnhance(type)) {
+            const tgt = def.target === 'empty' ? 'an empty cell'
+              : def.target === 'native' ? 'a native species'
+              : 'any cell';
+            msg += `<br><br>Target: ${tgt}`;
+          } else {
+            const works = Object.entries(INVADERS)
+              .filter(([_, sp]) => sp.controls.includes(type))
+              .map(([_, sp]) => sp.icon)
+              .join(' ');
+            const fails = Object.entries(INVADERS)
+              .filter(([_, sp]) => !sp.controls.includes(type))
+              .map(([_, sp]) => sp.icon)
+              .join(' ');
+            if (works) msg += `<br><br>✓ Works: ${works}`;
+            if (fails) msg += `<br><br>✗ Won't work: ${fails}`;
+          }
+          toast(msg, 6000);
+        }
         render();
       }
     }
