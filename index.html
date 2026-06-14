@@ -1987,6 +1987,8 @@
         showClientView();
         updateWsBadge();
         netPushScore(true);
+        closeOverlay('workshopOverlay');
+        openOverlay('helpOverlay');
       } else if (d.type === 'full') {
         wsSetStatus('wsLobbyStatus', 'That room already has 5 teams (the maximum).', 'err');
       } else if (d.type === 'scores') {
@@ -2085,6 +2087,7 @@
       });
       document.getElementById('btnHostRoom').addEventListener('click', hostWorkshop);
       document.getElementById('btnJoinRoom').addEventListener('click', () => {
+        document.getElementById('btnHostRoom').style.display = 'none';
         joinWorkshop(
           document.getElementById('wsRoomInput').value,
           document.getElementById('wsTeamInput').value,
@@ -2093,6 +2096,7 @@
       });
       document.getElementById('btnLeaveRoom').addEventListener('click', () => {
         leaveWorkshop();
+        document.getElementById('btnHostRoom').style.display = 'block';
         closeOverlay('workshopOverlay');
         toast('🚪 Left the workshop room.');
       });
