@@ -1529,6 +1529,7 @@
       }
 
       S.invasivePhaseActive = false;  // Invasive phase complete, ready for next turn
+      render();  // Re-render to show End Turn button again for next turn
     }
 
     function endGame(won) {
