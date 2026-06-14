@@ -1111,6 +1111,16 @@
         });
         if (i >= 0) { S.field[i] = { kind: 'native', type }; S.totalNatives++; }
       }
+      // Place additional natives to reach ~15% of board (10-11 total)
+      for (let extra = 0; extra < 5; extra++) {
+        const type = pick(STARTING_NATIVES);
+        const i = findCell(j => {
+          const r = Math.floor(j / COLS), c = j % COLS;
+          if (r < 2 || r > ROWS - 3 || c < 1 || c > COLS - 2 || S.field[j]) return false;
+          return !neighbors(j).some(n => S.field[n] && S.field[n].kind === 'native');
+        });
+        if (i >= 0) { S.field[i] = { kind: 'native', type }; S.totalNatives++; }
+      }
       // Invader clusters, not directly beside a native
       const clearOfNatives = j => !S.field[j] &&
         !neighbors(j).some(n => S.field[n] && S.field[n].kind === 'native');
