@@ -1052,7 +1052,8 @@
         seenFacts: {},
         totalNatives: 0,
         healthyTurns: 0,
-        newInvaders: new Set()  // Track invaders placed this turn (don't spread yet)
+        newInvaders: new Set(),  // Track invaders placed this turn (don't spread yet)
+        invasivePhaseActive: false  // Flag: true during invasive spread sequence
       };
     }
 
@@ -1263,8 +1264,9 @@
     }
 
     function endTurn() {
-      if (S.over) return;
+      if (S.over || S.invasivePhaseActive) return;  // Prevent multiple clicks
       S.selected = null;
+      S.invasivePhaseActive = true;  // Lock out further clicks
 
       // Start invasive phase with announcement
       toast(`🌙 Turn ${S.turn} - Invasive species spreading...`, 1500);
@@ -1410,6 +1412,7 @@
       }
 
       if (!nativeCount) {
+        S.invasivePhaseActive = false;  // Re-enable for next game
         endGame(false);
         return;
       }
@@ -1421,10 +1424,13 @@
           toast(`🌙 Turn ${S.turn} - no spread! ${healthStr}`);
         }
       }
+
+      S.invasivePhaseActive = false;  // Invasive phase complete, ready for next turn
     }
 
     function endGame(won) {
       S.over = true;
+      S.invasivePhaseActive = false;  // Clear flag on game end
       S.selected = null;
       if (won) S.score += 50 + nativeCells().length * 10;
       if (S.score > best) {
@@ -1559,10 +1565,10 @@
       document.getElementById('actionPips').textContent =
         '▲'.repeat(Math.max(0, S.plays)) + '△'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
 
-      // Show End Turn button only when all actions are used (or game over)
+      // Show End Turn button only when all actions are used (and invasive phase is not active)
       const endBtn = document.getElementById('btnEndTurn');
       if (endBtn) {
-        endBtn.style.display = (S.plays <= 0 || S.over) ? 'block' : 'none';
+        endBtn.style.display = (S.plays <= 0 && !S.invasivePhaseActive && !S.over) ? 'block' : 'none';
       }
 
       const invCount = invaderCells().length;
