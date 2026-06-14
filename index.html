@@ -2232,11 +2232,13 @@
       document.getElementById('btnNewGame').addEventListener('click', () => {
         closeOverlay('menuOverlay');
         initGame();
+        openOverlay('helpOverlay');
         toast('🎮 New game! Stop the invasion.');
       });
       document.getElementById('btnPlayAgain').addEventListener('click', () => {
         closeOverlay('gameOverlay');
         initGame();
+        openOverlay('helpOverlay');
         toast('🎮 New game! Stop the invasion.');
       });
       document.getElementById('btnHints').addEventListener('click', () => {
