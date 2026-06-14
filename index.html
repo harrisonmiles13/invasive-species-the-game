@@ -66,9 +66,8 @@
     /* Header */
     .app-header {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
+      flex-direction: column;
+      gap: 0.4rem;
       padding: 0.4rem 0.75rem;
       background: rgba(0, 0, 0, 0.18);
       backdrop-filter: blur(10px);
@@ -89,7 +88,8 @@
       align-items: center;
       font-weight: 600;
       font-size: 0.9rem;
-      white-space: nowrap;
+      flex-wrap: wrap;
+      justify-content: flex-start;
     }
 
     .header-right {
@@ -713,8 +713,14 @@
   <div class="app">
     <!-- Header -->
     <header class="app-header">
-      <div class="header-left">
-        <h1>🌿 <span class="title-text">Invasive Species: The Game!</span></h1>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+        <div class="header-left">
+          <h1>🌿 <span class="title-text">Invasive Species: The Game!</span></h1>
+        </div>
+        <div class="header-right">
+          <button class="btn-icon" id="btnGuide" title="Field Guide">📖</button>
+          <button class="btn-icon" id="btnMenu" title="Menu">☰</button>
+        </div>
       </div>
       <div class="header-center">
         <div class="score-display" title="Your management score">⭐ <span id="score">0</span></div>
@@ -724,10 +730,6 @@
           <div class="win-ticker-header" id="winTickerHeader"></div>
         </div>
         <span class="ws-badge" id="wsBadge" style="display:none;" title="Connected to a workshop room"></span>
-      </div>
-      <div class="header-right">
-        <button class="btn-icon" id="btnGuide" title="Field Guide">📖</button>
-        <button class="btn-icon" id="btnMenu" title="Menu">☰</button>
       </div>
     </header>
 
