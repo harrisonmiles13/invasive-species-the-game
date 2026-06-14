@@ -1402,12 +1402,14 @@
           toast(`${sp.icon} <b>${sp.name}</b> spreads to a new cell!`, 1000);
           render();
           spreadIdx++;
-          setTimeout(spreadNext, 1000);
+          setTimeout(spreadNext, 1200);
           return;
         }
         // All spreads done, clear new invaders and check for native losses
         S.newInvaders.clear();  // Next turn, all are eligible to spread
-        continueEndTurn(spreads.length);
+        setTimeout(() => {
+          continueEndTurn(spreads.length);
+        }, 200);
       };
 
       // Start the animation after a brief delay
@@ -1415,11 +1417,11 @@
         if (spreads.length > 0) {
           spreadNext();
         } else {
-          toast(`No invasive spread this turn.`, 1500);
+          toast(`🌙 No invasive spread this turn.`, 2000);
           setTimeout(() => {
             S.newInvaders.clear();
             continueEndTurn(0);
-          }, 1500);
+          }, 2000);
         }
       }, 1500);
     }
@@ -1848,6 +1850,10 @@
 
     function toast(html, ms) {
       const el = document.getElementById('toast');
+      if (!el) {
+        console.warn('toast: element not found');
+        return;
+      }
       el.innerHTML = html;
       el.classList.add('show');
       clearTimeout(toastTimer);
