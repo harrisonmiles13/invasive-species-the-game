@@ -126,11 +126,17 @@
       z-index: 99;
     }
 
-    .invasion-meter .fill {
+    .invasion-meter .meter-indicator {
+      position: absolute;
       height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #4CAF50, #FFC107 60%, #F44336);
-      transition: width 0.4s ease;
+      left: 0%;
+      width: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      transition: left 0.4s ease;
+      transform: translateX(-50%);
     }
 
     .invasion-meter .healthy-zone {
@@ -735,10 +741,10 @@
     </header>
 
     <!-- Invasion meter -->
-    <div class="invasion-meter" id="invasionMeter" title="Invasion meter: fills as more invasive species spread. Fill it completely to lose!">
+    <div class="invasion-meter" id="invasionMeter" title="Invasion meter: invasive count rises with spread. Exceed the red line to lose!">
       <div class="healthy-zone" id="healthyZone"></div>
       <div class="danger-line" id="dangerLine"></div>
-      <div class="fill" id="invasionFill"></div>
+      <div class="meter-indicator" id="meterIndicator">🌿</div>
     </div>
 
     <div class="game-body">
@@ -1675,7 +1681,7 @@
       const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
       const isHealthy = healthyRatio >= 0.5;
 
-      document.getElementById('invasionFill').style.width =
+      document.getElementById('meterIndicator').style.left =
         Math.min(100, Math.round(invCount / LOSE_CELLS * 100)) + '%';
 
       document.getElementById('dangerLine').style.left = Math.round(LOSE_CELLS / CELLS * 100) + '%';
