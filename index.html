@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, orientation=portrait" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -17,6 +17,25 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    /* Portrait mode only */
+    @media (orientation: landscape) {
+      .app {
+        display: none;
+      }
+      body::after {
+        content: "📱 Please rotate to portrait mode to play.";
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-size: 1.2rem;
+        color: white;
+        text-align: center;
+        padding: 2rem;
+      }
     }
 
     html, body {
@@ -2164,6 +2183,13 @@
 
     // ===== Boot ===============================================================
     document.addEventListener('DOMContentLoaded', () => {
+      // Request portrait orientation lock
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait-primary').catch(e => {
+          // Some devices don't support orientation lock - continue anyway
+        });
+      }
+
       bindUI();
       buildGuide();
       buildGlossary();
