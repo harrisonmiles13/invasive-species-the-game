@@ -1399,8 +1399,11 @@
           S.newInvaders.add(s.to);  // Mark newly spread invader
           burst(s.to, '#EF5350');
           sound('spread');
-          toast(`${sp.icon} <b>${sp.name}</b> spreads to a new cell!`, 1000);
-          render();
+          try {
+            render();
+          } catch (renderErr) {
+            // Render errors shouldn't break the spread sequence
+          }
           spreadIdx++;
           setTimeout(spreadNext, 1200);
           return;
@@ -1499,7 +1502,12 @@
       S.turn++;
       S.plays = PLAYS_PER_TURN;
       refillHand();
-      render();
+      try {
+        render();
+      } catch (renderErr) {
+        console.error(`continueEndTurn render error: ${renderErr.message}`);
+        // Continue anyway
+      }
 
       const invCount = invaderCells().length;
       const nativeCount = nativeCells().length;
@@ -1531,7 +1539,11 @@
       }
 
       S.invasivePhaseActive = false;  // Invasive phase complete, ready for next turn
-      render();  // Re-render to show End Turn button again for next turn
+      try {
+        render();  // Re-render to show End Turn button again for next turn
+      } catch (finalRenderErr) {
+        // Render might fail in some edge cases, but the turn is complete
+      }
     }
 
     function endGame(won) {
