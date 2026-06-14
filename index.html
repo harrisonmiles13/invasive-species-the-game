@@ -126,11 +126,17 @@
       z-index: 99;
     }
 
-    .invasion-meter .fill {
+    .invasion-meter .meter-indicator {
+      position: absolute;
       height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #4CAF50, #FFC107 60%, #F44336);
-      transition: width 0.4s ease;
+      left: 0%;
+      width: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      transition: left 0.4s ease;
+      transform: translateX(-50%);
     }
 
     .invasion-meter .healthy-zone {
@@ -735,10 +741,10 @@
     </header>
 
     <!-- Invasion meter -->
-    <div class="invasion-meter" id="invasionMeter" title="Invasion meter: fills as more invasive species spread. Fill it completely to lose!">
+    <div class="invasion-meter" id="invasionMeter" title="Invasion meter: invasive count rises with spread. Exceed the red line to lose!">
       <div class="healthy-zone" id="healthyZone"></div>
       <div class="danger-line" id="dangerLine"></div>
-      <div class="fill" id="invasionFill"></div>
+      <div class="meter-indicator" id="meterIndicator">🌿</div>
     </div>
 
     <div class="game-body">
@@ -1393,15 +1399,17 @@
           S.newInvaders.add(s.to);  // Mark newly spread invader
           burst(s.to, '#EF5350');
           sound('spread');
-          toast(`${sp.icon} <b>${sp.name}</b> spreads to a new cell!`, 1000);
+          toast(`${sp.icon} <b>${sp.name}</b> spreads to a new cell!`, 1100);
           render();
           spreadIdx++;
-          setTimeout(spreadNext, 1000);
+          setTimeout(spreadNext, 1200);
           return;
         }
         // All spreads done, clear new invaders and check for native losses
         S.newInvaders.clear();  // Next turn, all are eligible to spread
-        continueEndTurn(spreads.length);
+        setTimeout(() => {
+          continueEndTurn(spreads.length);
+        }, 200);
       };
 
       // Start the animation after a brief delay
@@ -1409,11 +1417,11 @@
         if (spreads.length > 0) {
           spreadNext();
         } else {
-          toast(`No invasive spread this turn.`, 1500);
+          toast(`🌙 No invasive spread this turn.`, 2000);
           setTimeout(() => {
             S.newInvaders.clear();
             continueEndTurn(0);
-          }, 1500);
+          }, 2000);
         }
       }, 1500);
     }
@@ -1523,6 +1531,7 @@
       }
 
       S.invasivePhaseActive = false;  // Invasive phase complete, ready for next turn
+      render();  // Re-render to show End Turn button again for next turn
     }
 
     function endGame(won) {
@@ -1675,7 +1684,7 @@
       const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
       const isHealthy = healthyRatio >= 0.5;
 
-      document.getElementById('invasionFill').style.width =
+      document.getElementById('meterIndicator').style.left =
         Math.min(100, Math.round(invCount / LOSE_CELLS * 100)) + '%';
 
       document.getElementById('dangerLine').style.left = Math.round(LOSE_CELLS / CELLS * 100) + '%';
@@ -1692,14 +1701,6 @@
         check.className = 'check' + (i < S.healthyTurns ? ' healthy' : '');
         check.textContent = i < S.healthyTurns ? '✓' : '';
         tickerHeader.appendChild(check);
-      }
-
-      const ticker = document.getElementById('winTicker');
-      ticker.innerHTML = '';
-      for (let i = 0; i < WIN_TURNS; i++) {
-        const dot = document.createElement('div');
-        dot.className = 'dot' + (i < S.healthyTurns ? ' healthy' : '');
-        ticker.appendChild(dot);
       }
 
       document.getElementById('bestScore').textContent = best;
