@@ -1399,11 +1399,8 @@
           S.newInvaders.add(s.to);  // Mark newly spread invader
           burst(s.to, '#EF5350');
           sound('spread');
-          try {
-            render();
-          } catch (renderErr) {
-            // Render errors shouldn't break the spread sequence
-          }
+          toast(`${sp.icon} <b>${sp.name}</b> spreads to a new cell!`, 1100);
+          render();
           spreadIdx++;
           setTimeout(spreadNext, 1200);
           return;
@@ -1502,12 +1499,7 @@
       S.turn++;
       S.plays = PLAYS_PER_TURN;
       refillHand();
-      try {
-        render();
-      } catch (renderErr) {
-        console.error(`continueEndTurn render error: ${renderErr.message}`);
-        // Continue anyway
-      }
+      render();
 
       const invCount = invaderCells().length;
       const nativeCount = nativeCells().length;
@@ -1539,11 +1531,7 @@
       }
 
       S.invasivePhaseActive = false;  // Invasive phase complete, ready for next turn
-      try {
-        render();  // Re-render to show End Turn button again for next turn
-      } catch (finalRenderErr) {
-        // Render might fail in some edge cases, but the turn is complete
-      }
+      render();  // Re-render to show End Turn button again for next turn
     }
 
     function endGame(won) {
@@ -1715,14 +1703,6 @@
         tickerHeader.appendChild(check);
       }
 
-      const ticker = document.getElementById('winTicker');
-      ticker.innerHTML = '';
-      for (let i = 0; i < WIN_TURNS; i++) {
-        const dot = document.createElement('div');
-        dot.className = 'dot' + (i < S.healthyTurns ? ' healthy' : '');
-        ticker.appendChild(dot);
-      }
-
       document.getElementById('bestScore').textContent = best;
       netPushScore();
     }
@@ -1862,10 +1842,6 @@
 
     function toast(html, ms) {
       const el = document.getElementById('toast');
-      if (!el) {
-        console.warn('toast: element not found');
-        return;
-      }
       el.innerHTML = html;
       el.classList.add('show');
       clearTimeout(toastTimer);
