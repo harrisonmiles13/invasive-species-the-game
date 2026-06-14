@@ -701,7 +701,10 @@
         <div class="hand-header">
           <span>Your interventions — tap a card, then tap a target</span>
           <div style="display: flex; gap: 1rem; align-items: center;">
-            <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
+            <div style="display: flex; align-items: center; gap: 0.3rem;">
+              <span style="font-size: 0.8rem; opacity: 0.8;">Interventions remaining:</span>
+              <span class="action-pips" id="actionPips" title="Actions remaining this turn (● = available, ○ = used)"></span>
+            </div>
             <div class="win-ticker" id="winTicker" title="Healthy turns toward victory (6 consecutive needed)"></div>
           </div>
         </div>
@@ -1140,10 +1143,20 @@
       } else {
         S.score = Math.max(0, S.score - 5);
         vibrate(150);
-        sound('error');
-        burst(cellIdx, '#F44336');
+        sound(‘error’);
+        burst(cellIdx, ‘#F44336’);
         const works = sp.controls.map(c => `${CONTROLS[c].icon} ${CONTROLS[c].name}`).join(‘ or ‘);
         toast(`❌ ${CONTROLS[ctrl].icon} doesn’t stop ${sp.icon} <b>${sp.name}</b>.<br>Works: <b>${works}</b>. ${sp.tip}<br><span style="font-size:0.75rem;opacity:0.7;">Tap to dismiss</span>`, 0);
+
+        // Failed control: invasive spreads immediately
+        const empties = neighbors(cellIdx).filter(n => !S.field[n]);
+        if (empties.length) {
+          const spreadTo = pick(empties);
+          S.field[spreadTo] = { kind: ‘invader’, type: cell.type };
+          burst(spreadTo, ‘#EF5350’);
+          sound(‘spread’);
+          render();
+        }
       }
     }
 
