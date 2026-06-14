@@ -1347,7 +1347,7 @@
       const invCount = invaderCells().length;
       const nativeCount = nativeCells().length;
       const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
-      const isHealthy = healthyRatio >= 0.5 && invCount < LOSE_CELLS;
+      const isHealthy = healthyRatio >= 0.5;
 
       if (isHealthy) {
         S.healthyTurns++;
@@ -1359,7 +1359,7 @@
         S.healthyTurns = 0;
       }
 
-      if (!nativeCount || invCount >= LOSE_CELLS) {
+      if (!nativeCount) {
         endGame(false);
         return;
       }
@@ -1513,7 +1513,7 @@
       const invCount = invaderCells().length;
       const nativeCount = nativeCells().length;
       const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
-      const isHealthy = healthyRatio >= 0.5 && invCount < LOSE_CELLS;
+      const isHealthy = healthyRatio >= 0.5;
 
       document.getElementById('invasionFill').style.width =
         Math.min(100, Math.round(invCount / LOSE_CELLS * 100)) + '%';
@@ -1805,10 +1805,8 @@
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🎯 Victory & Defeat</h3>
         <div class="guide-card">
           <p><b>Win:</b> Maintain healthy ratio for 6 consecutive turns</p>
-          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Healthy = Natives ÷ Invaders ≥ 0.5 AND Invaders < ${LOSE_CELLS} cells</p>
-          <p><b>Lose (either):</b></p>
-          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Invasion meter fills: ${LOSE_CELLS}+ invasive cells (45% of board)</p>
-          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• All natives eliminated</p>
+          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Healthy = Natives ÷ Invaders ≥ 0.5</p>
+          <p><b>Lose:</b> All native species eliminated</p>
         </div>
 
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🧬 Invasive Spread Rates</h3>
