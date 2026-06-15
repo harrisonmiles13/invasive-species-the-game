@@ -1059,7 +1059,12 @@
         totalNatives: 0,
         healthyTurns: 0,
         newInvaders: new Set(),  // Track invaders placed this turn (don't spread yet)
-        invasivePhaseActive: false  // Flag: true during invasive spread sequence
+        invasivePhaseActive: false,  // Flag: true during invasive spread sequence
+        // Multiplayer fields
+        gameMode: 'single',  // 'single' or 'shared'
+        players: [],  // [{name, id, score, hand, healthyTurns, turn}, ...]
+        currentPlayerIdx: 0,  // Index in players array (for shared board mode)
+        playerTurns: {}  // {playerId: current turn number}
       };
     }
 
@@ -1111,6 +1116,16 @@
         });
         if (i >= 0) { S.field[i] = { kind: 'native', type }; S.totalNatives++; }
       }
+      // Place additional natives to reach ~15% of board (10-11 total)
+      for (let extra = 0; extra < 5; extra++) {
+        const type = pick(STARTING_NATIVES);
+        const i = findCell(j => {
+          const r = Math.floor(j / COLS), c = j % COLS;
+          if (r < 2 || r > ROWS - 3 || c < 1 || c > COLS - 2 || S.field[j]) return false;
+          return !neighbors(j).some(n => S.field[n] && S.field[n].kind === 'native');
+        });
+        if (i >= 0) { S.field[i] = { kind: 'native', type }; S.totalNatives++; }
+      }
       // Invader clusters, not directly beside a native
       const clearOfNatives = j => !S.field[j] &&
         !neighbors(j).some(n => S.field[n] && S.field[n].kind === 'native');
@@ -1125,27 +1140,106 @@
       }
     }
 
+    function initSharedGame(playerList) {
+      // Initialize a shared-board multiplayer game
+      // playerList: [{name, id}, ...]
+      S.gameMode = 'shared';
+      S.players = playerList.map((p, idx) => ({
+        name: p.name,
+        id: p.id,
+        score: 0,
+        hand: [],
+        healthyTurns: 0,
+        turn: 1
+      }));
+      S.currentPlayerIdx = 0;
+      S.playerTurns = {};
+      playerList.forEach(p => { S.playerTurns[p.id] = 1; });
+      setupBoard();
+      // Refill hands for all players
+      S.players.forEach((p, idx) => {
+        S.hand = [];
+        refillHand();
+        p.hand = [...S.hand];
+      });
+      S.hand = [...S.players[0].hand];  // Set current player's hand
+    }
+
+    function getCurrentPlayer() {
+      return S.gameMode === 'shared' && S.players.length > 0
+        ? S.players[S.currentPlayerIdx]
+        : null;
+    }
+
+    function getPlayerHandIdx(playerId) {
+      if (S.gameMode !== 'shared') return null;
+      const playerIdx = S.players.findIndex(p => p.id === playerId);
+      return playerIdx >= 0 ? playerIdx : null;
+    }
+
+    function advanceToNextPlayer() {
+      if (S.gameMode !== 'shared') return;
+      S.currentPlayerIdx = (S.currentPlayerIdx + 1) % S.players.length;
+      S.hand = [...S.players[S.currentPlayerIdx].hand];
+      S.plays = PLAYS_PER_TURN;
+      S.selected = null;
+    }
+
     function refillHand() {
       const controlTypes = Object.keys(CONTROLS);
       const enhanceTypes = Object.keys(ENHANCEMENTS);
       const present = [...new Set(invaderCells().map(i => S.field[i].type))];
-      while (S.hand.length < HAND_SIZE) {
-        const hasUseful = S.hand.some(h =>
+
+      // Determine which hand to refill
+      const targetHand = S.gameMode === 'shared' && S.players.length > 0
+        ? S.players[S.currentPlayerIdx].hand
+        : S.hand;
+
+      while (targetHand.length < HAND_SIZE) {
+        const hasUseful = targetHand.some(h =>
           !isEnhance(h) && present.some(t => INVADERS[t].controls.includes(h)));
         if (present.length && !hasUseful) {
           // Guarantee at least one control that works on a present invader
-          S.hand.push(pick(INVADERS[pick(present)].controls));
+          targetHand.push(pick(INVADERS[pick(present)].controls));
         } else if (Math.random() < 0.3) {
           // Mix in a native enhancement card
-          S.hand.push(pick(enhanceTypes));
+          targetHand.push(pick(enhanceTypes));
         } else {
-          S.hand.push(pick(controlTypes));
+          targetHand.push(pick(controlTypes));
         }
+      }
+
+      // Sync global hand with current player's hand in shared mode
+      if (S.gameMode === 'shared' && S.players.length > 0) {
+        S.hand = [...S.players[S.currentPlayerIdx].hand];
       }
     }
 
     function initGame() {
       S = newState();
+
+      // In host multiplayer mode, create a shared game with all connected clients
+      if (NET.role === 'host' && NET.conns && NET.conns.length > 0 && S.gameMode === 'single') {
+        // Gather all connected players from all teams
+        const playerList = [];
+        for (const team in NET.scores) {
+          for (const peerId in NET.scores[team].players) {
+            const player = NET.scores[team].players[peerId];
+            playerList.push({ name: player.name, id: peerId });
+          }
+        }
+        // Add host as first player
+        playerList.unshift({ name: 'Host', id: 'host' });
+        if (playerList.length > 1) {
+          initSharedGame(playerList);
+          broadcastGameInit();
+          broadcastTurnChange();
+          render();
+          return;
+        }
+      }
+
+      // Single-player mode or host with no connected clients
       setupBoard();
       refillHand();
       render();
@@ -1153,6 +1247,18 @@
 
     // ===== Core rules =========================================================
     function playCard(handIdx, cellIdx) {
+      // Multiplayer turn check
+      if (S.gameMode === 'shared') {
+        const currentPlayer = getCurrentPlayer();
+        if (!currentPlayer) return false;
+        // In shared mode, only current player can play
+        if (NET.role === 'client' && NET.name !== currentPlayer.name) {
+          toast('⏳ Waiting for ' + currentPlayer.name + ' to play...');
+          sound('error');
+          return false;
+        }
+      }
+
       if (S.over || handIdx == null || !S.hand[handIdx]) return false;
       const type = S.hand[handIdx];
 
@@ -1174,12 +1280,33 @@
         return false;
       }
 
-      S.hand.splice(handIdx, 1);
+      // For shared mode, apply to current player's hand, not global hand
+      if (S.gameMode === 'shared') {
+        const currentPlayer = getCurrentPlayer();
+        if (currentPlayer && currentPlayer.hand) {
+          currentPlayer.hand.splice(handIdx, 1);
+        }
+      } else {
+        S.hand.splice(handIdx, 1);
+      }
       S.selected = null;
       S.plays--;
 
       if (isEnhance(type)) applyEnhancement(type, cellIdx);
       else applyControl(type, cellIdx);
+
+      // Update current player's hand in shared mode
+      if (S.gameMode === 'shared') {
+        const currentPlayer = getCurrentPlayer();
+        if (currentPlayer) {
+          S.hand = currentPlayer.hand;
+        }
+      }
+
+      // In shared multiplayer, broadcast board state to other players
+      if (S.gameMode === 'shared' && NET.role === 'host') {
+        broadcastGameState();
+      }
 
       render();
       return true;
@@ -1531,6 +1658,13 @@
       }
 
       S.invasivePhaseActive = false;  // Invasive phase complete, ready for next turn
+
+      // In multiplayer, advance to next player's turn
+      if (S.gameMode === 'shared' && S.players.length > 0) {
+        advanceToNextPlayer();
+        broadcastTurnChange();
+      }
+
       render();  // Re-render to show End Turn button again for next turn
     }
 
@@ -1671,10 +1805,30 @@
       document.getElementById('actionPips').textContent =
         '▲'.repeat(Math.max(0, S.plays)) + '△'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
 
+      // In multiplayer, show whose turn it is
+      const handHeader = document.querySelector('.hand-header span');
+      if (S.gameMode === 'shared' && S.players && S.players.length > 0) {
+        const currentPlayer = getCurrentPlayer();
+        const isMyTurn = currentPlayer && (NET.name === currentPlayer.name || NET.role === 'host');
+        if (currentPlayer) {
+          if (handHeader) {
+            handHeader.textContent = isMyTurn
+              ? '🎯 Your turn - tap a card, then tap a target'
+              : '⏳ ' + currentPlayer.name + '\'s turn (waiting...)';
+          }
+        }
+      } else if (handHeader) {
+        handHeader.textContent = 'Your interventions - tap a card, then tap a target';
+      }
+
       // Show End Turn button only when all actions are used (and invasive phase is not active)
+      // In multiplayer, also check if it's your turn
       const endBtn = document.getElementById('btnEndTurn');
       if (endBtn) {
-        endBtn.style.display = (S.plays <= 0 && !S.invasivePhaseActive && !S.over) ? 'block' : 'none';
+        const canEndTurn = S.plays <= 0 && !S.invasivePhaseActive && !S.over;
+        const isMyTurnShared = S.gameMode !== 'shared' ||
+          (getCurrentPlayer() && (NET.name === getCurrentPlayer().name || NET.role === 'host'));
+        endBtn.style.display = (canEndTurn && isMyTurnShared) ? 'block' : 'none';
       }
 
       const invCount = invaderCells().length;
@@ -2096,6 +2250,58 @@
       return false;
     }
 
+    // Multiplayer game state broadcasting
+    function broadcastGameInit() {
+      if (NET.role !== 'host' || S.gameMode !== 'shared') return;
+      const msg = {
+        type: 'game_init',
+        field: S.field,
+        currentPlayerIdx: S.currentPlayerIdx,
+        players: S.players,
+        turn: S.turn
+      };
+      NET.conns.forEach(c => { try { c.send(msg); } catch (_) {} });
+    }
+
+    function broadcastGameState() {
+      if (NET.role !== 'host' || S.gameMode !== 'shared') return;
+      const msg = {
+        type: 'game_state',
+        field: S.field,
+        currentPlayerIdx: S.currentPlayerIdx,
+        players: S.players,
+        turn: S.turn,
+        score: S.score
+      };
+      NET.conns.forEach(c => { try { c.send(msg); } catch (_) {} });
+    }
+
+    function broadcastTurnChange() {
+      if (NET.role !== 'host' || S.gameMode !== 'shared') return;
+      const currentPlayer = getCurrentPlayer();
+      const msg = {
+        type: 'turn_change',
+        currentPlayerIdx: S.currentPlayerIdx,
+        currentPlayerName: currentPlayer ? currentPlayer.name : '',
+        turn: S.turn
+      };
+      NET.conns.forEach(c => { try { c.send(msg); } catch (_) {} });
+    }
+
+    function applyRemoteGameState(data) {
+      if (S.gameMode !== 'shared') return;
+      S.field = data.field;
+      S.currentPlayerIdx = data.currentPlayerIdx;
+      S.players = data.players;
+      S.turn = data.turn;
+      const currentPlayer = getCurrentPlayer();
+      if (currentPlayer) {
+        S.hand = [...(currentPlayer.hand || [])];
+        S.plays = PLAYS_PER_TURN;
+      }
+      render();
+    }
+
     // ---- Host ----
     function hostWorkshop() {
       if (peerMissing('wsLobbyStatus')) return;
@@ -2151,6 +2357,13 @@
         if (!t) return;
         t.players[conn.peer] = { name: conn.pname, score: d.score, turn: d.turn, over: d.over };
         broadcastScores();
+      }
+      // Multiplayer game state messages - relay to all clients
+      else if (d.type === 'game_state' && S && S.gameMode === 'shared') {
+        broadcastGameState();
+      }
+      else if (d.type === 'turn_change' && S && S.gameMode === 'shared') {
+        broadcastTurnChange();
       }
     }
 
@@ -2226,6 +2439,40 @@
         wsSetStatus('wsLobbyStatus', 'That room already has 5 teams (the maximum).', 'err');
       } else if (d.type === 'scores') {
         renderLeaderboard('wsClientBoard', d.totals);
+      }
+      // Multiplayer game initialization
+      else if (d.type === 'game_init') {
+        S = newState();
+        S.gameMode = 'shared';
+        S.field = d.field;
+        S.currentPlayerIdx = d.currentPlayerIdx;
+        S.players = d.players;
+        S.turn = d.turn;
+        // Refind this client's player object
+        const myPlayer = S.players.find(p => p.name === NET.name);
+        if (myPlayer) {
+          S.hand = [...(myPlayer.hand || [])];
+          S.plays = PLAYS_PER_TURN;
+        } else {
+          S.hand = [];
+        }
+        render();
+        closeOverlay('menuOverlay');
+        openOverlay('helpOverlay');
+        toast('🎮 Joined shared game!', 1500);
+      }
+      // Multiplayer game state messages
+      else if (d.type === 'game_state' && S && S.gameMode === 'shared') {
+        applyRemoteGameState(d);
+      }
+      else if (d.type === 'turn_change' && S && S.gameMode === 'shared') {
+        const isMyTurn = S.players && S.players[d.currentPlayerIdx] && S.players[d.currentPlayerIdx].name === NET.name;
+        if (isMyTurn) {
+          toast('🎯 It\'s your turn!', 1500);
+        } else {
+          toast('⏳ Waiting for ' + d.currentPlayerName + ' to play...', 1500);
+        }
+        render();
       }
     }
 
