@@ -1521,6 +1521,24 @@
       render();
     }
 
+    function discardHand() {
+      // Team multiplayer: client asks host to process the discard
+      if (MP.active) {
+        if (MP.over || MP.currentId !== MP.myId) return;
+        mpSendIntent({ type: 'discard_hand' });
+        return;
+      }
+      // Single player: discard all cards and end turn
+      if (S.over || S.invasivePhaseActive || S.hand.length === 0) return;
+      S.hand = [];
+      S.plays = 0;
+      S.selected = null;
+      sound('select');
+      toast('🗑️ Hand discarded. Turn ending...');
+      render();
+      setTimeout(() => endTurn(), 800);
+    }
+
     function continueEndTurn(spreadCount) {
       // Random events
       if (Math.random() < RANDOM_EVENT_CHANCE && S.turn > 1) {
@@ -1759,6 +1777,14 @@
       passBtn.addEventListener('click', passAction);
       row.appendChild(passBtn);
 
+      // Discard hand button - shows when player has cards and plays remaining
+      const discardBtn = document.createElement('button');
+      discardBtn.className = 'btn-endturn discard-btn';
+      discardBtn.id = 'btnDiscard';
+      discardBtn.innerHTML = 'Discard<br>Hand 🗑️';
+      discardBtn.addEventListener('click', discardHand);
+      row.appendChild(discardBtn);
+
       const endBtn = document.createElement('button');
       endBtn.className = 'btn-endturn' + (S.plays <= 0 && !S.over ? ' urge' : '');
       endBtn.id = 'btnEndTurn';
@@ -1793,6 +1819,13 @@
       if (passBtn) {
         const canPass = S.plays > 0 && !S.invasivePhaseActive && !S.over;
         passBtn.style.display = (canPass && myTurn) ? 'block' : 'none';
+      }
+
+      // Show Discard Hand button when player has cards and actions remaining
+      const discardBtn = document.getElementById('btnDiscard');
+      if (discardBtn) {
+        const canDiscard = S.hand.length > 0 && S.plays > 0 && !S.invasivePhaseActive && !S.over;
+        discardBtn.style.display = (canDiscard && myTurn) ? 'block' : 'none';
       }
 
       // Show End Turn button only when all actions are used (and invasive phase is not active).
@@ -2230,6 +2263,7 @@
         // a safe local route in case a future build lets the host play a team.
         if (msg.type === 'action') tmHandleAction(MP.team, MP.myId, msg.handIdx, msg.cellIdx);
         else if (msg.type === 'pass') tmHandlePass(MP.team, MP.myId);
+        else if (msg.type === 'discard_hand') tmHandleDiscardHand(MP.team, MP.myId);
         else if (msg.type === 'end_turn') tmHandleEndTurn(MP.team, MP.myId);
       }
     }
@@ -2362,6 +2396,16 @@
       if (g.plays <= 0) return;                        // no plays left
       g.plays--;
       tmBroadcastTeam(g, []);
+    }
+
+    function tmHandleDiscardHand(team, pid) {
+      const g = TM.games[team];
+      if (!g || g.over) return;
+      if (g.currentId !== pid) return;                 // not this player's turn
+      if (g.hands[pid].length === 0) return;           // no cards to discard
+      g.hands[pid] = [];                               // clear hand
+      g.plays = 0;                                     // exhaust all plays
+      tmHandleEndTurn(team, pid);                      // immediately end turn
     }
 
     function tmHandleEndTurn(team, pid) {
