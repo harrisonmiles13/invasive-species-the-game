@@ -328,6 +328,32 @@
     .card.community { background: #F9A825; color: #3a2e00; }
     .card.enhance-card { border-color: rgba(255, 235, 150, 0.55); }
 
+    /* Custom tooltips */
+    .custom-tooltip {
+      position: fixed;
+      background: rgba(0, 0, 0, 0.95);
+      color: white;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.3;
+      max-width: 240px;
+      white-space: normal;
+      z-index: 10000;
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .custom-tooltip::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
     /* Shielded native indicator */
     .token.shielded {
       box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.95), 0 0 10px rgba(255, 213, 79, 0.7), 0 3px 8px rgba(0, 0, 0, 0.4);
@@ -1761,10 +1787,17 @@
           if (works) tooltip += `\n\n✓ Works: ${works}`;
           if (fails) tooltip += `\n\n✗ Won't work: ${fails}`;
         }
-        cardEl.title = tooltip;
+        // Store tooltip as data attribute and use custom tooltip system
+        cardEl.dataset.tooltip = tooltip.replace(/\n\n/g, '<br>');
 
         cardEl.innerHTML = `<span>${def.icon}</span><span class="card-label">${def.short}</span>`;
         cardEl.addEventListener('pointerdown', onCardPointerDown);
+        cardEl.addEventListener('pointerenter', (e) => {
+          if (cardEl.dataset.tooltip) {
+            showTooltip(cardEl.dataset.tooltip, cardEl);
+          }
+        });
+        cardEl.addEventListener('pointerleave', hideTooltip);
         cardEl.addEventListener('contextmenu', e => e.preventDefault());
         row.appendChild(cardEl);
       });
@@ -2009,6 +2042,40 @@
         toastTimer = setTimeout(() => el.classList.remove('show'), ms || 3200);
       }
       el.onclick = () => { clearTimeout(toastTimer); el.classList.remove('show'); };
+    }
+
+    // Custom tooltip system - positioned to avoid overlapping the field
+    function showTooltip(text, targetEl) {
+      if (HOST_SIM) return;
+      let tooltip = document.getElementById('customTooltip');
+      if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'customTooltip';
+        tooltip.className = 'custom-tooltip';
+        document.body.appendChild(tooltip);
+      }
+      tooltip.innerHTML = text;
+      const rect = targetEl.getBoundingClientRect();
+      const tooltipHeight = 80;  // approximate
+      const tooltipWidth = 240;
+      const spacing = 8;
+
+      // Prefer positioning above the target, fall back to below
+      if (rect.top > tooltipHeight + spacing) {
+        // Above
+        tooltip.style.top = (rect.top - tooltipHeight - spacing) + 'px';
+        tooltip.style.left = Math.max(8, Math.min(window.innerWidth - tooltipWidth - 8, rect.left + rect.width / 2 - tooltipWidth / 2)) + 'px';
+      } else {
+        // Below
+        tooltip.style.top = (rect.bottom + spacing) + 'px';
+        tooltip.style.left = Math.max(8, Math.min(window.innerWidth - tooltipWidth - 8, rect.left + rect.width / 2 - tooltipWidth / 2)) + 'px';
+      }
+      tooltip.style.display = 'block';
+    }
+
+    function hideTooltip() {
+      const tooltip = document.getElementById('customTooltip');
+      if (tooltip) tooltip.style.display = 'none';
     }
 
     function vibrate(pattern) {
@@ -2916,6 +2983,33 @@
           closeOverlay('feedbackOverlay');
         }, 500);
       });
+
+      // Invasion meter tooltip on click
+      document.getElementById('invasionMeter')?.addEventListener('click', (e) => {
+        const invCount = invaderCells().length;
+        const tooltip = `<b>Invasion Meter</b><br>Current: ${invCount}/${LOSE_CELLS} cells<br>Safe zone: 0-${LOSE_CELLS}<br>Lose if invasives exceed ${LOSE_CELLS}`;
+        showTooltip(tooltip, e.target);
+      });
+
+      // Header score tooltips
+      const headerCenter = document.querySelector('.header-center');
+      if (headerCenter) {
+        headerCenter.addEventListener('click', (e) => {
+          if (e.target.id === 'nativeCount' || e.target.parentElement.id === 'nativeCount') {
+            showTooltip('🦋 <b>Native species</b><br>Species you want to protect. Need to maintain natives/invasives ratio ≥ 0.5 for 6 turns to win.', e.target.id === 'nativeCount' ? e.target : e.target.parentElement);
+          } else if (e.target.id === 'invasiveCount' || e.target.parentElement.id === 'invasiveCount') {
+            showTooltip('🌿 <b>Invasive species</b><br>Species you\'re managing. Invasives spread each turn. Lose if invasives exceed ' + LOSE_CELLS + ' cells.', e.target.id === 'invasiveCount' ? e.target : e.target.parentElement);
+          } else if (e.target.id === 'score' || e.target.parentElement.className.includes('score')) {
+            showTooltip('⭐ <b>Score</b><br>Points earned by removing invasives and protecting natives. Multiplied by rounds efficiency in team games.', document.querySelector('.score-display'));
+          }
+        });
+      }
+
+      // Hide tooltip on card interaction
+      document.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest('.custom-tooltip')) hideTooltip();
+      });
+
       document.getElementById('btnGuide').addEventListener('click', () => openOverlay('guideOverlay'));
       document.getElementById('btnGuide2').addEventListener('click', () => {
         closeOverlay('menuOverlay');
