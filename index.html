@@ -2206,7 +2206,7 @@
         'Prescribed Burn': 'Intentionally set, carefully controlled fires that help fire-adapted native plants return and set back invasives.',
         'Eradication': 'Completely removing a species from an area. This is almost impossible once a species is established as invasive.',
         'Management': 'Controlling invasive species populations to maintain ecosystem health-the realistic goal once invasion is underway.',
-        'Ratio (natives:invaders)': 'The mathematical proportion of native species to invasive species. A healthy ecosystem maintains more natives than invaders.',
+        'Healthy ratio': 'More native species than invasive species (at least 50% as many invaders as natives). This is how you win!',
         'Resilience': 'An ecosystem\'s ability to recover from disturbance. Native species diversity makes ecosystems more resilient to invasion.'
       };
       let html = '<p style="font-size:0.8rem;opacity:0.85;margin-bottom:0.7rem;">Terms and concepts used in this game:</p>';
@@ -2229,7 +2229,7 @@
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🎯 Victory & Defeat</h3>
         <div class="guide-card">
           <p><b>Win:</b> Maintain healthy ratio for 6 consecutive turns</p>
-          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Healthy = Natives ÷ Invaders ≥ 0.5</p>
+          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Healthy = More natives than invaders (50%+ ratio)</p>
           <p><b>Lose:</b> All native species eliminated</p>
         </div>
 
@@ -2996,7 +2996,7 @@
       if (headerCenter) {
         headerCenter.addEventListener('click', (e) => {
           if (e.target.id === 'nativeCount' || e.target.parentElement.id === 'nativeCount') {
-            showTooltip('🦋 <b>Native species</b><br>Species you want to protect. Need to maintain natives/invasives ratio ≥ 0.5 for 6 turns to win.', e.target.id === 'nativeCount' ? e.target : e.target.parentElement);
+            showTooltip('🦋 <b>Native species</b><br>Species you want to protect. Need more natives than invaders (50%+ ratio) for 6 turns to win.', e.target.id === 'nativeCount' ? e.target : e.target.parentElement);
           } else if (e.target.id === 'invasiveCount' || e.target.parentElement.id === 'invasiveCount') {
             showTooltip('🌿 <b>Invasive species</b><br>Species you\'re managing. Invasives spread each turn. Lose if invasives exceed ' + LOSE_CELLS + ' cells.', e.target.id === 'invasiveCount' ? e.target : e.target.parentElement);
           } else if (e.target.id === 'score' || e.target.parentElement.className.includes('score')) {
