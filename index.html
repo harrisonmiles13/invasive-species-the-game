@@ -724,6 +724,7 @@
           <h1>🌿 <span class="title-text">Invasive Species: The Game!</span></h1>
         </div>
         <div class="header-right">
+          <button class="btn-icon" id="btnFeedback" title="Send feedback">💭</button>
           <button class="btn-icon" id="btnGuide" title="Field Guide">📖</button>
           <button class="btn-icon" id="btnMenu" title="Menu">☰</button>
         </div>
@@ -797,6 +798,28 @@
         <button class="menu-btn" id="btnHints">💡 Hints: Off</button>
         <button class="menu-btn" id="btnSound">🔊 Sound: On</button>
         <button class="menu-btn" id="btnFullscreen">⛶ Fullscreen</button>
+      </div>
+    </div>
+
+    <!-- Feedback Overlay -->
+    <div class="overlay" id="feedbackOverlay">
+      <div class="panel" style="max-width: 500px;">
+        <div class="panel-header">
+          <h2>💭 Send Feedback</h2>
+          <button class="btn-close" data-close="feedbackOverlay">×</button>
+        </div>
+        <form id="feedbackForm" action="https://formsubmit.co/harrisonmiles13@gmail.com" method="POST" style="display: flex; flex-direction: column; gap: 0.8rem;">
+          <label style="font-size: 0.9rem;">
+            <span style="opacity: 0.9;">Your name (optional)</span>
+            <input type="text" name="name" placeholder="Your name" style="width: 100%; padding: 0.5rem; margin-top: 0.3rem; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); color: white; border-radius: 4px;">
+          </label>
+          <label style="font-size: 0.9rem;">
+            <span style="opacity: 0.9;">Your feedback *</span>
+            <textarea name="message" placeholder="Tell me what you think... bugs, ideas, fun moments, etc." style="width: 100%; padding: 0.5rem; margin-top: 0.3rem; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); color: white; border-radius: 4px; font-family: inherit; min-height: 150px; resize: vertical;" required></textarea>
+          </label>
+          <button type="submit" class="menu-btn primary" style="margin-top: 0.4rem;">📧 Send Feedback</button>
+          <p style="font-size: 0.75rem; opacity: 0.7; margin: 0;">Your feedback is sent directly to me and helps me improve the game. ❤️</p>
+        </form>
       </div>
     </div>
 
@@ -1034,7 +1057,7 @@
     }
 
     const STARTING_INVADERS = [
-      ['kudzu', 2], ['hyacinth', 2], ['mussel', 1], ['borer', 1], ['python', 1]
+      ['kudzu', 4], ['hyacinth', 4], ['mussel', 2], ['borer', 2], ['python', 2]
     ];
     const STARTING_NATIVES = ['oak', 'monarch', 'turtle', 'bee', 'heron'];
 
@@ -1484,6 +1507,20 @@
       }, 1500);
     }
 
+    function passAction() {
+      // Team multiplayer: client asks host to process the pass
+      if (MP.active) {
+        if (MP.over || MP.currentId !== MP.myId) return;
+        mpSendIntent({ type: 'pass' });
+        return;
+      }
+      // Single player: just decrement plays locally
+      if (S.over || S.invasivePhaseActive || S.plays <= 0) return;
+      S.plays--;
+      sound('select');
+      render();
+    }
+
     function continueEndTurn(spreadCount) {
       // Random events
       if (Math.random() < RANDOM_EVENT_CHANCE && S.turn > 1) {
@@ -1714,6 +1751,14 @@
         row.appendChild(cardEl);
       });
 
+      // Pass button - shows when player still has actions
+      const passBtn = document.createElement('button');
+      passBtn.className = 'btn-endturn pass-btn';
+      passBtn.id = 'btnPass';
+      passBtn.innerHTML = 'Pass 🔄';
+      passBtn.addEventListener('click', passAction);
+      row.appendChild(passBtn);
+
       const endBtn = document.createElement('button');
       endBtn.className = 'btn-endturn' + (S.plays <= 0 && !S.over ? ' urge' : '');
       endBtn.id = 'btnEndTurn';
@@ -1741,6 +1786,13 @@
         } else {
           handHeader.textContent = 'Your interventions - tap a card, then tap a target';
         }
+      }
+
+      // Show Pass button when player has actions remaining
+      const passBtn = document.getElementById('btnPass');
+      if (passBtn) {
+        const canPass = S.plays > 0 && !S.invasivePhaseActive && !S.over;
+        passBtn.style.display = (canPass && myTurn) ? 'block' : 'none';
       }
 
       // Show End Turn button only when all actions are used (and invasive phase is not active).
@@ -2177,6 +2229,7 @@
         // Host-as-player path is not used in team mode (host is the hub), but keep
         // a safe local route in case a future build lets the host play a team.
         if (msg.type === 'action') tmHandleAction(MP.team, MP.myId, msg.handIdx, msg.cellIdx);
+        else if (msg.type === 'pass') tmHandlePass(MP.team, MP.myId);
         else if (msg.type === 'end_turn') tmHandleEndTurn(MP.team, MP.myId);
       }
     }
@@ -2300,6 +2353,15 @@
       });
       tmBroadcastTeam(g, []);
       tmBroadcastStandings();
+    }
+
+    function tmHandlePass(team, pid) {
+      const g = TM.games[team];
+      if (!g || g.over) return;
+      if (g.currentId !== pid) return;                 // not this player's turn
+      if (g.plays <= 0) return;                        // no plays left
+      g.plays--;
+      tmBroadcastTeam(g, []);
     }
 
     function tmHandleEndTurn(team, pid) {
@@ -2798,6 +2860,18 @@
 
     function bindUI() {
       document.getElementById('btnMenu').addEventListener('click', () => openOverlay('menuOverlay'));
+      document.getElementById('btnFeedback').addEventListener('click', () => openOverlay('feedbackOverlay'));
+      document.getElementById('feedbackForm')?.addEventListener('submit', (e) => {
+        const form = document.getElementById('feedbackForm');
+        const text = form.querySelector('textarea').value;
+        if (!text.trim()) return;  // require message
+        // FormSubmit will handle the POST; show a success toast after a short delay
+        setTimeout(() => {
+          toast('💭 Feedback sent! Thanks for helping me improve the game!', 3000);
+          document.getElementById('feedbackForm').reset();
+          closeOverlay('feedbackOverlay');
+        }, 500);
+      });
       document.getElementById('btnGuide').addEventListener('click', () => openOverlay('guideOverlay'));
       document.getElementById('btnGuide2').addEventListener('click', () => {
         closeOverlay('menuOverlay');
