@@ -869,6 +869,12 @@
           <div id="wsLeaderboard" class="ws-leaderboard">
             <div class="ws-empty">Waiting for teams to join…</div>
           </div>
+          <button class="menu-btn primary" id="btnStartTeams" style="margin-top:0.7rem;">▶ Start team games</button>
+          <p style="font-size:0.74rem;opacity:0.8;margin-top:0.4rem;">
+            Every team gets the same starting board, then plays it independently. Within a team,
+            players take turns (each turn the invasion spreads). First to 6 healthy rounds wins;
+            ties break on overall score (points × first-winner's rounds ÷ your rounds).
+          </p>
           <div class="ws-status" id="wsHostStatus"></div>
         </div>
 
@@ -1059,12 +1065,7 @@
         totalNatives: 0,
         healthyTurns: 0,
         newInvaders: new Set(),  // Track invaders placed this turn (don't spread yet)
-        invasivePhaseActive: false,  // Flag: true during invasive spread sequence
-        // Multiplayer fields
-        gameMode: 'single',  // 'single' or 'shared'
-        players: [],  // [{name, id, score, hand, healthyTurns, turn}, ...]
-        currentPlayerIdx: 0,  // Index in players array (for shared board mode)
-        playerTurns: {}  // {playerId: current turn number}
+        invasivePhaseActive: false  // Flag: true during invasive spread sequence
       };
     }
 
@@ -1140,106 +1141,27 @@
       }
     }
 
-    function initSharedGame(playerList) {
-      // Initialize a shared-board multiplayer game
-      // playerList: [{name, id}, ...]
-      S.gameMode = 'shared';
-      S.players = playerList.map((p, idx) => ({
-        name: p.name,
-        id: p.id,
-        score: 0,
-        hand: [],
-        healthyTurns: 0,
-        turn: 1
-      }));
-      S.currentPlayerIdx = 0;
-      S.playerTurns = {};
-      playerList.forEach(p => { S.playerTurns[p.id] = 1; });
-      setupBoard();
-      // Refill hands for all players
-      S.players.forEach((p, idx) => {
-        S.hand = [];
-        refillHand();
-        p.hand = [...S.hand];
-      });
-      S.hand = [...S.players[0].hand];  // Set current player's hand
-    }
-
-    function getCurrentPlayer() {
-      return S.gameMode === 'shared' && S.players.length > 0
-        ? S.players[S.currentPlayerIdx]
-        : null;
-    }
-
-    function getPlayerHandIdx(playerId) {
-      if (S.gameMode !== 'shared') return null;
-      const playerIdx = S.players.findIndex(p => p.id === playerId);
-      return playerIdx >= 0 ? playerIdx : null;
-    }
-
-    function advanceToNextPlayer() {
-      if (S.gameMode !== 'shared') return;
-      S.currentPlayerIdx = (S.currentPlayerIdx + 1) % S.players.length;
-      S.hand = [...S.players[S.currentPlayerIdx].hand];
-      S.plays = PLAYS_PER_TURN;
-      S.selected = null;
-    }
-
     function refillHand() {
       const controlTypes = Object.keys(CONTROLS);
       const enhanceTypes = Object.keys(ENHANCEMENTS);
       const present = [...new Set(invaderCells().map(i => S.field[i].type))];
-
-      // Determine which hand to refill
-      const targetHand = S.gameMode === 'shared' && S.players.length > 0
-        ? S.players[S.currentPlayerIdx].hand
-        : S.hand;
-
-      while (targetHand.length < HAND_SIZE) {
-        const hasUseful = targetHand.some(h =>
+      while (S.hand.length < HAND_SIZE) {
+        const hasUseful = S.hand.some(h =>
           !isEnhance(h) && present.some(t => INVADERS[t].controls.includes(h)));
         if (present.length && !hasUseful) {
           // Guarantee at least one control that works on a present invader
-          targetHand.push(pick(INVADERS[pick(present)].controls));
+          S.hand.push(pick(INVADERS[pick(present)].controls));
         } else if (Math.random() < 0.3) {
           // Mix in a native enhancement card
-          targetHand.push(pick(enhanceTypes));
+          S.hand.push(pick(enhanceTypes));
         } else {
-          targetHand.push(pick(controlTypes));
+          S.hand.push(pick(controlTypes));
         }
-      }
-
-      // Sync global hand with current player's hand in shared mode
-      if (S.gameMode === 'shared' && S.players.length > 0) {
-        S.hand = [...S.players[S.currentPlayerIdx].hand];
       }
     }
 
     function initGame() {
       S = newState();
-
-      // In host multiplayer mode, create a shared game with all connected clients
-      if (NET.role === 'host' && NET.conns && NET.conns.length > 0 && S.gameMode === 'single') {
-        // Gather all connected players from all teams
-        const playerList = [];
-        for (const team in NET.scores) {
-          for (const peerId in NET.scores[team].players) {
-            const player = NET.scores[team].players[peerId];
-            playerList.push({ name: player.name, id: peerId });
-          }
-        }
-        // Add host as first player
-        playerList.unshift({ name: 'Host', id: 'host' });
-        if (playerList.length > 1) {
-          initSharedGame(playerList);
-          broadcastGameInit();
-          broadcastTurnChange();
-          render();
-          return;
-        }
-      }
-
-      // Single-player mode or host with no connected clients
       setupBoard();
       refillHand();
       render();
@@ -1247,16 +1169,37 @@
 
     // ===== Core rules =========================================================
     function playCard(handIdx, cellIdx) {
-      // Multiplayer turn check
-      if (S.gameMode === 'shared') {
-        const currentPlayer = getCurrentPlayer();
-        if (!currentPlayer) return false;
-        // In shared mode, only current player can play
-        if (NET.role === 'client' && NET.name !== currentPlayer.name) {
-          toast('⏳ Waiting for ' + currentPlayer.name + ' to play...');
+      // Team multiplayer: client sends the move as an intent to the host, which
+      // owns the authoritative board. Nothing is mutated locally.
+      if (MP.active) {
+        if (MP.over) return false;
+        if (MP.currentId !== MP.myId) {
+          toast('⏳ Waiting for ' + (mpCurrentName() || 'your teammate') + ' to play…');
           sound('error');
           return false;
         }
+        if (handIdx == null || !S.hand[handIdx]) return false;
+        const type = S.hand[handIdx];
+        if (!validTargetForCard(type, cellIdx)) {
+          if (isEnhance(type)) {
+            const tgt = ENHANCEMENTS[type].target;
+            if (tgt === 'empty') toast('🌱 Plant this on an <b>empty</b> cell (highlighted green).');
+            else if (tgt === 'native') toast('🌾 Use this on one of your <b>native species</b> (gold rings).');
+            else toast('Tap a highlighted cell to use this card.');
+          } else {
+            toast('🚫 Aim for an <b>invasive species</b> - the ones with <b>red rings</b>.');
+          }
+          sound('error');
+          return false;
+        }
+        if (S.plays <= 0) {
+          toast('⚡ No actions left - tap <b>End Turn 🌙</b>.');
+          sound('error');
+          return false;
+        }
+        S.selected = null;
+        mpSendIntent({ type: 'action', handIdx, cellIdx });
+        return true;
       }
 
       if (S.over || handIdx == null || !S.hand[handIdx]) return false;
@@ -1280,33 +1223,12 @@
         return false;
       }
 
-      // For shared mode, apply to current player's hand, not global hand
-      if (S.gameMode === 'shared') {
-        const currentPlayer = getCurrentPlayer();
-        if (currentPlayer && currentPlayer.hand) {
-          currentPlayer.hand.splice(handIdx, 1);
-        }
-      } else {
-        S.hand.splice(handIdx, 1);
-      }
+      S.hand.splice(handIdx, 1);
       S.selected = null;
       S.plays--;
 
       if (isEnhance(type)) applyEnhancement(type, cellIdx);
       else applyControl(type, cellIdx);
-
-      // Update current player's hand in shared mode
-      if (S.gameMode === 'shared') {
-        const currentPlayer = getCurrentPlayer();
-        if (currentPlayer) {
-          S.hand = currentPlayer.hand;
-        }
-      }
-
-      // In shared multiplayer, broadcast board state to other players
-      if (S.gameMode === 'shared' && NET.role === 'host') {
-        broadcastGameState();
-      }
 
       render();
       return true;
@@ -1494,6 +1416,15 @@
     }
 
     function endTurn() {
+      // Team multiplayer: client asks the host to resolve the turn.
+      if (MP.active) {
+        if (MP.over || MP.currentId !== MP.myId) return;
+        S.selected = null;
+        S.invasivePhaseActive = true;
+        render();
+        mpSendIntent({ type: 'end_turn' });
+        return;
+      }
       if (S.over || S.invasivePhaseActive) return;  // Prevent multiple clicks
       S.selected = null;
       S.invasivePhaseActive = true;  // Lock out further clicks
@@ -1658,13 +1589,6 @@
       }
 
       S.invasivePhaseActive = false;  // Invasive phase complete, ready for next turn
-
-      // In multiplayer, advance to next player's turn
-      if (S.gameMode === 'shared' && S.players.length > 0) {
-        advanceToNextPlayer();
-        broadcastTurnChange();
-      }
-
       render();  // Re-render to show End Turn button again for next turn
     }
 
@@ -1799,36 +1723,32 @@
     }
 
     function render() {
+      if (HOST_SIM) return;  // Host resolving a team turn off-screen: skip rendering
       renderBoard();
       renderHand();
       document.getElementById('score').textContent = S.score;
       document.getElementById('actionPips').textContent =
         '▲'.repeat(Math.max(0, S.plays)) + '△'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
 
-      // In multiplayer, show whose turn it is
+      // In team multiplayer, show whose turn it is on this team
       const handHeader = document.querySelector('.hand-header span');
-      if (S.gameMode === 'shared' && S.players && S.players.length > 0) {
-        const currentPlayer = getCurrentPlayer();
-        const isMyTurn = currentPlayer && (NET.name === currentPlayer.name || NET.role === 'host');
-        if (currentPlayer) {
-          if (handHeader) {
-            handHeader.textContent = isMyTurn
-              ? '🎯 Your turn - tap a card, then tap a target'
-              : '⏳ ' + currentPlayer.name + '\'s turn (waiting...)';
-          }
+      const myTurn = !MP.active || MP.currentId === MP.myId;
+      if (handHeader) {
+        if (MP.active) {
+          handHeader.textContent = myTurn
+            ? '🎯 Your turn - tap a card, then tap a target'
+            : '⏳ ' + (mpCurrentName() || 'Teammate') + '\'s turn…';
+        } else {
+          handHeader.textContent = 'Your interventions - tap a card, then tap a target';
         }
-      } else if (handHeader) {
-        handHeader.textContent = 'Your interventions - tap a card, then tap a target';
       }
 
-      // Show End Turn button only when all actions are used (and invasive phase is not active)
-      // In multiplayer, also check if it's your turn
+      // Show End Turn button only when all actions are used (and invasive phase is not active).
+      // In team mode, also require that it's this player's turn.
       const endBtn = document.getElementById('btnEndTurn');
       if (endBtn) {
         const canEndTurn = S.plays <= 0 && !S.invasivePhaseActive && !S.over;
-        const isMyTurnShared = S.gameMode !== 'shared' ||
-          (getCurrentPlayer() && (NET.name === getCurrentPlayer().name || NET.role === 'host'));
-        endBtn.style.display = (canEndTurn && isMyTurnShared) ? 'block' : 'none';
+        endBtn.style.display = (canEndTurn && myTurn) ? 'block' : 'none';
       }
 
       const invCount = invaderCells().length;
@@ -1995,6 +1915,7 @@
     let toastTimer = null;
 
     function toast(html, ms) {
+      if (HOST_SIM) return;  // Host resolving a team turn off-screen: no UI side effects
       const el = document.getElementById('toast');
       el.innerHTML = html;
       el.classList.add('show');
@@ -2006,12 +1927,14 @@
     }
 
     function vibrate(pattern) {
+      if (HOST_SIM) return;
       if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
     }
 
     let audioCtx = null;
 
     function sound(type) {
+      if (HOST_SIM) return;
       if (!soundOn) return;
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -2044,6 +1967,7 @@
     }
 
     function burst(cellIdx, color) {
+      if (HOST_SIM) return;
       const board = document.getElementById('board');
       const rect = board.getBoundingClientRect();
       const { x, y } = cellPos(cellIdx);
@@ -2218,11 +2142,322 @@
     }
 
     // ===== Workshop / multiplayer (PeerJS, optional) ==========================
-    // Topology: one host device (projector) is the hub. Phones connect as clients,
-    // join a named team, and stream their score to the host's live leaderboard.
-    // Single-player is unaffected and works with no network.
+    // Topology: one host device (projector) is the hub. Phones connect as clients
+    // and join a named team. In a TEAM GAME the host is authoritative: it owns one
+    // independent board per team, validates every move, resolves invasive spread,
+    // and broadcasts the result. Clients are thin terminals - they render what the
+    // host sends and forward the player's taps as intents. Single-player and the
+    // older score-only workshop flow are unaffected and work with no network.
     const NET = { peer: null, role: null, code: null, team: null, name: null,
                   host: null, conns: [], scores: {}, joined: false, lastSent: 0 };
+
+    // When true, the host is computing a team's turn off-screen: presentation
+    // helpers (render/toast/burst/sound/vibrate) become no-ops so reused rule code
+    // mutates state without touching the host's own DOM.
+    let HOST_SIM = false;
+
+    // Client-side team-game state (what THIS device renders). The board itself
+    // lives in the global S; MP only tracks the multiplayer framing around it.
+    const MP = { active: false, team: null, myId: null,
+                 currentId: null, players: [], round: 1, healthyRounds: 0,
+                 over: false, won: false };
+
+    // Host-side team engine: one game object per team, plus the shared session seed.
+    const TM = { running: false, games: {}, baseField: null, firstWinRounds: null };
+
+    function mpCurrentName() {
+      const p = (MP.players || []).find(x => x.id === MP.currentId);
+      return p ? p.name : '';
+    }
+
+    function mpSendIntent(msg) {
+      if (NET.role === 'client' && NET.host) {
+        try { NET.host.send(msg); } catch (_) {}
+      } else if (NET.role === 'host') {
+        // Host-as-player path is not used in team mode (host is the hub), but keep
+        // a safe local route in case a future build lets the host play a team.
+        if (msg.type === 'action') tmHandleAction(MP.team, MP.myId, msg.handIdx, msg.cellIdx);
+        else if (msg.type === 'end_turn') tmHandleEndTurn(MP.team, MP.myId);
+      }
+    }
+
+    // ===== Host-authoritative team engine =====================================
+    // Run reused rule code (setupBoard / applyControl / applyEnhancement /
+    // refillHand / validTargetForCard) against a team's game object by swapping
+    // the global S and suppressing presentation. Always synchronous, so each
+    // incoming intent is processed atomically - no two teams interleave.
+    function tmWith(g, fn) {
+      const savedS = S, savedSim = HOST_SIM;
+      S = g; HOST_SIM = true;
+      try { return fn(); } finally { S = savedS; HOST_SIM = savedSim; }
+    }
+
+    function tmCountInvaders(g) {
+      let n = 0; for (let i = 0; i < CELLS; i++) if (g.field[i] && g.field[i].kind === 'invader') n++;
+      return n;
+    }
+    function tmCountNatives(g) {
+      let n = 0; for (let i = 0; i < CELLS; i++) if (g.field[i] && g.field[i].kind === 'native') n++;
+      return n;
+    }
+
+    // Build a fresh S-shaped game object for a team and deal each player a hand.
+    function tmNewGame(team, players, baseField, baseNatives) {
+      const g = newState();
+      g.team = team;
+      g.field = baseField.map(c => (c ? Object.assign({}, c) : null));
+      g.totalNatives = baseNatives;
+      g.order = players.map(p => p.id);
+      g.names = {}; players.forEach(p => { g.names[p.id] = p.name; });
+      g.hands = {};
+      g.currentIdx = 0;
+      g.currentId = g.order[0];
+      g.plays = PLAYS_PER_TURN;
+      g.roundsCompleted = 0;
+      g.healthyRounds = 0;
+      g.won = false; g.lost = false; g.roundsToWin = null;
+      // Deal a stochastic hand per player against this team's starting board.
+      players.forEach(p => {
+        tmWith(g, () => { g.hand = []; refillHand(); g.hands[p.id] = g.hand; });
+      });
+      return g;
+    }
+
+    function tmStartGames() {
+      if (peerMissing('wsHostStatus')) return;
+      // Group currently-connected clients by team.
+      const teams = {};
+      NET.conns.forEach(c => {
+        if (!c.team || !c.peer) return;
+        (teams[c.team] = teams[c.team] || []).push({ id: c.peer, name: c.pname || 'Player' });
+      });
+      const teamNames = Object.keys(teams);
+      if (!teamNames.length) {
+        wsSetStatus('wsHostStatus', 'No teams have joined yet - share the room code first.', 'err');
+        return;
+      }
+      // One shared random starting board for every team (same start, then diverge).
+      let baseField = null, baseNatives = 0;
+      tmWith(newState(), function () {
+        setupBoard();           // mutates the temp state (now S)
+        baseField = S.field.map(c => (c ? Object.assign({}, c) : null));
+        baseNatives = S.totalNatives;
+      });
+      TM.running = true;
+      TM.games = {};
+      TM.baseField = baseField;
+      TM.firstWinRounds = null;
+      teamNames.forEach(t => { TM.games[t] = tmNewGame(t, teams[t], baseField, baseNatives); });
+      // Kick off every team.
+      teamNames.forEach(t => tmBroadcastTeam(TM.games[t], []));
+      tmBroadcastStandings();
+      wsSetStatus('wsHostStatus',
+        'Games started for ' + teamNames.length + ' team' + (teamNames.length > 1 ? 's' : '') + '.', 'ok');
+    }
+
+    // A late joiner is folded onto the end of their team's turn order.
+    function tmAddLatePlayer(team, id, name) {
+      const g = TM.games[team];
+      if (!g || g.over) return;
+      if (g.order.includes(id)) return;
+      g.order.push(id);
+      g.names[id] = name;
+      tmWith(g, () => { g.hand = []; refillHand(); g.hands[id] = g.hand; });
+      tmBroadcastTeam(g, []);
+    }
+
+    function tmRemovePlayer(team, id) {
+      const g = TM.games[team];
+      if (!g) return;
+      const idx = g.order.indexOf(id);
+      if (idx < 0) return;
+      const wasCurrent = (g.currentId === id);
+      g.order.splice(idx, 1);
+      delete g.hands[id]; delete g.names[id];
+      if (!g.order.length) { return; }   // whole team gone; leave game dormant
+      if (idx < g.currentIdx) g.currentIdx--;
+      if (g.currentIdx >= g.order.length) g.currentIdx = 0;
+      g.currentId = g.order[g.currentIdx];
+      if (wasCurrent) { g.plays = PLAYS_PER_TURN; }
+      tmBroadcastTeam(g, []);
+    }
+
+    function tmHandleAction(team, pid, handIdx, cellIdx) {
+      const g = TM.games[team];
+      if (!g || g.over) return;
+      if (g.currentId !== pid) return;                 // not this player's turn
+      if (g.plays <= 0) return;
+      const hand = g.hands[pid];
+      if (!hand || handIdx == null || !hand[handIdx]) return;
+      const type = hand[handIdx];
+      const ok = tmWith(g, () => validTargetForCard(type, cellIdx));
+      if (!ok) return;                                  // invalid target: ignore
+      hand.splice(handIdx, 1);
+      g.plays--;
+      tmWith(g, () => {
+        if (isEnhance(type)) applyEnhancement(type, cellIdx);  // may grant +plays (community)
+        else applyControl(type, cellIdx);
+      });
+      tmBroadcastTeam(g, []);
+      tmBroadcastStandings();
+    }
+
+    function tmHandleEndTurn(team, pid) {
+      const g = TM.games[team];
+      if (!g || g.over) return;
+      if (g.currentId !== pid) return;
+      const spreads = tmResolveTurn(g);                 // invasive spread + events + losses
+
+      // Advance to the next player on this team; a full lap is one round.
+      g.currentIdx = (g.currentIdx + 1) % g.order.length;
+      const roundDone = (g.currentIdx === 0);
+      if (roundDone) {
+        g.roundsCompleted++;
+        const inv = tmCountInvaders(g), nat = tmCountNatives(g);
+        const healthy = inv === 0 ? true : (nat / inv) >= 0.5;
+        g.healthyRounds = healthy ? g.healthyRounds + 1 : 0;
+      }
+      g.currentId = g.order[g.currentIdx];
+      g.plays = PLAYS_PER_TURN;
+      // Refill the now-active player's hand against the current board.
+      tmWith(g, () => { g.hand = g.hands[g.currentId] || []; refillHand(); g.hands[g.currentId] = g.hand; });
+
+      // Resolve win / loss.
+      const nativeCount = tmCountNatives(g);
+      const invaderCount = tmCountInvaders(g);
+      if (g.healthyRounds >= WIN_TURNS) {
+        g.over = true; g.won = true; g.roundsToWin = g.roundsCompleted;
+        if (TM.firstWinRounds == null) TM.firstWinRounds = g.roundsToWin;
+      } else if (nativeCount === 0 || invaderCount > LOSE_CELLS) {
+        g.over = true; g.lost = true;
+      }
+
+      tmBroadcastTeam(g, spreads);
+      tmBroadcastStandings();
+    }
+
+    // Synchronous turn resolution against g (no animation, no DOM). Mirrors the
+    // single-player spread -> random event -> native-loss sequence.
+    function tmResolveTurn(g) {
+      const spreads = [];
+      // Invasive spread: established invaders only (those placed this turn skip).
+      for (let i = 0; i < CELLS; i++) {
+        const cell = g.field[i];
+        if (!cell || cell.kind !== 'invader' || g.newInvaders.has(i)) continue;
+        const sp = INVADERS[cell.type];
+        if (Math.random() < sp.spread) {
+          const empties = neighbors(i).filter(n => !g.field[n]);
+          if (empties.length) {
+            const to = pick(empties);
+            g.field[to] = { kind: 'invader', type: cell.type };
+            g.newInvaders.add(to);
+            spreads.push({ to: to, type: cell.type });
+          }
+        }
+      }
+      g.newInvaders.clear();
+
+      // Random event (skip the very first turn of the game).
+      g.turn = (g.turn || 1) + 1;
+      if (Math.random() < RANDOM_EVENT_CHANCE && g.turn > 2) {
+        if (Math.random() < 0.5) {
+          // Hurricane: clears random cells, scores destroyed invaders.
+          const before = tmCountInvaders(g);
+          const hits = Math.max(2, Math.floor(CELLS * 0.15));
+          for (let k = 0; k < hits; k++) {
+            const idx = Math.floor(Math.random() * CELLS);
+            if (g.field[idx]) g.field[idx] = null;
+          }
+          g.score += Math.max(0, before - tmCountInvaders(g)) * 10;
+        } else {
+          // Wildfire: clears random cells, scores burned kudzu/hyacinth.
+          const hits = Math.max(2, Math.floor(CELLS * 0.12));
+          let burned = 0;
+          for (let k = 0; k < hits; k++) {
+            const idx = Math.floor(Math.random() * CELLS);
+            if (g.field[idx]) {
+              if (g.field[idx].kind === 'invader' && ['kudzu', 'hyacinth'].includes(g.field[idx].type)) burned++;
+              g.field[idx] = null;
+            }
+          }
+          g.score += burned * 15;
+        }
+      }
+
+      // Natives surrounded by 3+ invaders are lost unless shielded.
+      const lost = [];
+      for (let i = 0; i < CELLS; i++) {
+        const occ = g.field[i];
+        if (!occ || occ.kind !== 'native') continue;
+        const surrounded = neighbors(i).filter(n => g.field[n] && g.field[n].kind === 'invader').length;
+        if (surrounded >= 3) {
+          if (!occ.shield) lost.push(i);
+        }
+      }
+      for (const i of lost) { g.field[i] = null; g.score = Math.max(0, g.score - 25); }
+      // Shields wear off by one.
+      for (let i = 0; i < CELLS; i++) {
+        if (g.field[i] && g.field[i].kind === 'native' && g.field[i].shield) g.field[i].shield--;
+      }
+      return spreads;
+    }
+
+    // Per-player view of a team's game (each client gets its own hand only).
+    function tmBroadcastTeam(g, spreads) {
+      const players = g.order.map(id => ({ id: id, name: g.names[id] }));
+      const base = {
+        type: g.over ? 'team_over' : 'team_state',
+        team: g.team,
+        field: g.field,
+        plays: g.plays,
+        currentId: g.currentId,
+        currentName: g.names[g.currentId] || '',
+        players: players,
+        round: g.roundsCompleted,
+        healthyRounds: g.healthyRounds,
+        score: g.score,
+        overall: tmTeamScore(g),
+        over: g.over, won: g.won, lost: g.lost,
+        spreads: spreads || []
+      };
+      NET.conns.forEach(c => {
+        if (c.team !== g.team) return;
+        const msg = Object.assign({}, base, { myId: c.peer, hand: g.hands[c.peer] || [] });
+        try { c.send(msg); } catch (_) {}
+      });
+    }
+
+    function tmTeamScore(g) {
+      // Overall score = points * (firstWinRounds / roundsThisTeam). Only meaningful
+      // once some team has won; before that we report the raw points.
+      if (TM.firstWinRounds == null) return null;
+      const rounds = g.won ? g.roundsToWin : Math.max(1, g.roundsCompleted);
+      return Math.round(g.score * (TM.firstWinRounds / rounds));
+    }
+
+    function tmStandingsRows() {
+      return Object.values(TM.games).map(g => ({
+        team: g.team,
+        healthy: g.healthyRounds,
+        rounds: g.roundsCompleted,
+        points: g.score,
+        overall: tmTeamScore(g),
+        status: g.over ? (g.won ? 'Won 🏆' : 'Lost 🥀') : 'In progress'
+      })).sort((a, b) => {
+        // Winners first, then by healthy-round progress, then points.
+        const aw = a.status.startsWith('Won') ? 1 : 0, bw = b.status.startsWith('Won') ? 1 : 0;
+        if (aw !== bw) return bw - aw;
+        if ((b.overall || 0) !== (a.overall || 0)) return (b.overall || 0) - (a.overall || 0);
+        if (b.healthy !== a.healthy) return b.healthy - a.healthy;
+        return b.points - a.points;
+      });
+    }
+
+    function tmBroadcastStandings() {
+      const rows = tmStandingsRows();
+      renderTeamLeaderboard('wsLeaderboard', rows);
+      NET.conns.forEach(c => { try { c.send({ type: 'team_board', rows: rows }); } catch (_) {} });
+    }
 
     function genCode() {
       const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I/O to avoid confusion
@@ -2248,58 +2483,6 @@
         return true;
       }
       return false;
-    }
-
-    // Multiplayer game state broadcasting
-    function broadcastGameInit() {
-      if (NET.role !== 'host' || S.gameMode !== 'shared') return;
-      const msg = {
-        type: 'game_init',
-        field: S.field,
-        currentPlayerIdx: S.currentPlayerIdx,
-        players: S.players,
-        turn: S.turn
-      };
-      NET.conns.forEach(c => { try { c.send(msg); } catch (_) {} });
-    }
-
-    function broadcastGameState() {
-      if (NET.role !== 'host' || S.gameMode !== 'shared') return;
-      const msg = {
-        type: 'game_state',
-        field: S.field,
-        currentPlayerIdx: S.currentPlayerIdx,
-        players: S.players,
-        turn: S.turn,
-        score: S.score
-      };
-      NET.conns.forEach(c => { try { c.send(msg); } catch (_) {} });
-    }
-
-    function broadcastTurnChange() {
-      if (NET.role !== 'host' || S.gameMode !== 'shared') return;
-      const currentPlayer = getCurrentPlayer();
-      const msg = {
-        type: 'turn_change',
-        currentPlayerIdx: S.currentPlayerIdx,
-        currentPlayerName: currentPlayer ? currentPlayer.name : '',
-        turn: S.turn
-      };
-      NET.conns.forEach(c => { try { c.send(msg); } catch (_) {} });
-    }
-
-    function applyRemoteGameState(data) {
-      if (S.gameMode !== 'shared') return;
-      S.field = data.field;
-      S.currentPlayerIdx = data.currentPlayerIdx;
-      S.players = data.players;
-      S.turn = data.turn;
-      const currentPlayer = getCurrentPlayer();
-      if (currentPlayer) {
-        S.hand = [...(currentPlayer.hand || [])];
-        S.plays = PLAYS_PER_TURN;
-      }
-      render();
     }
 
     // ---- Host ----
@@ -2335,6 +2518,14 @@
       const t = NET.scores[conn.team];
       if (t && t.players) delete t.players[conn.peer];
       NET.conns = NET.conns.filter(c => c !== conn);
+      if (TM.running) tmRemovePlayer(conn.team, conn.peer);
+    }
+
+    // Send a message to every connected client on a given team.
+    function tmSendTeam(team, msg) {
+      NET.conns.forEach(c => {
+        if (c.team === team) { try { c.send(msg); } catch (_) {} }
+      });
     }
 
     function hostOnData(conn, d) {
@@ -2352,18 +2543,19 @@
         try { conn.send({ type: 'welcome', team: d.team }); } catch (_) {}
         broadcastScores();
         wsSetStatus('wsHostStatus', conn.pname + ' joined team "' + d.team + '"', 'ok');
+        // If a team game is already running, fold this player into their team.
+        if (TM.running) tmAddLatePlayer(conn.team, conn.peer, conn.pname);
       } else if (d.type === 'score' && conn.team) {
         const t = NET.scores[conn.team];
         if (!t) return;
         t.players[conn.peer] = { name: conn.pname, score: d.score, turn: d.turn, over: d.over };
         broadcastScores();
       }
-      // Multiplayer game state messages - relay to all clients
-      else if (d.type === 'game_state' && S && S.gameMode === 'shared') {
-        broadcastGameState();
-      }
-      else if (d.type === 'turn_change' && S && S.gameMode === 'shared') {
-        broadcastTurnChange();
+      // Team game intents from a client: validate and resolve on the host.
+      else if (d.type === 'action' && conn.team) {
+        tmHandleAction(conn.team, conn.peer, d.handIdx, d.cellIdx);
+      } else if (d.type === 'end_turn' && conn.team) {
+        tmHandleEndTurn(conn.team, conn.peer);
       }
     }
 
@@ -2440,39 +2632,15 @@
       } else if (d.type === 'scores') {
         renderLeaderboard('wsClientBoard', d.totals);
       }
-      // Multiplayer game initialization
-      else if (d.type === 'game_init') {
-        S = newState();
-        S.gameMode = 'shared';
-        S.field = d.field;
-        S.currentPlayerIdx = d.currentPlayerIdx;
-        S.players = d.players;
-        S.turn = d.turn;
-        // Refind this client's player object
-        const myPlayer = S.players.find(p => p.name === NET.name);
-        if (myPlayer) {
-          S.hand = [...(myPlayer.hand || [])];
-          S.plays = PLAYS_PER_TURN;
-        } else {
-          S.hand = [];
-        }
-        render();
-        closeOverlay('menuOverlay');
-        openOverlay('helpOverlay');
-        toast('🎮 Joined shared game!', 1500);
-      }
-      // Multiplayer game state messages
-      else if (d.type === 'game_state' && S && S.gameMode === 'shared') {
-        applyRemoteGameState(d);
-      }
-      else if (d.type === 'turn_change' && S && S.gameMode === 'shared') {
-        const isMyTurn = S.players && S.players[d.currentPlayerIdx] && S.players[d.currentPlayerIdx].name === NET.name;
-        if (isMyTurn) {
-          toast('🎯 It\'s your turn!', 1500);
-        } else {
-          toast('⏳ Waiting for ' + d.currentPlayerName + ' to play...', 1500);
-        }
-        render();
+      // ----- Team game messages (host is authoritative) -----
+      else if (d.type === 'team_state') {
+        mpApplyState(d);
+      } else if (d.type === 'team_over') {
+        mpApplyState(d);
+        mpShowGameOver(d);
+      } else if (d.type === 'team_board') {
+        // Live standings broadcast (round/healthy/score per team)
+        renderTeamLeaderboard('wsClientBoard', d.rows);
       }
     }
 
@@ -2485,6 +2653,7 @@
     }
 
     function netPushScore(force) {
+      if (MP.active) return;  // Team mode pushes state via the host engine instead
       if (NET.role !== 'client' || !NET.host || !NET.joined) return;
       const now = Date.now();
       if (!force && now - NET.lastSent < 700) return;
@@ -2498,11 +2667,100 @@
       try { if (NET.peer) NET.peer.destroy(); } catch (_) {}
       NET.peer = null; NET.role = null; NET.host = null; NET.joined = false;
       NET.conns = []; NET.scores = {};
+      // Reset team-game state on both host and client.
+      MP.active = false; MP.team = null; MP.myId = null; MP.currentId = null;
+      MP.players = []; MP.over = false; MP.won = false;
+      TM.running = false; TM.games = {}; TM.baseField = null; TM.firstWinRounds = null;
       updateWsBadge();
       document.getElementById('wsHostView').style.display = 'none';
       document.getElementById('wsClientView').style.display = 'none';
       document.getElementById('wsLobby').style.display = 'block';
       wsSetStatus('wsLobbyStatus', '', '');
+    }
+
+    // ----- Client-side team-game view -----
+    function mpApplyState(d) {
+      const firstState = !MP.active;
+      MP.active = true;
+      MP.team = d.team;
+      MP.myId = d.myId;
+      MP.currentId = d.currentId;
+      MP.players = d.players || [];
+      MP.round = d.round;
+      MP.healthyRounds = d.healthyRounds;
+      MP.over = !!d.over;
+      MP.won = !!d.won;
+
+      const myTurn = (d.currentId === d.myId);
+      if (!S) S = newState();
+      S.field = d.field;
+      S.hand = d.hand || [];
+      S.plays = myTurn ? d.plays : 0;
+      S.score = d.score;
+      S.healthyTurns = d.healthyRounds;   // drives the 6-step win ticker
+      S.turn = d.round;
+      S.over = !!d.over;
+      S.selected = null;
+      S.invasivePhaseActive = false;
+
+      if (firstState) {
+        closeOverlay('workshopOverlay');
+        closeOverlay('menuOverlay');
+        closeOverlay('helpOverlay');
+        toast('🎮 Team game started! ' + (myTurn ? "You're up first." : 'Watch your teammate.'), 2500);
+      }
+      render();
+
+      // Flash any cells the invasion spread into this turn.
+      if (d.spreads && d.spreads.length) {
+        sound('spread');
+        d.spreads.forEach((s, i) => {
+          setTimeout(() => { try { burst(s.to, '#EF5350'); } catch (_) {} }, i * 180);
+        });
+      } else if (!firstState && myTurn) {
+        toast('🎯 Your turn!', 1400);
+      }
+    }
+
+    function mpShowGameOver(d) {
+      const hero = document.getElementById('goHero');
+      const title = document.getElementById('goTitle');
+      const stats = document.getElementById('goStats');
+      if (hero) hero.textContent = d.won ? '🏆' : '🥀';
+      if (title) title.textContent = d.won
+        ? 'Your team stabilized the ecosystem!'
+        : 'The invasion overwhelmed your team…';
+      if (stats) {
+        const overall = (d.overall != null) ? d.overall : '—';
+        stats.innerHTML =
+          `<span>⭐ ${d.score} pts</span>` +
+          `<span>🔁 ${d.round} rounds</span>` +
+          `<span>🌿 ${d.healthyRounds}/${WIN_TURNS} healthy</span>` +
+          `<span>🏅 Overall ${overall}</span>`;
+      }
+      sound(d.won ? 'win' : 'lose');
+      openOverlay('gameOverlay');
+    }
+
+    // Rich team standings (host scoreboard + client side panel).
+    function renderTeamLeaderboard(id, rows) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!rows || !rows.length) {
+        el.innerHTML = '<div class="ws-empty">Waiting for the host to start games…</div>';
+        return;
+      }
+      const medals = ['🥇', '🥈', '🥉'];
+      el.innerHTML = rows.map((r, i) => {
+        const rank = r.status.startsWith('Won') ? (medals[i] || (i + 1)) : (i + 1);
+        const team = String(r.team).replace(/[<>&]/g, '');
+        const overall = (r.overall != null) ? r.overall : '—';
+        return `<div class="ws-row${i === 0 ? ' lead' : ''}">` +
+          `<span class="ws-rank">${rank}</span>` +
+          `<span class="ws-team">${team}` +
+          `<small>🌿 ${r.healthy}/${WIN_TURNS} · 🔁 ${r.rounds} · ⭐ ${r.points} · ${r.status}</small></span>` +
+          `<span class="ws-score">${overall}</span></div>`;
+      }).join('');
     }
 
     function renderLeaderboard(id, totals) {
@@ -2566,6 +2824,7 @@
         openOverlay('workshopOverlay');
       });
       document.getElementById('btnHostRoom').addEventListener('click', hostWorkshop);
+      document.getElementById('btnStartTeams').addEventListener('click', tmStartGames);
       document.getElementById('btnJoinRoom').addEventListener('click', () => {
         document.getElementById('btnHostRoom').style.display = 'none';
         joinWorkshop(
