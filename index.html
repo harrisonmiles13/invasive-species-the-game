@@ -1507,15 +1507,19 @@
 
       // Calculate what will spread - only old invaders (not placed this turn)
       const spreads = [];
+      const spreadTargets = new Set();  // Track cells just picked for spreading
       for (const i of invaderCells()) {
         // Skip newly placed invaders - they don't spread until next turn
         if (S.newInvaders.has(i)) continue;
 
         const sp = INVADERS[S.field[i].type];
         if (Math.random() < sp.spread) {
-          const empties = neighbors(i).filter(n => !S.field[n]);
+          // Exclude both empty AND cells already targeted by spreads this turn
+          const empties = neighbors(i).filter(n => !S.field[n] && !spreadTargets.has(n));
           if (empties.length) {
-            spreads.push({ from: i, to: pick(empties), type: S.field[i].type });
+            const to = pick(empties);
+            spreadTargets.add(to);  // Mark as target for this turn's spreads
+            spreads.push({ from: i, to: to, type: S.field[i].type });
           }
         }
       }
@@ -2537,17 +2541,20 @@
     // single-player spread -> random event -> native-loss sequence.
     function tmResolveTurn(g) {
       const spreads = [];
+      const spreadThisTurn = new Set();  // Track cells just occupied by spreads
       // Invasive spread: established invaders only (those placed this turn skip).
       for (let i = 0; i < CELLS; i++) {
         const cell = g.field[i];
         if (!cell || cell.kind !== 'invader' || g.newInvaders.has(i)) continue;
         const sp = INVADERS[cell.type];
         if (Math.random() < sp.spread) {
-          const empties = neighbors(i).filter(n => !g.field[n]);
+          // Exclude both empty AND newly-spread-into cells
+          const empties = neighbors(i).filter(n => !g.field[n] && !spreadThisTurn.has(n));
           if (empties.length) {
             const to = pick(empties);
             g.field[to] = { kind: 'invader', type: cell.type };
             g.newInvaders.add(to);
+            spreadThisTurn.add(to);  // Mark as occupied by this turn's spread
             spreads.push({ to: to, type: cell.type });
           }
         }
