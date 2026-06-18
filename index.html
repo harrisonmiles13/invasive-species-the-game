@@ -1007,7 +1007,7 @@
     const RANDOM_EVENT_CHANCE = 0.25; // 25% chance per turn
 
     const CONTROLS = {
-      manual: { icon: '🔨', short: 'Hand Pull', name: 'Hand Pulling',
+      manual: { icon: '👐', short: 'Hand Pull', name: 'Hand Pulling',
         desc: 'Hand-pulling, trapping, harvesting and scraping. Hard work, but precise and chemical-free.', class: 'manual' },
       shears: { icon: '✂️', short: 'Cut', name: 'Cutting & Mowing',
         desc: "Repeated cutting exhausts a plant's root reserves until it can no longer regrow.", class: 'shears' },
@@ -1098,7 +1098,7 @@
     }
 
     const STARTING_INVADERS = [
-      ['kudzu', 4], ['hyacinth', 4], ['mussel', 2], ['borer', 2], ['python', 2]
+      ['kudzu', 4], ['hyacinth', 4], ['mussel', 2], ['borer', 2], ['python', 2], ['carp', 2], ['pathogen', 1]
     ];
     const STARTING_NATIVES = ['oak', 'monarch', 'turtle', 'bee', 'heron'];
 
@@ -1413,12 +1413,21 @@
             totalScore += sp.points;
           }
         }
-      } else {
-        // CDD: single target
-        S.field[cellIdx] = null;
-        removed = 1;
-        totalScore = sp.points;
-        burst(cellIdx, '#4CAF50');
+      } else if (ctrl === 'cdd') {
+        // CDD: target + all adjacent of same type (area draining effect)
+        const toRemove = [cellIdx];
+        const adjCells = neighbors(cellIdx);
+        for (const adjIdx of adjCells) {
+          if (S.field[adjIdx] && S.field[adjIdx].kind === 'invader' && S.field[adjIdx].type === cell.type) {
+            toRemove.push(adjIdx);
+          }
+        }
+        for (const idx of toRemove) {
+          S.field[idx] = null;
+          burst(idx, '#00ACC1');
+        }
+        removed = toRemove.length;
+        totalScore = sp.points * removed;
       }
 
       S.score += totalScore;
@@ -1498,15 +1507,19 @@
 
       // Calculate what will spread - only old invaders (not placed this turn)
       const spreads = [];
+      const spreadTargets = new Set();  // Track cells just picked for spreading
       for (const i of invaderCells()) {
         // Skip newly placed invaders - they don't spread until next turn
         if (S.newInvaders.has(i)) continue;
 
         const sp = INVADERS[S.field[i].type];
         if (Math.random() < sp.spread) {
-          const empties = neighbors(i).filter(n => !S.field[n]);
+          // Exclude both empty AND cells already targeted by spreads this turn
+          const empties = neighbors(i).filter(n => !S.field[n] && !spreadTargets.has(n));
           if (empties.length) {
-            spreads.push({ from: i, to: pick(empties), type: S.field[i].type });
+            const to = pick(empties);
+            spreadTargets.add(to);  // Mark as target for this turn's spreads
+            spreads.push({ from: i, to: to, type: S.field[i].type });
           }
         }
       }
@@ -2528,17 +2541,20 @@
     // single-player spread -> random event -> native-loss sequence.
     function tmResolveTurn(g) {
       const spreads = [];
+      const spreadThisTurn = new Set();  // Track cells just occupied by spreads
       // Invasive spread: established invaders only (those placed this turn skip).
       for (let i = 0; i < CELLS; i++) {
         const cell = g.field[i];
         if (!cell || cell.kind !== 'invader' || g.newInvaders.has(i)) continue;
         const sp = INVADERS[cell.type];
         if (Math.random() < sp.spread) {
-          const empties = neighbors(i).filter(n => !g.field[n]);
+          // Exclude both empty AND newly-spread-into cells
+          const empties = neighbors(i).filter(n => !g.field[n] && !spreadThisTurn.has(n));
           if (empties.length) {
             const to = pick(empties);
             g.field[to] = { kind: 'invader', type: cell.type };
             g.newInvaders.add(to);
+            spreadThisTurn.add(to);  // Mark as occupied by this turn's spread
             spreads.push({ to: to, type: cell.type });
           }
         }
