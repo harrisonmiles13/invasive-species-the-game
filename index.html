@@ -1413,12 +1413,21 @@
             totalScore += sp.points;
           }
         }
-      } else {
-        // CDD: single target
-        S.field[cellIdx] = null;
-        removed = 1;
-        totalScore = sp.points;
-        burst(cellIdx, '#4CAF50');
+      } else if (ctrl === 'cdd') {
+        // CDD: target + all adjacent of same type (area draining effect)
+        const toRemove = [cellIdx];
+        const adjCells = neighbors(cellIdx);
+        for (const adjIdx of adjCells) {
+          if (S.field[adjIdx] && S.field[adjIdx].kind === 'invader' && S.field[adjIdx].type === cell.type) {
+            toRemove.push(adjIdx);
+          }
+        }
+        for (const idx of toRemove) {
+          S.field[idx] = null;
+          burst(idx, '#00ACC1');
+        }
+        removed = toRemove.length;
+        totalScore = sp.points * removed;
       }
 
       S.score += totalScore;
