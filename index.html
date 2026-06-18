@@ -1007,7 +1007,7 @@
     const RANDOM_EVENT_CHANCE = 0.25; // 25% chance per turn
 
     const CONTROLS = {
-      manual: { icon: '🔨', short: 'Hand Pull', name: 'Hand Pulling',
+      manual: { icon: '👐', short: 'Hand Pull', name: 'Hand Pulling',
         desc: 'Hand-pulling, trapping, harvesting and scraping. Hard work, but precise and chemical-free.', class: 'manual' },
       shears: { icon: '✂️', short: 'Cut', name: 'Cutting & Mowing',
         desc: "Repeated cutting exhausts a plant's root reserves until it can no longer regrow.", class: 'shears' },
@@ -1046,17 +1046,7 @@
         controls: ['manual'], spread: 0.3, points: 40,
         harm: 'Released pets that ate their way through the Everglades - some mammal numbers fell over 90%.',
         tip: "No easy fix exists: trained trackers remove pythons one by one. Never release a pet!",
-        fact: 'A single female can lay 50-100+ eggs. With no natural predators in Florida, populations exploded from a few released pets to tens of thousands.' },
-      carp: { icon: '🐟', name: 'Asian Carp', color: '#1565C0', origin: 'East Asia',
-        controls: ['manual', 'cdd'], spread: 0.525, points: 22,
-        harm: 'Voracious eaters that consume 40% of their body weight daily, out-competing native fish and destroying aquatic plants.',
-        tip: 'Electric barriers stop them in waterways; targeted removal by commercial fisheries reduces populations.',
-        fact: 'Adults reach 4 feet long and can survive in many water conditions. A single carp eats 40% of its body weight daily, depleting food for native fish.' },
-      pathogen: { icon: '🦠', name: 'Chytrid Fungus', color: '#C62828', origin: 'East Asia',
-        controls: ['cdd', 'chem'], spread: 0.6, points: 30,
-        harm: 'A deadly fungus that infects amphibian skin, preventing them from breathing. Has wiped out entire frog species.',
-        tip: 'Quarantine and disinfect hiking gear; treat breeding habitats with antifungal compounds.',
-        fact: 'Chytrid fungus has caused more extinctions of vertebrate species than any other pathogen in recorded history.' }
+        fact: 'A single female can lay 50-100+ eggs. With no natural predators in Florida, populations exploded from a few released pets to tens of thousands.' }
     };
 
     const NATIVES = {
