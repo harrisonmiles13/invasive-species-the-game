@@ -21,7 +21,7 @@ Works great on phones — add it to your home screen for a fullscreen app feel.
 2. **Match the method to the species** — every invader has real-world weaknesses. Wrong method = the invader survives and you lose points.
 3. **End your turn** and watch out: invaders **spread** to neighbouring cells, one at a time.
 4. **Protect the natives** — they're lost if invaders surround them. Plant more and restore habitat to keep your balance.
-5. **Win** by maintaining a **healthy ecosystem** (more natives than invaders) for **6 consecutive turns** — about one game in a 50-minute workshop slot.
+5. **Win** by maintaining a **healthy ecosystem** (70% natives) for **5 consecutive turns** — about one game in a 50-minute workshop slot.
 6. **Lose** if the invasion meter fills up or all natives are lost.
 
 Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
@@ -52,7 +52,7 @@ Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
 **Native enhancements (build up natives):**
 - 🌱 **Native Planting** — establish a new native on an empty cell
 - 🌻 **Seed Bombing** — scatter natives across an area
-- 🌾 **Habitat Restoration** — shield a native from being overwhelmed
+- 🌾 **Habitat Restoration** — clear one invader (any species) and plant two natives in its place
 - 🤝 **Community Day** — rally volunteers to protect every native and gain an action
 
 ## 👥 Workshop Mode (multiplayer)
