@@ -973,6 +973,7 @@
         <div class="help-step"><span class="big">🃏</span><span>Your hand holds two kinds of cards: <b>controls</b> (🔨✂️🐾💧🔥💊) that remove invaders, and green <b>native enhancements</b> (🌱🌻🌾🤝) that plant and protect natives. Tap a card, then tap its target - or drag it.</span></div>
         <div class="help-step"><span class="big">🎯</span><span>Every invader has weaknesses based on <b>real conservation science</b>. Use the wrong method and it survives! Check the 📖 Field Guide.</span></div>
         <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn - but beware: <b>invaders spread</b> to neighboring cells.</span></div>
+        <div class="help-step"><span class="big">🌬️</span><span>New invaders keep arriving each turn on the <b>wind, water, animals and human transport</b> - so clearing the board once isn't enough. Stay vigilant: an open habitat invites new colonizers.</span></div>
         <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. <b>Plant</b> more and <b>restore</b> habitat to keep your ratio healthy!</span></div>
         <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining 70% natives for 10 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
         <div class="eco-note">💡 Once a species becomes invasive, complete eradication is nearly impossible. Management is about maintaining a balance. Tap any creature to learn about it.</div>
@@ -1005,6 +1006,21 @@
     const WIN_TURNS = 10; // turns to maintain healthy ratio to win
     const HEALTHY_RATIO = 7 / 3; // natives/invaders must be >= 2.33 (70% natives, 30% invaders)
     const RANDOM_EVENT_CHANCE = 0.25; // 25% chance per turn
+    // Propagule pressure: new invaders constantly arrive via wind-, water- and
+    // animal-dispersed seeds, plus fresh human introductions. A cleared board
+    // never stays clear for free - an open niche invites new colonizers. This is
+    // why eradication is almost never permanent and management is ongoing.
+    const INTRO_BASE_CHANCE = 0.45; // baseline reintroduction chance per turn
+    // How a brand-new invader arrived (educational flavor, keyed by species).
+    const DISPERSAL = {
+      kudzu:    { icon: '🌬️', vector: 'Wind-blown seeds' },
+      hyacinth: { icon: '💧', vector: 'A water-borne fragment' },
+      mussel:   { icon: '🚤', vector: 'Larvae in boat bilge water' },
+      borer:    { icon: '🪵', vector: 'Larvae hitchhiking in firewood' },
+      python:   { icon: '🐍', vector: 'A released pet' },
+      carp:     { icon: '💧', vector: 'Eggs carried downstream' },
+      pathogen: { icon: '🦠', vector: 'Spores on contaminated gear' }
+    };
 
     const CONTROLS = {
       manual: { icon: '👐', short: 'Hand Pull', name: 'Hand Pulling',
@@ -1593,6 +1609,43 @@
       setTimeout(() => endTurn(), 800);
     }
 
+    // Stochastic reintroduction of invaders (single-player). Models the constant
+    // propagule pressure of dispersing seeds, larvae and new introductions: the
+    // emptier the habitat, the more likely an open niche gets colonized. Brand-new
+    // arrivals are marked so they establish for a turn before they can spread.
+    function introduceInvaders() {
+      const invCount = invaderCells().length;
+      // An empty niche WILL be colonized; a nearly-clear board is highly inviting.
+      let chance = INTRO_BASE_CHANCE;
+      if (invCount === 0) chance = 1.0;
+      else if (invCount <= 2) chance = 0.7;
+      if (Math.random() >= chance) return 0;
+
+      // Occasionally a second propagule arrives later in the game.
+      let count = 1;
+      if (invCount <= 2 && S.turn >= 4 && Math.random() < 0.35) count = 2;
+
+      let introduced = 0;
+      for (let n = 0; n < count; n++) {
+        // Prefer open ground that isn't already pressing on a native, but a
+        // determined colonizer will take any empty cell.
+        let i = findCell(j => !S.field[j] &&
+          !neighbors(j).some(nb => S.field[nb] && S.field[nb].kind === 'native'));
+        if (i < 0) i = findCell(j => !S.field[j]);
+        if (i < 0) break;
+        const type = pick(Object.keys(INVADERS));
+        S.field[i] = { kind: 'invader', type };
+        S.newInvaders.add(i); // establishes this turn; eligible to spread next turn
+        introduced++;
+        const sp = INVADERS[type];
+        const d = DISPERSAL[type] || { icon: '🌱', vector: 'A new introduction' };
+        burst(i, '#EF5350');
+        sound('spread');
+        toast(`${d.icon} <b>${d.vector}</b>: ${sp.icon} ${sp.name} took root in open ground!`, 4000);
+      }
+      return introduced;
+    }
+
     function continueEndTurn(spreadCount) {
       // Random events
       if (Math.random() < RANDOM_EVENT_CHANCE && S.turn > 1) {
@@ -1662,6 +1715,10 @@
       for (const i of nativeCells()) {
         if (S.field[i].shield) S.field[i].shield--;
       }
+
+      // Propagule pressure: new invaders arrive on the wind, in the water, on
+      // animals, or via human transport - so a cleared board never stays clear.
+      introduceInvaders();
 
       S.turn++;
       S.plays = PLAYS_PER_TURN;
@@ -2284,6 +2341,16 @@
           <p style="margin: 0.3rem 0;"><b>Community Day 🤝:</b> Protect all natives from overwhelm + gain 1 bonus action</p>
         </div>
 
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌬️ Propagule Pressure (Reintroduction)</h3>
+        <div class="guide-card">
+          <p style="font-size: 0.85rem; margin: 0 0 0.4rem;">New invaders keep arriving each turn via natural and human dispersal, so a cleared board never stays clear for free:</p>
+          <p style="margin: 0.3rem 0;"><b>Base chance:</b> ${Math.round(INTRO_BASE_CHANCE * 100)}% per turn</p>
+          <p style="margin: 0.3rem 0;"><b>Nearly clear (≤2 invaders):</b> 70% chance (an open niche is inviting)</p>
+          <p style="margin: 0.3rem 0;"><b>Completely clear (0 invaders):</b> 100% - the empty habitat <i>will</i> be colonized</p>
+          <p style="margin: 0.3rem 0; font-size: 0.85rem;">Vectors: 🌬️ wind-blown seeds, 💧 water-borne fragments &amp; eggs, 🚤 boat hitchhikers, 🪵 firewood, 🐍 released pets, 🦠 contaminated gear.</p>
+          <p style="font-size: 0.8rem; opacity: 0.8;">A fresh arrival establishes for one turn before it can spread - giving you a window to respond. This is why management never ends.</p>
+        </div>
+
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌪️ Random Events</h3>
         <div class="guide-card">
           <p style="margin: 0.3rem 0;"><b>Chance:</b> 25% per turn (after turn 1)</p>
@@ -2602,6 +2669,34 @@
       // Shields wear off by one.
       for (let i = 0; i < CELLS; i++) {
         if (g.field[i] && g.field[i].kind === 'native' && g.field[i].shield) g.field[i].shield--;
+      }
+
+      // Propagule pressure: stochastic reintroduction so a cleared board never
+      // stays clear for free. Mirrors single-player introduceInvaders().
+      const invCount = tmCountInvaders(g);
+      let introChance = INTRO_BASE_CHANCE;
+      if (invCount === 0) introChance = 1.0;
+      else if (invCount <= 2) introChance = 0.7;
+      if (Math.random() < introChance) {
+        let count = 1;
+        if (invCount <= 2 && g.turn >= 4 && Math.random() < 0.35) count = 2;
+        for (let n = 0; n < count; n++) {
+          // Prefer empty cells not already beside a native, else any empty cell.
+          const open = [];
+          const anyEmpty = [];
+          for (let i = 0; i < CELLS; i++) {
+            if (g.field[i]) continue;
+            anyEmpty.push(i);
+            if (!neighbors(i).some(nb => g.field[nb] && g.field[nb].kind === 'native')) open.push(i);
+          }
+          const pool = open.length ? open : anyEmpty;
+          if (!pool.length) break;
+          const to = pick(pool);
+          const type = pick(Object.keys(INVADERS));
+          g.field[to] = { kind: 'invader', type };
+          g.newInvaders.add(to);
+          spreads.push({ to: to, type: type, introduced: true });
+        }
       }
       return spreads;
     }
