@@ -118,42 +118,54 @@
       background: rgba(255, 255, 255, 0.25);
     }
 
-    /* Invasion meter */
+    /* Balance meter: shows the invasive share of living tokens (left = mostly
+       natives/healthy, right = mostly invaders), with a gold marker at the
+       healthy target. */
     .invasion-meter {
-      height: 6px;
-      background: rgba(0, 0, 0, 0.3);
+      height: 8px;
+      /* gradient hints direction: green (healthy) -> amber -> red (overrun) */
+      background: linear-gradient(90deg, rgba(76,175,80,0.35) 0%, rgba(255,193,7,0.30) 50%, rgba(244,67,54,0.40) 100%);
       position: relative;
       z-index: 99;
+      margin-bottom: 7px; /* room for the indicator that hangs below the bar */
     }
 
+    /* Indicator: a small caret sitting just BELOW the bar, pointing up at the
+       current position. Hanging downward keeps it clear of the header above. */
     .invasion-meter .meter-indicator {
       position: absolute;
-      height: 100%;
+      top: 100%;
       left: 0%;
-      width: 1.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      transition: left 0.4s ease;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 7px solid #fff;
       transform: translateX(-50%);
+      transition: left 0.4s ease, border-bottom-color 0.3s ease;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+      z-index: 101;
     }
 
+    /* Green band from 0 to the healthy target (the "safe" share of invaders). */
     .invasion-meter .healthy-zone {
       position: absolute;
       height: 100%;
       top: 0;
-      background: rgba(76, 175, 80, 0.2);
-      border-right: 2px solid rgba(76, 175, 80, 0.6);
+      left: 0;
+      background: rgba(76, 175, 80, 0.30);
     }
 
-    .invasion-meter .danger-line {
+    /* Gold tick marking the healthy target the indicator should stay left of. */
+    .invasion-meter .target-marker {
       position: absolute;
-      height: 100%;
-      top: 0;
+      top: -2px;
+      height: calc(100% + 4px);
       width: 2px;
-      background: #F44336;
-      opacity: 0.7;
+      background: #FFD54F;
+      transform: translateX(-50%);
+      box-shadow: 0 0 4px rgba(255, 213, 79, 0.9);
+      z-index: 100;
     }
 
     /* Win ticker */
@@ -767,11 +779,11 @@
       </div>
     </header>
 
-    <!-- Invasion meter -->
-    <div class="invasion-meter" id="invasionMeter" title="Invasion meter: invasive count rises with spread. Exceed the red line to lose!">
+    <!-- Balance meter -->
+    <div class="invasion-meter" id="invasionMeter" title="Habitat balance: the invasive share of living species. Keep the marker left of the gold target to stay healthy.">
       <div class="healthy-zone" id="healthyZone"></div>
-      <div class="danger-line" id="dangerLine"></div>
-      <div class="meter-indicator" id="meterIndicator">🌿</div>
+      <div class="target-marker" id="targetMarker"></div>
+      <div class="meter-indicator" id="meterIndicator"></div>
     </div>
 
     <div class="game-body">
@@ -935,7 +947,7 @@
           <button class="menu-btn primary" id="btnStartTeams" style="margin-top:0.7rem;">▶ Start team games</button>
           <p style="font-size:0.74rem;opacity:0.8;margin-top:0.4rem;">
             Every team gets the same starting board, then plays it independently. Within a team,
-            players take turns (each turn the invasion spreads). First to 10 healthy rounds wins;
+            players take turns (each turn the invasion spreads). First to 5 healthy rounds wins;
             ties break on overall score (points × first-winner's rounds ÷ your rounds).
           </p>
           <div class="ws-status" id="wsHostStatus"></div>
@@ -975,7 +987,7 @@
         <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn - but beware: <b>invaders spread</b> to neighboring cells.</span></div>
         <div class="help-step"><span class="big">🌬️</span><span>New invaders keep arriving each turn on the <b>wind, water, animals and human transport</b> - so clearing the board once isn't enough. Stay vigilant: an open habitat invites new colonizers.</span></div>
         <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. <b>Plant</b> more and <b>restore</b> habitat to keep your ratio healthy!</span></div>
-        <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining 70% natives for 10 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
+        <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining 70% natives for 5 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
         <div class="eco-note">💡 Once a species becomes invasive, complete eradication is nearly impossible. Management is about maintaining a balance. Tap any creature to learn about it.</div>
         <button class="menu-btn primary" data-close="helpOverlay" style="margin-top:0.8rem;">Let's go! 🌿</button>
       </div>
@@ -1003,7 +1015,7 @@
     const COLS = 8, ROWS = 9, CELLS = COLS * ROWS;
     const HAND_SIZE = 5, PLAYS_PER_TURN = 3;
     const LOSE_CELLS = Math.floor(CELLS * 0.45); // invasion meter limit
-    const WIN_TURNS = 10; // turns to maintain healthy ratio to win
+    const WIN_TURNS = 5; // turns to maintain healthy ratio to win
     const HEALTHY_RATIO = 7 / 3; // natives/invaders must be >= 2.33 (70% natives, 30% invaders)
     const RANDOM_EVENT_CHANCE = 0.25; // 25% chance per turn
     // Propagule pressure: new invaders constantly arrive via wind-, water- and
@@ -1087,14 +1099,14 @@
     };
 
     // Native enhancement cards - interventions that build up natives instead of
-    // removing invaders. target: 'empty' | 'native' | 'any'
+    // removing invaders. target: 'empty' | 'native' | 'invader' | 'any'
     const ENHANCEMENTS = {
       plant:     { icon: '🌱', short: 'Plant', name: 'Native Planting', target: 'empty',
         desc: 'Plant a new native species in an empty cell to rebuild biodiversity and improve the native-to-invader ratio.' },
       seedbomb:  { icon: '🌻', short: 'Seeds', name: 'Seed Bombing', target: 'empty',
         desc: 'Scatter native seeds - establishes natives in an empty cell and its empty neighbours at once.' },
-      restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'empty',
-        desc: 'Restore habitat by planting natives in empty cells nearby - rebuilds the ecosystem one patch at a time.' },
+      restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'invader',
+        desc: 'Reclaim a patch: clears one invader (any species, no matter its weaknesses) and plants two natives in its place to rebuild the ecosystem.' },
       community: { icon: '🤝', short: 'Rally', name: 'Community Day', target: 'any',
         desc: 'Rally volunteers: shields every native from being overwhelmed this turn and energizes the team (+1 action).' }
     };
@@ -1108,6 +1120,7 @@
         const tgt = ENHANCEMENTS[type].target;
         if (tgt === 'empty') return !occ;
         if (tgt === 'native') return !!(occ && occ.kind === 'native');
+        if (tgt === 'invader') return !!(occ && occ.kind === 'invader');
         return true; // 'any'
       }
       return !!(occ && occ.kind === 'invader');
@@ -1265,6 +1278,7 @@
             const tgt = ENHANCEMENTS[type].target;
             if (tgt === 'empty') toast('🌱 Plant this on an <b>empty</b> cell (highlighted green).');
             else if (tgt === 'native') toast('🌾 Use this on one of your <b>native species</b> (gold rings).');
+            else if (tgt === 'invader') toast('🌾 Use this on an <b>invasive species</b> (red rings) - it clears one and plants natives.');
             else toast('Tap a highlighted cell to use this card.');
           } else {
             toast('🚫 Aim for an <b>invasive species</b> - the ones with <b>red rings</b>.');
@@ -1290,6 +1304,7 @@
           const tgt = ENHANCEMENTS[type].target;
           if (tgt === 'empty') toast('🌱 Plant this on an <b>empty</b> cell (highlighted green).');
           else if (tgt === 'native') toast('🌾 Use this on one of your <b>native species</b> (gold rings).');
+          else if (tgt === 'invader') toast('🌾 Use this on an <b>invasive species</b> (red rings) - it clears one and plants natives.');
           else toast('Tap a highlighted cell to use this card.');
         } else {
           toast('🚫 Aim for an <b>invasive species</b> - the ones with <b>red rings</b>.');
@@ -1482,18 +1497,28 @@
         S.score += planted * 6;
         toast(`🌻 Seed bomb! Established <b>${planted}</b> new native${planted !== 1 ? 's' : ''}.`, 4200);
       } else if (type === 'restore') {
+        // Reclaim a patch: clear one invader (any species, regardless of its
+        // susceptibility) and plant two natives - the freed cell plus a nearby
+        // empty one - to rebuild the ecosystem in its place.
+        const cleared = (S.field[cellIdx] && S.field[cellIdx].kind === 'invader')
+          ? INVADERS[S.field[cellIdx].type] : null;
+        S.field[cellIdx] = null;
+        S.newInvaders.delete(cellIdx);
+        burst(cellIdx, '#26A69A');
         let planted = 0;
-        const empties = neighbors(cellIdx).filter(n => !S.field[n]);
-        for (const i of empties) {
-          if (Math.random() < 0.6) { // 60% chance to plant in each neighbor
+        const spots = [cellIdx, ...neighbors(cellIdx).filter(n => !S.field[n])];
+        for (const c of spots) {
+          if (planted >= 2) break;
+          if (!S.field[c]) {
             const t = pick(Object.keys(NATIVES));
-            S.field[i] = { kind: 'native', type: t };
-            burst(i, '#26A69A');
+            S.field[c] = { kind: 'native', type: t };
+            S.totalNatives++;
+            burst(c, '#66BB6A');
             planted++;
           }
         }
-        S.score += planted * 8;
-        toast(`🌾 Habitat restored! Established <b>${planted}</b> new native${planted !== 1 ? 's' : ''} nearby.`, 4200);
+        S.score += 12 + planted * 8;
+        toast(`🌾 Habitat restored! Cleared ${cleared ? cleared.icon + ' <b>' + cleared.name + '</b>' : 'an invader'} and planted <b>${planted}</b> native${planted !== 1 ? 's' : ''}.`, 4600);
       } else if (type === 'community') {
         let n = 0;
         for (const i of nativeCells()) { S.field[i].shield = Math.max(S.field[i].shield || 0, 1); n++; }
@@ -1961,15 +1986,19 @@
       const healthyRatio = invCount > 0 ? nativeCount / invCount : Infinity;
       const isHealthy = healthyRatio >= HEALTHY_RATIO;
 
-      document.getElementById('meterIndicator').style.left =
-        Math.min(100, Math.round(invCount / LOSE_CELLS * 100)) + '%';
+      // Balance meter reflects the invasive SHARE of living species (0% = all
+      // natives, 100% = all invaders). The gold target marks the most invasion
+      // you can carry and still be "healthy" (natives >= 70%).
+      const living = invCount + nativeCount;
+      const invasivePct = living > 0 ? (invCount / living) * 100 : 0;
+      const targetPct = 100 / (1 + HEALTHY_RATIO); // = 30% invasive at ratio 7:3
 
-      document.getElementById('dangerLine').style.left = Math.round(LOSE_CELLS / CELLS * 100) + '%';
+      const meterInd = document.getElementById('meterIndicator');
+      meterInd.style.left = Math.min(100, invasivePct) + '%';
+      meterInd.style.borderBottomColor = isHealthy ? '#66BB6A' : '#EF5350';
 
-      const healthyStart = invCount > 0 ? 0 : 0;
-      const healthyEnd = LOSE_CELLS / CELLS * 100;
-      document.getElementById('healthyZone').style.left = healthyStart + '%';
-      document.getElementById('healthyZone').style.width = healthyEnd + '%';
+      document.getElementById('healthyZone').style.width = targetPct + '%';
+      document.getElementById('targetMarker').style.left = targetPct + '%';
 
       const tickerHeader = document.getElementById('winTickerHeader');
       tickerHeader.innerHTML = '';
@@ -2263,7 +2292,8 @@
       for (const t of Object.keys(ENHANCEMENTS)) {
         const e = ENHANCEMENTS[t];
         const tgt = e.target === 'empty' ? 'an empty cell'
-          : e.target === 'native' ? 'a native species' : 'any cell';
+          : e.target === 'native' ? 'a native species'
+          : e.target === 'invader' ? 'an invasive species' : 'any cell';
         html += `<div class="guide-card"><div class="guide-title">` +
           `<span class="big">${e.icon}</span> ${e.name}</div><p>${e.desc}</p>` +
           `<div class="guide-controls">Use on: ${tgt}</div></div>`;
@@ -2291,7 +2321,7 @@
         'Prescribed Burn': 'Intentionally set, carefully controlled fires that help fire-adapted native plants return and set back invasives.',
         'Eradication': 'Completely removing a species from an area. This is almost impossible once a species is established as invasive.',
         'Management': 'Controlling invasive species populations to maintain ecosystem health-the realistic goal once invasion is underway.',
-        'Healthy ratio': '70% or more natives (ratio of at least 2.3:1). Maintain this for 10 consecutive turns to win!',
+        'Healthy ratio': '70% or more natives (ratio of at least 2.3:1). Maintain this for 5 consecutive turns to win!',
         'Resilience': 'An ecosystem\'s ability to recover from disturbance. Native species diversity makes ecosystems more resilient to invasion.'
       };
       let html = '<p style="font-size:0.8rem;opacity:0.85;margin-bottom:0.7rem;">Terms and concepts used in this game:</p>';
@@ -2313,7 +2343,7 @@
       const html = `
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🎯 Victory & Defeat</h3>
         <div class="guide-card">
-          <p><b>Win:</b> Maintain 70% natives (ratio 2.3:1) for 10 consecutive turns</p>
+          <p><b>Win:</b> Maintain 70% natives (ratio 2.3:1) for 5 consecutive turns</p>
           <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Healthy = 70% natives or more (2.3:1 ratio minimum)</p>
           <p><b>Lose:</b> All native species eliminated</p>
         </div>
@@ -2337,7 +2367,7 @@
         <div class="guide-card">
           <p style="margin: 0.3rem 0;"><b>Plant 🌱:</b> Create new native on empty cell</p>
           <p style="margin: 0.3rem 0;"><b>Seed Bomb 🌻:</b> Plant natives on 3 random cells (spread effect)</p>
-          <p style="margin: 0.3rem 0;"><b>Restore 🌾:</b> Plant natives in nearby empty cells (~60% success rate per neighbor)</p>
+          <p style="margin: 0.3rem 0;"><b>Restore 🌾:</b> Clear one invader (any species, ignores weaknesses) and plant 2 natives in its place</p>
           <p style="margin: 0.3rem 0;"><b>Community Day 🤝:</b> Protect all natives from overwhelm + gain 1 bonus action</p>
         </div>
 
@@ -3110,11 +3140,16 @@
         }, 500);
       });
 
-      // Invasion meter tooltip on click
+      // Balance meter tooltip on click
       document.getElementById('invasionMeter')?.addEventListener('click', (e) => {
         const invCount = invaderCells().length;
-        const tooltip = `<b>Invasion Meter</b><br>Current: ${invCount}/${LOSE_CELLS} cells<br>Safe zone: 0-${LOSE_CELLS}<br>Lose if invasives exceed ${LOSE_CELLS}`;
-        showTooltip(tooltip, e.target);
+        const natCount = nativeCells().length;
+        const living = invCount + natCount;
+        const invasivePct = living > 0 ? Math.round((invCount / living) * 100) : 0;
+        const targetPct = Math.round(100 / (1 + HEALTHY_RATIO));
+        const status = invasivePct <= targetPct ? '✓ Healthy' : '⚠ Too many invaders';
+        const tooltip = `<b>Habitat Balance</b><br>Invasive share: ${invasivePct}% (${invCount} of ${living})<br>Healthy target: ≤ ${targetPct}% invasive (gold marker)<br>Status: ${status}`;
+        showTooltip(tooltip, e.currentTarget);
       });
 
       // Header score tooltips
@@ -3122,7 +3157,7 @@
       if (headerCenter) {
         headerCenter.addEventListener('click', (e) => {
           if (e.target.id === 'nativeCount' || e.target.parentElement.id === 'nativeCount') {
-            showTooltip('🦋 <b>Native species</b><br>Species you want to protect. Need 70% natives for 10 consecutive turns to win.', e.target.id === 'nativeCount' ? e.target : e.target.parentElement);
+            showTooltip('🦋 <b>Native species</b><br>Species you want to protect. Need 70% natives for 5 consecutive turns to win.', e.target.id === 'nativeCount' ? e.target : e.target.parentElement);
           } else if (e.target.id === 'invasiveCount' || e.target.parentElement.id === 'invasiveCount') {
             showTooltip('🌿 <b>Invasive species</b><br>Species you\'re managing. Invasives spread each turn. Lose if invasives exceed ' + LOSE_CELLS + ' cells.', e.target.id === 'invasiveCount' ? e.target : e.target.parentElement);
           } else if (e.target.id === 'score' || e.target.parentElement.className.includes('score')) {
