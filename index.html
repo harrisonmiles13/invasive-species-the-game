@@ -349,7 +349,7 @@
       border-radius: 6px;
       font-size: 0.8rem;
       line-height: 1.3;
-      max-width: 240px;
+      max-width: 360px;
       white-space: normal;
       z-index: 10000;
       pointer-events: none;
@@ -1035,10 +1035,10 @@
     };
 
     const CONTROLS = {
-      manual: { icon: '👐', short: 'Hand Pull', name: 'Hand Pulling',
-        desc: 'Hand-pulling, trapping, harvesting and scraping. Hard work, but precise and chemical-free.', class: 'manual' },
-      shears: { icon: '✂️', short: 'Cut', name: 'Cutting & Mowing',
-        desc: "Repeated cutting exhausts a plant's root reserves until it can no longer regrow.", class: 'shears' },
+      manual: { icon: '👐', short: 'Hunting', name: 'Hunting & Trapping',
+        desc: 'Tracking, trapping and removing invasive animals by hand. Hard work, but precise and chemical-free.', class: 'manual' },
+      shears: { icon: '✂️', short: 'Cut', name: 'Mechanical Control',
+        desc: 'Cutting, mowing, harvesting and netting. Repeatedly stripping biomass exhausts an invader until it can no longer rebound.', class: 'shears' },
       bio:    { icon: '🐾', short: 'Bio', name: 'Biological Control',
         desc: "Introduce carefully tested natural predators or pathogens - weevils, parasitoid wasps, fungi - that target the invader without harming natives.", class: 'bio' },
       cdd:    { icon: '💧', short: 'CDD', name: 'Clean, Drain, Dry',
@@ -1056,7 +1056,7 @@
         tip: 'Cut it back again and again, or use prescribed burns to expose its root crowns.',
         fact: 'Kudzu was brought to the US in 1876 as an ornamental plant and livestock feed. By the 1950s it covered millions of acres.' },
       hyacinth: { icon: '🌺', name: 'Water Hyacinth', color: '#7B1FA2', origin: 'Amazon Basin',
-        controls: ['manual', 'bio'], spread: 0.6, points: 20,
+        controls: ['shears', 'bio'], spread: 0.6, points: 20,
         harm: 'Floating mats double in size in two weeks, clogging waterways and starving fish of oxygen.',
         tip: "Harvest the mats by hand or machine, or release Neochetina weevils that eat only hyacinth.",
         fact: 'A single plant produces thousands of seeds and floats to colonize new waterways. Mats can double in biomass within weeks.' },
@@ -1076,7 +1076,7 @@
         tip: "No easy fix exists: trained trackers remove pythons one by one. Never release a pet!",
         fact: 'A single female can lay 50-100+ eggs. With no natural predators in Florida, populations exploded from a few released pets to tens of thousands.' },
       carp: { icon: '🐟', name: 'Asian Carp', color: '#1565C0', origin: 'East Asia',
-        controls: ['manual', 'cdd'], spread: 0.525, points: 22,
+        controls: ['manual', 'cdd', 'shears'], spread: 0.525, points: 22,
         harm: 'Voracious eaters that consume 40% of their body weight daily, out-competing native fish and destroying aquatic plants.',
         tip: 'Electric barriers stop them in waterways; targeted removal by commercial fisheries reduces populations.',
         fact: 'Adults reach 4 feet long and can survive in many water conditions. A single carp eats 40% of its body weight daily, depleting food for native fish.' },
@@ -1362,7 +1362,7 @@
       let totalScore = 0;
 
       if (ctrl === 'manual') {
-        // Hand Pull: single target only
+        // Hunting: single target only
         S.field[cellIdx] = null;
         removed = 1;
         totalScore = sp.points;
@@ -1788,8 +1788,9 @@
       S.invasivePhaseActive = false;  // Clear flag on game end
       S.selected = null;
       if (won) S.score += 50 + nativeCells().length * 10;
-      if (S.score > best) {
-        best = S.score;
+      const finalScore = effScore();
+      if (finalScore > best) {
+        best = finalScore;
         try { localStorage.setItem('nd-best', String(best)); } catch (e) {}
       }
       render();
@@ -1802,7 +1803,7 @@
         ? 'Invasion managed! The ecosystem is stable.'
         : (nativeCells().length ? 'The invasion overwhelmed the habitat…' : 'All the native species were lost…');
       document.getElementById('goStats').innerHTML =
-        `<span>⭐ ${S.score}</span><span>🏅 Best ${best}</span>` +
+        `<span>⭐ ${finalScore}</span><span>🏅 Best ${best}</span>` +
         `<span>🌱 ${S.turn} turns</span><span>🦋 ${nativeCells().length}/${S.totalNatives} natives saved</span>`;
 
       const recap = Object.keys(INVADERS)
@@ -1936,11 +1937,16 @@
       row.appendChild(endBtn);
     }
 
+    // Player-facing score is always scaled by efficiency: raw points earned
+    // divided by the number of rounds played, so faster, cleaner games score
+    // higher. S.score keeps the raw running total; effScore() is what we show.
+    function effScore() { return Math.round(S.score / Math.max(1, S.turn)); }
+
     function render() {
       if (HOST_SIM) return;  // Host resolving a team turn off-screen: skip rendering
       renderBoard();
       renderHand();
-      document.getElementById('score').textContent = S.score;
+      document.getElementById('score').textContent = effScore();
       document.getElementById('actionPips').textContent =
         '▲'.repeat(Math.max(0, S.plays)) + '△'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
 
@@ -2171,7 +2177,7 @@
       tooltip.innerHTML = text;
       const rect = targetEl.getBoundingClientRect();
       const tooltipHeight = 80;  // approximate
-      const tooltipWidth = 240;
+      const tooltipWidth = 360;
       const spacing = 8;
 
       // Prefer positioning above the target, fall back to below
@@ -3161,7 +3167,7 @@
           } else if (e.target.id === 'invasiveCount' || e.target.parentElement.id === 'invasiveCount') {
             showTooltip('🌿 <b>Invasive species</b><br>Species you\'re managing. Invasives spread each turn. Lose if invasives exceed ' + LOSE_CELLS + ' cells.', e.target.id === 'invasiveCount' ? e.target : e.target.parentElement);
           } else if (e.target.id === 'score' || e.target.parentElement.className.includes('score')) {
-            showTooltip('⭐ <b>Score</b><br>Points earned by removing invasives and protecting natives. Multiplied by rounds efficiency in team games.', document.querySelector('.score-display'));
+            showTooltip('⭐ <b>Score</b><br>Points from removing invasives and protecting natives, divided by the number of rounds played — so faster, cleaner games score higher.', document.querySelector('.score-display'));
           }
         });
       }

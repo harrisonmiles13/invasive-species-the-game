@@ -31,19 +31,19 @@ Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
 
 | Species | From | Weak to |
 |---|---|---|
-| 🌿 Kudzu | East Asia | ✂️ Cutting · 🔥 Prescribed burn |
-| 🌺 Water Hyacinth | Amazon Basin | 🔨 Manual harvest · 🐾 Weevils |
-| 🐚 Zebra Mussel | Caspian Sea region | 🔨 Scraping · 💧 Clean-Drain-Dry |
+| 🌿 Kudzu | East Asia | ✂️ Mechanical control · 🔥 Prescribed burn |
+| 🌺 Water Hyacinth | Amazon Basin | ✂️ Mechanical harvest · 🐾 Weevils |
+| 🐚 Zebra Mussel | Caspian Sea region | 👐 Hunting & scraping · 💧 Clean-Drain-Dry |
 | 🪲 Emerald Ash Borer | Northeast Asia | 🐾 Parasitoid wasps · 💊 Targeted treatment |
-| 🐍 Burmese Python | Southeast Asia | 🔨 Trained trackers (nothing else works!) |
-| 🐟 Asian Carp | East Asia | 🔨 Targeted removal · 💧 Barriers |
+| 🐍 Burmese Python | Southeast Asia | 👐 Trained trackers (nothing else works!) |
+| 🐟 Asian Carp | East Asia | 👐 Hunting · ✂️ Netting · 💧 Barriers |
 | 🦠 Chytrid Fungus | East Asia | 💧 Disinfection · 💊 Antifungal treatment |
 
 ## 🛠 Your Interventions
 
 **Controls (manage invaders):**
-- 🔨 **Manual Removal** — hand-pulling, trapping, harvesting, scraping
-- ✂️ **Cutting & Mowing** — repeated cutting exhausts root reserves
+- 👐 **Hunting & Trapping** — tracking, trapping and removing invasive animals by hand
+- ✂️ **Mechanical Control** — cutting, mowing, harvesting and netting to strip biomass
 - 🐾 **Biological Control** — tested natural enemies from the invader's homeland
 - 💧 **Water Management** — drawdowns, hot-water washes, barriers
 - 🔥 **Prescribed Burn** — planned fire that helps natives return
