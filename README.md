@@ -31,19 +31,19 @@ Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
 
 | Species | From | Weak to |
 |---|---|---|
-| 🌿 Kudzu | East Asia | ✂️ Cutting · 🔥 Prescribed burn |
-| 🌺 Water Hyacinth | Amazon Basin | 🔨 Manual harvest · 🐾 Weevils |
-| 🐚 Zebra Mussel | Caspian Sea region | 🔨 Scraping · 💧 Clean-Drain-Dry |
+| 🌿 Kudzu | East Asia | ✂️ Mechanical control · 🔥 Prescribed burn |
+| 🌺 Water Hyacinth | Amazon Basin | ✂️ Mechanical harvest · 🐾 Weevils |
+| 🐚 Zebra Mussel | Caspian Sea region | 👐 Hunting & scraping · 💧 Clean-Drain-Dry |
 | 🪲 Emerald Ash Borer | Northeast Asia | 🐾 Parasitoid wasps · 💊 Targeted treatment |
-| 🐍 Burmese Python | Southeast Asia | 🔨 Trained trackers · 💰 Python bounty |
-| 🐟 Asian Carp | East Asia | 🔨 Targeted removal · 💧 Barriers |
+| 🐍 Burmese Python | Southeast Asia | 👐 Trained trackers · 💰 Python bounty |
+| 🐟 Asian Carp | East Asia | 👐 Hunting · ✂️ Netting · 💧 Barriers |
 | 🦠 Chytrid Fungus | East Asia | 💧 Disinfection · 💊 Antifungal treatment |
 
 ## 🛠 Your Interventions
 
 **Controls (manage invaders):**
-- 🔨 **Manual Removal** — hand-pulling, trapping, harvesting, scraping
-- ✂️ **Cutting & Mowing** — repeated cutting exhausts root reserves
+- 👐 **Hunting & Trapping** — tracking, trapping and removing invasive animals by hand
+- ✂️ **Mechanical Control** — cutting, mowing, harvesting and netting to strip biomass
 - 🐾 **Biological Control** — tested natural enemies from the invader's homeland
 - 💧 **Water Management** — drawdowns, hot-water washes, barriers
 - 🔥 **Prescribed Burn** — planned fire that helps natives return
@@ -65,7 +65,7 @@ Built for facilitated group sessions:
 - Teams join from their phones with a **team name** (bar-trivia style) via the room
   code, a shared link, or a **QR code**.
 - Teams take turns on a shared habitat; every team starts from the same board.
-- **Ranking:** winners first (fewest rounds), then the longest healthy streak, then points.
+- **Ranking:** winners first (fewest rounds), then the longest healthy streak, then score (points ÷ rounds).
 - Up to **5 teams** per room; single player works too.
 
 Multiplayer uses [PeerJS](https://peerjs.com/) free peer-to-peer signaling, so it
