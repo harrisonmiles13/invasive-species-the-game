@@ -19,8 +19,10 @@
       padding: 0;
     }
 
-    /* Portrait mode only */
+    /* Portrait mode only (except a host running the projector scoreboard) */
     @media (orientation: landscape) {
+      body.hosting .app { display: flex; }
+      body.hosting::after { display: none !important; }
       .app {
         display: none;
       }
@@ -332,6 +334,14 @@
     .card.cdd    { background: #00ACC1; }
     .card.burn   { background: #F4511E; }
     .card.chem   { background: #D81B60; }
+    .card.bounty { background: linear-gradient(135deg, #F9A825, #E65100); }
+
+    /* Python bounty patrol zone (area control) */
+    .cell.bounty-zone {
+      background: rgba(255, 179, 0, 0.16);
+      border: 2px dashed rgba(255, 193, 7, 0.75);
+    }
+    .cell.bounty-zone.bounty-last { border-style: dotted; opacity: 0.85; }
 
     /* Enhancement card colors (warm/green palette to read as "help natives") */
     .card.plant     { background: #2E7D32; }
@@ -367,6 +377,105 @@
     }
 
     /* Shielded native indicator */
+    /* Newly-arrived invader: pulsing red halo + NEW tag for one turn */
+    .token.fresh {
+      animation: freshPulse 1.1s ease-in-out infinite;
+      position: relative;
+    }
+    .token.fresh::after {
+      content: 'NEW';
+      position: absolute;
+      top: -6px;
+      right: -8px;
+      font-size: 0.5rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      padding: 1px 3px;
+      border-radius: 4px;
+      background: #D32F2F;
+      color: #fff;
+      text-shadow: none;
+    }
+    @keyframes freshPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.9), 0 3px 8px rgba(0,0,0,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(239, 83, 80, 0), 0 3px 8px rgba(0,0,0,0.4); }
+    }
+
+    /* Cells touched by an event flash for a few seconds */
+    .cell.fx-hurricane { animation: fxFlash 0.6s ease 5; border-color: #90CAF9; box-shadow: 0 0 14px rgba(144, 202, 249, 0.9); }
+    .cell.fx-wildfire  { animation: fxFlash 0.6s ease 5; border-color: #FF7043; box-shadow: 0 0 14px rgba(255, 112, 67, 0.9); }
+    .cell.fx-arrival   { animation: fxFlash 0.6s ease 5; border-color: #EF5350; box-shadow: 0 0 16px rgba(239, 83, 80, 1); }
+    .cell.fx-patrol    { animation: fxFlash 0.6s ease 5; border-color: #FFC107; box-shadow: 0 0 14px rgba(255, 193, 7, 0.9); }
+    .cell.fx-lost      { animation: fxFlash 0.6s ease 5; border-color: #F48FB1; box-shadow: 0 0 14px rgba(244, 143, 177, 0.9); }
+    @keyframes fxFlash {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.18); }
+    }
+
+    /* Board shake / screen tint when a big event lands */
+    .game-area.shake { animation: shake 0.5s ease 2; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .event-tint {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1400;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .event-tint.show { opacity: 1; }
+
+    /* Event banner: big, centred, can't be missed. Queued; tap to continue. */
+    .event-banner {
+      position: fixed;
+      left: 50%;
+      top: 38%;
+      transform: translate(-50%, -50%) scale(0.85);
+      width: min(90vw, 420px);
+      padding: 1.1rem 1.2rem 0.9rem;
+      border-radius: 1.1rem;
+      background: rgba(12, 20, 18, 0.97);
+      border: 3px solid #fff;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+      text-align: center;
+      z-index: 1500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.25s cubic-bezier(.2,1.4,.4,1);
+    }
+    .event-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+    .event-banner .eb-kicker { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; }
+    .event-banner .eb-icon { font-size: 3.2rem; line-height: 1.1; margin: 0.2rem 0; }
+    .event-banner .eb-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .event-banner .eb-body { font-size: 0.88rem; line-height: 1.4; opacity: 0.95; }
+    .event-banner .eb-learn { font-size: 0.76rem; line-height: 1.35; opacity: 0.75; margin-top: 0.5rem; font-style: italic; }
+    .event-banner .eb-btn {
+      margin-top: 0.8rem;
+      padding: 0.5rem 1.4rem;
+      border-radius: 999px;
+      border: none;
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: #102;
+      background: #fff;
+      cursor: pointer;
+    }
+    .event-banner .eb-timer { height: 3px; border-radius: 3px; background: rgba(255,255,255,0.5); margin-top: 0.7rem; transform-origin: left; }
+    .event-banner.tone-storm { border-color: #64B5F6; }
+    .event-banner.tone-storm .eb-kicker { color: #90CAF9; }
+    .event-banner.tone-fire { border-color: #FF7043; }
+    .event-banner.tone-fire .eb-kicker { color: #FFAB91; }
+    .event-banner.tone-bad { border-color: #EF5350; }
+    .event-banner.tone-bad .eb-kicker { color: #FF8A80; }
+    .event-banner.tone-good { border-color: #FFC107; }
+    .event-banner.tone-good .eb-kicker { color: #FFE082; }
+
     .token.shielded {
       box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.95), 0 0 10px rgba(255, 213, 79, 0.7), 0 3px 8px rgba(0, 0, 0, 0.4);
     }
@@ -596,7 +705,34 @@
     .ws-rank { font-size: 1.1rem; font-weight: 800; width: 1.7rem; text-align: center; }
     .ws-team { flex: 1; font-weight: 700; }
     .ws-team small { display: block; font-weight: 400; font-size: 0.7rem; opacity: 0.7; }
-    .ws-score { font-size: 1.15rem; font-weight: 800; }
+    .ws-score { font-size: 1.15rem; font-weight: 800; text-align: right; }
+    .ws-score small { display: block; font-size: 0.6rem; font-weight: 600; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ws-row.mine { border-color: #81C784; box-shadow: inset 0 0 0 1px #81C784; }
+    .ws-row.won { background: rgba(255, 213, 79, 0.22); border-color: rgba(255, 213, 79, 0.75); }
+    .ws-row.lost { opacity: 0.6; }
+    .ws-streak { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 0.3rem; }
+    .ws-streak i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.18); display: inline-block; }
+    .ws-streak i.on { background: #66BB6A; box-shadow: 0 0 5px #66BB6A; }
+    .ws-pill { font-size: 0.6rem; font-weight: 800; padding: 0.08rem 0.4rem; border-radius: 999px; margin-left: 0.35rem; vertical-align: middle; background: rgba(255,255,255,0.15); }
+    .ws-pill.turn { background: rgba(129, 199, 132, 0.35); }
+    .ws-pill.won { background: #FFC107; color: #3a2e00; }
+    .ws-pill.lost { background: rgba(239, 83, 80, 0.6); }
+    .ws-feed { display: flex; flex-direction: column; gap: 0.25rem; max-height: 210px; overflow-y: auto; }
+    .ws-feed div { font-size: 0.78rem; padding: 0.3rem 0.5rem; border-radius: 0.45rem; background: rgba(255,255,255,0.05); animation: slideUp 0.25s ease; }
+    .ws-feed div b { font-weight: 800; }
+    .ws-feed .ago { float: right; opacity: 0.5; font-size: 0.68rem; }
+
+    /* Projector mode: the host scoreboard fills the screen */
+    .panel.projector { width: min(98vw, 1200px); max-height: 96dvh; padding: 1.6rem 2rem; }
+    .panel.projector .ws-host-grid { display: grid; grid-template-columns: 260px 1fr; gap: 1.6rem; align-items: start; }
+    .panel.projector .ws-row { padding: 0.9rem 1.1rem; }
+    .panel.projector .ws-team { font-size: 1.5rem; }
+    .panel.projector .ws-team small { font-size: 0.95rem; }
+    .panel.projector .ws-score { font-size: 2rem; }
+    .panel.projector .ws-rank { font-size: 1.7rem; width: 2.4rem; }
+    .panel.projector .ws-feed { max-height: 34dvh; }
+    .panel.projector .ws-feed div { font-size: 1rem; }
+    .panel.projector .ws-streak i { width: 14px; height: 14px; }
     .ws-empty { text-align: center; opacity: 0.6; font-size: 0.85rem; padding: 0.8rem; }
     .ws-status { font-size: 0.78rem; margin-top: 0.6rem; min-height: 1.1rem; opacity: 0.9; }
     .ws-status.err { color: #ff8a80; }
@@ -792,6 +928,16 @@
         <div class="board" id="board"></div>
         <div class="toast" id="toast"></div>
       </main>
+      <div class="event-tint" id="eventTint"></div>
+      <div class="event-banner" id="eventBanner" role="alertdialog" aria-live="assertive">
+        <div class="eb-kicker" id="ebKicker"></div>
+        <div class="eb-icon" id="ebIcon"></div>
+        <div class="eb-title" id="ebTitle"></div>
+        <div class="eb-body" id="ebBody"></div>
+        <div class="eb-learn" id="ebLearn"></div>
+        <button class="eb-btn" id="ebBtn">Got it</button>
+        <div class="eb-timer" id="ebTimer"></div>
+      </div>
 
       <!-- Player Hand -->
       <footer class="player-area">
@@ -932,25 +1078,37 @@
           <div class="ws-status" id="wsLobbyStatus"></div>
         </div>
 
-        <!-- Host view: code, link, QR, live leaderboard -->
+        <!-- Host view: code, link, QR, live scoreboard + event feed -->
         <div id="wsHostView" style="display:none;">
-          <div class="ws-code-box">
-            <div class="ws-code-label">Room code</div>
-            <div class="ws-code" id="wsHostCode">····</div>
+          <div class="ws-host-grid">
+            <div>
+              <div class="ws-code-box">
+                <div class="ws-code-label">Room code</div>
+                <div class="ws-code" id="wsHostCode">····</div>
+              </div>
+              <img id="wsQR" class="ws-qr" alt="Join QR code" />
+              <div class="ws-link" id="wsHostLink"></div>
+              <button class="menu-btn primary" id="btnStartTeams" style="margin-top:0.5rem;">▶ Start team games</button>
+              <button class="menu-btn" id="btnProjector" style="margin-top:0.4rem;">📺 Projector view</button>
+              <button class="menu-btn" id="btnEndRoom" style="margin-top:0.4rem;">🚪 Close room</button>
+              <div class="ws-status" id="wsHostStatus"></div>
+            </div>
+            <div>
+              <h3 style="margin:0.9rem 0 0.4rem;font-size:0.95rem;" id="wsBoardTitle">🙋 Teams in the room</h3>
+              <div id="wsLeaderboard" class="ws-leaderboard">
+                <div class="ws-empty">Waiting for teams to join…</div>
+              </div>
+              <h3 style="margin:0.9rem 0 0.4rem;font-size:0.95rem;">📣 Live feed</h3>
+              <div id="wsFeed" class="ws-feed">
+                <div class="ws-empty">Events from every team's habitat will appear here.</div>
+              </div>
+              <p style="font-size:0.74rem;opacity:0.8;margin-top:0.6rem;">
+                Every team gets the same starting board, then plays it independently. Within a team,
+                players take turns; each full lap of the team is one round. <b>Ranking:</b> teams that
+                won rank first (fewest rounds wins), then the longest current healthy streak, then score (points ÷ rounds).
+              </p>
+            </div>
           </div>
-          <img id="wsQR" class="ws-qr" alt="Join QR code" />
-          <div class="ws-link" id="wsHostLink"></div>
-          <h3 style="margin:0.9rem 0 0.4rem;font-size:0.95rem;">🏆 Live leaderboard</h3>
-          <div id="wsLeaderboard" class="ws-leaderboard">
-            <div class="ws-empty">Waiting for teams to join…</div>
-          </div>
-          <button class="menu-btn primary" id="btnStartTeams" style="margin-top:0.7rem;">▶ Start team games</button>
-          <p style="font-size:0.74rem;opacity:0.8;margin-top:0.4rem;">
-            Every team gets the same starting board, then plays it independently. Within a team,
-            players take turns (each turn the invasion spreads). First to 5 healthy rounds wins;
-            ties break on overall score (points × first-winner's rounds ÷ your rounds).
-          </p>
-          <div class="ws-status" id="wsHostStatus"></div>
         </div>
 
         <!-- Client view: connected, playing -->
@@ -960,8 +1118,8 @@
             <div class="ws-code" id="wsClientTeam">-</div>
           </div>
           <p style="font-size:0.82rem;opacity:0.88;margin:0.6rem 0;">
-            Your score streams live to the host scoreboard. Close this panel and keep playing -
-            work together as a team!
+            You're connected. When the host starts team games, your team shares one habitat and
+            takes turns. Until then, practise solo - your score shows on the host screen.
           </p>
           <h3 style="margin:0.6rem 0 0.4rem;font-size:0.9rem;">Standings</h3>
           <div id="wsClientBoard" class="ws-leaderboard">
@@ -985,6 +1143,7 @@
         <div class="help-step"><span class="big">🃏</span><span>Your hand holds two kinds of cards: <b>controls</b> (🔨✂️🐾💧🔥💊) that remove invaders, and green <b>native enhancements</b> (🌱🌻🌾🤝) that plant and protect natives. Tap a card, then tap its target - or drag it.</span></div>
         <div class="help-step"><span class="big">🎯</span><span>Every invader has weaknesses based on <b>real conservation science</b>. Use the wrong method and it survives! Check the 📖 Field Guide.</span></div>
         <div class="help-step"><span class="big">🌙</span><span>When your actions run out, end the turn - but beware: <b>invaders spread</b> to neighboring cells.</span></div>
+        <div class="help-step"><span class="big">💰</span><span>Pythons shrug off almost everything. Post a <b>Python Bounty</b> to send hunters through a whole area - they keep patrolling the gold zone for 2 more turns.</span></div>
         <div class="help-step"><span class="big">🌬️</span><span>New invaders keep arriving each turn on the <b>wind, water, animals and human transport</b> - so clearing the board once isn't enough. Stay vigilant: an open habitat invites new colonizers.</span></div>
         <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. <b>Plant</b> more and <b>restore</b> habitat to keep your ratio healthy!</span></div>
         <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining 70% natives for 5 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
@@ -1023,6 +1182,12 @@
     // never stays clear for free - an open niche invites new colonizers. This is
     // why eradication is almost never permanent and management is ongoing.
     const INTRO_BASE_CHANCE = 0.45; // baseline reintroduction chance per turn
+    // Python bounty (area control), modelled on Florida's Python Elimination
+    // Program and the Florida Python Challenge: paid hunters sweep an area and
+    // keep patrolling it, catching pythons that wander in.
+    const BOUNTY_RADIUS = 2;        // hexes swept around the target
+    const BOUNTY_PATROL_TURNS = 2;  // turns the patrol zone stays active afterwards
+    const BOUNTY_BONUS = 15;        // bounty paid per python on top of its points
     // How a brand-new invader arrived (educational flavor, keyed by species).
     const DISPERSAL = {
       kudzu:    { icon: '🌬️', vector: 'Wind-blown seeds' },
@@ -1046,7 +1211,9 @@
       burn:   { icon: '🔥', short: 'Burn', name: 'Prescribed Burn',
         desc: 'Carefully planned fire clears invasive growth and helps fire-adapted native plants return.', class: 'burn' },
       chem:   { icon: '💊', short: 'Spray', name: 'Targeted Treatment',
-        desc: 'Targeted chemical treatments are effective but risky - spray the wrong target and harm natives. Precision and timing are critical.', class: 'chem' }
+        desc: 'Targeted chemical treatments are effective but risky - spray the wrong target and harm natives. Precision and timing are critical.', class: 'chem' },
+      bounty: { icon: '💰', short: 'Bounty', name: 'Python Bounty',
+        desc: "Post a bounty like Florida's Python Elimination Program: paid hunters sweep the area (every python within 2 cells) and keep patrolling it for 2 more turns, catching any python that moves in.", class: 'bounty' }
     };
 
     const INVADERS = {
@@ -1071,9 +1238,9 @@
         tip: 'Tiny parasitoid wasps hunt its larvae, and targeted trunk treatments protect single trees.',
         fact: 'Since 2002, Emerald Ash Borers have killed over 100 million ash trees. A single adult can produce 50-100 offspring in its lifetime.' },
       python: { icon: '🐍', name: 'Burmese Python', color: '#33691E', origin: 'Southeast Asia',
-        controls: ['manual'], spread: 0.3, points: 40,
+        controls: ['manual', 'bounty'], spread: 0.3, points: 40,
         harm: 'Released pets that ate their way through the Everglades - some mammal numbers fell over 90%.',
-        tip: "No easy fix exists: trained trackers remove pythons one by one. Never release a pet!",
+        tip: "No spray or trap stops them: trained trackers remove pythons one by one, and Florida pays bounty hunters to sweep and patrol whole areas. Never release a pet!",
         fact: 'A single female can lay 50-100+ eggs. With no natural predators in Florida, populations exploded from a few released pets to tens of thousands.' },
       carp: { icon: '🐟', name: 'Asian Carp', color: '#1565C0', origin: 'East Asia',
         controls: ['manual', 'cdd', 'shears'], spread: 0.525, points: 22,
@@ -1158,7 +1325,9 @@
         totalNatives: 0,
         healthyTurns: 0,
         newInvaders: new Set(),  // Track invaders placed this turn (don't spread yet)
-        invasivePhaseActive: false  // Flag: true during invasive spread sequence
+        invasivePhaseActive: false,  // Flag: true during invasive spread sequence
+        bountyZones: [],  // Active python bounty patrols: { cells: [...], turns: n }
+        bounties: 0       // Pythons removed through bounties (for the scoreboard)
       };
     }
 
@@ -1174,6 +1343,20 @@
         if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) out.push(nr * COLS + nc);
       }
       return out;
+    }
+
+    // All cells within `radius` hex steps of i (including i).
+    function cellsWithin(i, radius) {
+      const seen = new Set([i]);
+      let frontier = [i];
+      for (let r = 0; r < radius; r++) {
+        const next = [];
+        for (const c of frontier) {
+          for (const n of neighbors(c)) if (!seen.has(n)) { seen.add(n); next.push(n); }
+        }
+        frontier = next;
+      }
+      return [...seen];
     }
 
     function invaderCells() {
@@ -1235,9 +1418,11 @@
     }
 
     function refillHand() {
-      const controlTypes = Object.keys(CONTROLS);
       const enhanceTypes = Object.keys(ENHANCEMENTS);
       const present = [...new Set(invaderCells().map(i => S.field[i].type))];
+      // The bounty card only works on pythons, so only deal it while they're around.
+      const controlTypes = Object.keys(CONTROLS)
+        .filter(c => c !== 'bounty' || present.includes('python'));
       while (S.hand.length < HAND_SIZE) {
         const hasUseful = S.hand.some(h =>
           !isEnhance(h) && present.some(t => INVADERS[t].controls.includes(h)));
@@ -1254,6 +1439,9 @@
     }
 
     function initGame() {
+      bannerQueue.length = 0;
+      for (const k in EVENT_FX) delete EVENT_FX[k];
+      if (bannerShowing) dismissBanner();
       S = newState();
       setupBoard();
       refillHand();
@@ -1459,11 +1647,34 @@
         }
         removed = toRemove.length;
         totalScore = sp.points * removed;
+      } else if (ctrl === 'bounty') {
+        // Python Bounty: hunters sweep every python within BOUNTY_RADIUS, then
+        // keep patrolling the zone for a few turns (area control).
+        const zone = cellsWithin(cellIdx, BOUNTY_RADIUS);
+        for (const idx of zone) {
+          const occ = S.field[idx];
+          if (occ && occ.kind === 'invader' && occ.type === 'python') {
+            S.field[idx] = null;
+            S.newInvaders.delete(idx);
+            burst(idx, '#FFC107');
+            removed++;
+            totalScore += sp.points + BOUNTY_BONUS;
+          }
+        }
+        S.bounties = (S.bounties || 0) + removed;
+        S.bountyZones = S.bountyZones || [];
+        S.bountyZones.push({ cells: zone, turns: BOUNTY_PATROL_TURNS });
+        flashCells(zone, 'patrol');
       }
 
       S.score += totalScore;
       S.removed[cell.type] = (S.removed[cell.type] || 0) + removed;
 
+      if (ctrl === 'bounty') {
+        toast(`💰 <b>Bounty claimed!</b> Hunters removed <b>${removed}</b> 🐍 python${removed !== 1 ? 's' : ''} (+${totalScore}).<br>` +
+          `The gold zone stays patrolled for <b>${BOUNTY_PATROL_TURNS}</b> more turns.`, 5200);
+        return;
+      }
       if (!S.seenFacts[cell.type]) {
         S.seenFacts[cell.type] = true;
         toast(`✅ <b>+${totalScore}</b> ${sp.icon} <b>${sp.name}</b> removed (${removed})!<br>${sp.harm}`, 5200);
@@ -1542,6 +1753,7 @@
       if (S.over || S.invasivePhaseActive) return;  // Prevent multiple clicks
       S.selected = null;
       S.invasivePhaseActive = true;  // Lock out further clicks
+      clearFreshFlags();
 
       // Start invasive phase with announcement
       toast(`🌙 Turn ${S.turn} - Invasive species spreading...`, 1500);
@@ -1634,23 +1846,105 @@
       setTimeout(() => endTurn(), 800);
     }
 
-    // Stochastic reintroduction of invaders (single-player). Models the constant
-    // propagule pressure of dispersing seeds, larvae and new introductions: the
-    // emptier the habitat, the more likely an open niche gets colonized. Brand-new
-    // arrivals are marked so they establish for a turn before they can spread.
+    // ===== Turn-end helpers (shared by single-player and the team engine) =====
+    // Each operates on the global S (the team engine swaps S via tmWith), mutates
+    // the board, and returns a plain, serializable event object (or null) that
+    // presentEvent() turns into a banner - locally, or on a client's phone.
+
+    function clearFreshFlags() {
+      for (let i = 0; i < CELLS; i++) if (S.field[i] && S.field[i].fresh) delete S.field[i].fresh;
+    }
+
+    // Python bounty patrols: any python inside an active zone is caught.
+    function patrolBountyZones() {
+      if (!S.bountyZones || !S.bountyZones.length) return null;
+      const caught = [];
+      for (const z of S.bountyZones) {
+        for (const idx of z.cells) {
+          const occ = S.field[idx];
+          if (occ && occ.kind === 'invader' && occ.type === 'python' && !caught.includes(idx)) {
+            S.field[idx] = null;
+            S.newInvaders.delete(idx);
+            caught.push(idx);
+          }
+        }
+        z.turns--;
+      }
+      S.bountyZones = S.bountyZones.filter(z => z.turns > 0);
+      if (!caught.length) return null;
+      const pts = caught.length * (INVADERS.python.points + BOUNTY_BONUS);
+      S.score += pts;
+      S.bounties = (S.bounties || 0) + caught.length;
+      S.removed.python = (S.removed.python || 0) + caught.length;
+      return { kind: 'patrol', cells: caught, count: caught.length, score: pts };
+    }
+
+    // Random disturbance: hurricane or wildfire strikes random cells.
+    function rollRandomEvent() {
+      if (Math.random() >= RANDOM_EVENT_CHANCE) return null;
+      const kind = Math.random() < 0.5 ? 'hurricane' : 'wildfire';
+      const hits = Math.max(2, Math.floor(CELLS * (kind === 'hurricane' ? 0.15 : 0.12)));
+      const ev = { kind, cells: [], invaders: 0, plants: 0, natives: 0, score: 0 };
+      for (let k = 0; k < hits; k++) {
+        const idx = Math.floor(Math.random() * CELLS);
+        const occ = S.field[idx];
+        ev.cells.push(idx);
+        if (!occ) continue;
+        if (occ.kind === 'invader') {
+          ev.invaders++;
+          if (['kudzu', 'hyacinth'].includes(occ.type)) ev.plants++;
+        } else {
+          ev.natives++;
+        }
+        S.field[idx] = null;
+        S.newInvaders.delete(idx);
+      }
+      ev.cells = [...new Set(ev.cells)];
+      ev.score = kind === 'hurricane' ? ev.invaders * 10 : ev.plants * 15;
+      S.score += ev.score;
+      return ev;
+    }
+
+    // Natives surrounded by 3+ invaders are lost - unless shielded.
+    function resolveNativeLosses() {
+      const lost = [], shielded = [];
+      for (const i of nativeCells()) {
+        const surrounded = neighbors(i)
+          .filter(n => S.field[n] && S.field[n].kind === 'invader').length;
+        if (surrounded >= 3) (S.field[i].shield ? shielded : lost).push(i);
+      }
+      const types = lost.map(i => S.field[i].type);
+      for (const i of lost) {
+        S.field[i] = null;
+        S.score = Math.max(0, S.score - 25);
+      }
+      // Shields wear off by one turn
+      for (const i of nativeCells()) {
+        if (S.field[i].shield) S.field[i].shield--;
+      }
+      S.nativesLost = (S.nativesLost || 0) + lost.length;
+      if (!lost.length && !shielded.length) return null;
+      return { kind: 'lost', cells: lost, types, shielded: shielded.length };
+    }
+
+    // Stochastic reintroduction of invaders. Models the constant propagule
+    // pressure of dispersing seeds, larvae and new introductions: the emptier
+    // the habitat, the more likely an open niche gets colonized. Brand-new
+    // arrivals are marked so they establish for a turn before they can spread,
+    // and flagged `fresh` so the board highlights them.
     function introduceInvaders() {
       const invCount = invaderCells().length;
       // An empty niche WILL be colonized; a nearly-clear board is highly inviting.
       let chance = INTRO_BASE_CHANCE;
       if (invCount === 0) chance = 1.0;
       else if (invCount <= 2) chance = 0.7;
-      if (Math.random() >= chance) return 0;
+      if (Math.random() >= chance) return null;
 
       // Occasionally a second propagule arrives later in the game.
       let count = 1;
       if (invCount <= 2 && S.turn >= 4 && Math.random() < 0.35) count = 2;
 
-      let introduced = 0;
+      const arrivals = [];
       for (let n = 0; n < count; n++) {
         // Prefer open ground that isn't already pressing on a native, but a
         // determined colonizer will take any empty cell.
@@ -1659,91 +1953,147 @@
         if (i < 0) i = findCell(j => !S.field[j]);
         if (i < 0) break;
         const type = pick(Object.keys(INVADERS));
-        S.field[i] = { kind: 'invader', type };
+        S.field[i] = { kind: 'invader', type, fresh: true };
         S.newInvaders.add(i); // establishes this turn; eligible to spread next turn
-        introduced++;
-        const sp = INVADERS[type];
-        const d = DISPERSAL[type] || { icon: '🌱', vector: 'A new introduction' };
-        burst(i, '#EF5350');
-        sound('spread');
-        toast(`${d.icon} <b>${d.vector}</b>: ${sp.icon} ${sp.name} took root in open ground!`, 4000);
+        arrivals.push({ i, type });
       }
-      return introduced;
+      if (!arrivals.length) return null;
+      return { kind: 'arrival', cells: arrivals.map(a => a.i), arrivals };
+    }
+
+    // ===== Event presentation: banner + board effects =========================
+    const EVENT_FX = {};      // cellIdx -> { cls, until }
+    const bannerQueue = [];
+    let bannerTimer = null, bannerShowing = false;
+
+    function flashCells(cells, kind, ms) {
+      if (HOST_SIM) return;
+      const until = Date.now() + (ms || 3200);
+      for (const c of cells) EVENT_FX[c] = { cls: 'fx-' + kind, until };
+      setTimeout(() => { if (S && !HOST_SIM) renderBoard(); }, (ms || 3200) + 50);
+    }
+
+    function describeEvent(ev) {
+      const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+      if (ev.kind === 'hurricane') return {
+        tone: 'storm', kicker: 'Random event', icon: '🌀', title: 'Hurricane!',
+        body: `Storm surge tore through <b>${plural(ev.cells.length, 'cell')}</b>: <b>${plural(ev.invaders, 'invader')}</b> washed out` +
+          (ev.natives ? `, but <b>${plural(ev.natives, 'native')}</b> lost too.` : '.') +
+          (ev.score ? ` <b>+${ev.score}</b>` : ''),
+        learn: 'Storms are double-edged: they knock invaders back, but also open bare ground that new invaders colonize first.'
+      };
+      if (ev.kind === 'wildfire') return {
+        tone: 'fire', kicker: 'Random event', icon: '🔥', title: 'Wildfire!',
+        body: `Fire swept <b>${plural(ev.cells.length, 'cell')}</b>, burning <b>${plural(ev.plants, 'invasive plant')}</b>` +
+          (ev.natives ? ` and <b>${plural(ev.natives, 'native')}</b>.` : '.') +
+          (ev.score ? ` <b>+${ev.score}</b>` : ''),
+        learn: 'Fire-adapted native plants often recover faster than invaders - the idea behind prescribed burns.'
+      };
+      if (ev.kind === 'arrival') {
+        const list = ev.arrivals.map(a => {
+          const sp = INVADERS[a.type], d = DISPERSAL[a.type] || { icon: '🌱', vector: 'A new introduction' };
+          return `${d.icon} ${d.vector} brought ${sp.icon} <b>${sp.name}</b>`;
+        }).join('<br>');
+        return {
+          tone: 'bad', kicker: 'New arrival', icon: ev.arrivals.map(a => INVADERS[a.type].icon).join(' '),
+          title: ev.arrivals.length > 1 ? 'New invaders arrived!' : 'A new invader arrived!',
+          body: list + '<br>Look for the pulsing <b>NEW</b> tag - deal with it before it spreads next turn.',
+          learn: 'Propagule pressure: seeds, larvae and pets keep arriving, so an open habitat never stays clear for free.'
+        };
+      }
+      if (ev.kind === 'patrol') return {
+        tone: 'good', kicker: 'Bounty patrol', icon: '💰🐍', title: `Hunters caught ${plural(ev.count, 'python')}!`,
+        body: `Pythons that slithered into your bounty zone were removed. <b>+${ev.score}</b>`,
+        learn: "Florida's Python Elimination Program pays contracted hunters per python - thousands have been removed from the Everglades."
+      };
+      if (ev.kind === 'lost') {
+        if (!ev.cells.length) return {
+          tone: 'good', kicker: 'Natives', icon: '🛡️', title: 'Shields held!',
+          body: `Volunteers protected <b>${plural(ev.shielded, 'native')}</b> that were surrounded by invaders.`, learn: ''
+        };
+        return {
+          tone: 'bad', kicker: 'Natives lost', icon: ev.types.map(t => NATIVES[t].icon).join(' '),
+          title: ev.cells.length > 1 ? `${ev.cells.length} natives overwhelmed` : `${NATIVES[ev.types[0]].name} overwhelmed`,
+          body: `Surrounded by 3+ invaders. <b>-${25 * ev.cells.length}</b>` +
+            (ev.shielded ? `<br>🛡️ ${plural(ev.shielded, 'native')} survived thanks to a shield.` : ''),
+          learn: 'Keep invaders from encircling natives - or rally a Community Day to shield them.'
+        };
+      }
+      return null;
+    }
+
+    // Show an event loudly: banner (queued), board flash, shake, sound, buzz.
+    function presentEvent(ev) {
+      if (HOST_SIM || !ev) return;
+      const info = describeEvent(ev);
+      if (!info) return;
+      if (ev.cells && ev.cells.length) flashCells(ev.cells, ev.kind, 4200);
+      bannerQueue.push(info);
+      if (!bannerShowing) showNextBanner();
+    }
+
+    function showNextBanner() {
+      const info = bannerQueue.shift();
+      const el = document.getElementById('eventBanner');
+      if (!info) { bannerShowing = false; el.classList.remove('show'); return; }
+      bannerShowing = true;
+      el.className = 'event-banner tone-' + info.tone;
+      document.getElementById('ebKicker').textContent = info.kicker;
+      document.getElementById('ebIcon').textContent = info.icon;
+      document.getElementById('ebTitle').textContent = info.title;
+      document.getElementById('ebBody').innerHTML = info.body;
+      document.getElementById('ebLearn').textContent = info.learn || '';
+      document.getElementById('ebBtn').textContent = bannerQueue.length ? 'Next ›' : 'Got it';
+      const dur = 6500;
+      const timer = document.getElementById('ebTimer');
+      timer.style.transition = 'none';
+      timer.style.transform = 'scaleX(1)';
+      void el.offsetWidth;  // restart the timer bar
+      el.classList.add('show');
+      requestAnimationFrame(() => {
+        timer.style.transition = `transform ${dur}ms linear`;
+        timer.style.transform = 'scaleX(0)';
+      });
+
+      const tintColor = { storm: 'rgba(66,165,245,0.22)', fire: 'rgba(255,87,34,0.22)',
+                          bad: 'rgba(229,57,53,0.2)', good: 'rgba(255,193,7,0.16)' }[info.tone];
+      const tint = document.getElementById('eventTint');
+      tint.style.background = `radial-gradient(circle at 50% 40%, transparent 30%, ${tintColor} 100%)`;
+      tint.classList.add('show');
+      if (info.tone === 'storm' || info.tone === 'fire' || info.tone === 'bad') {
+        const area = document.getElementById('gameArea');
+        area.classList.remove('shake'); void area.offsetWidth; area.classList.add('shake');
+        setTimeout(() => area.classList.remove('shake'), 1100);
+      }
+      sound(info.tone === 'good' ? 'good' : 'event');
+      vibrate(info.tone === 'good' ? [50, 40, 50] : [120, 60, 120]);
+
+      clearTimeout(bannerTimer);
+      bannerTimer = setTimeout(dismissBanner, dur);
+    }
+
+    function dismissBanner() {
+      clearTimeout(bannerTimer);
+      document.getElementById('eventBanner').classList.remove('show');
+      document.getElementById('eventTint').classList.remove('show');
+      setTimeout(showNextBanner, 220);
     }
 
     function continueEndTurn(spreadCount) {
+      // Bounty patrols catch pythons that moved into their zones
+      presentEvent(patrolBountyZones());
+
       // Random events
-      if (Math.random() < RANDOM_EVENT_CHANCE && S.turn > 1) {
-        const eventType = Math.random() < 0.5 ? 'hurricane' : 'wildfire';
-        if (eventType === 'hurricane') {
-          // Hurricane destroys some invaders but damages all cells
-          const invadersBeforeEvent = invaderCells().length;
-          const cellsToHit = Math.max(2, Math.floor(CELLS * 0.15));
-          for (let i = 0; i < cellsToHit; i++) {
-            const idx = Math.floor(Math.random() * CELLS);
-            if (S.field[idx]) {
-              S.field[idx] = null;
-            }
-          }
-          const invadersAfterEvent = invaderCells().length;
-          const invadersDestroyed = invadersBeforeEvent - invadersAfterEvent;
-          sound('spread');
-          if (invadersDestroyed > 0) {
-            toast(`🌀 Hurricane swept through! <b>${invadersDestroyed}</b> invasive species were destroyed!`, 4000);
-            S.score += invadersDestroyed * 10;
-          } else {
-            toast(`🌀 A hurricane struck, destroying habitat but not many invaders.`, 4000);
-          }
-        } else {
-          // Wildfire kills invasive plants but also damages native habitat
-          const plantInvaders = invaderCells().filter(i =>
-            ['kudzu', 'hyacinth'].includes(S.field[i].type));
-          const cellsToHit = Math.max(2, Math.floor(CELLS * 0.12));
-          let wildscapeInvaders = 0;
-          for (let i = 0; i < cellsToHit; i++) {
-            const idx = Math.floor(Math.random() * CELLS);
-            if (S.field[idx]) {
-              if (S.field[idx].kind === 'invader' && ['kudzu', 'hyacinth'].includes(S.field[idx].type)) {
-                wildscapeInvaders++;
-              }
-              S.field[idx] = null;
-            }
-          }
-          sound('spread');
-          toast(`🔥 Prescribed fire! <b>${wildscapeInvaders}</b> invasive plants were burned. (Some natives lost too.)`, 4500);
-          S.score += wildscapeInvaders * 15;
-        }
-      }
+      if (S.turn > 1) presentEvent(rollRandomEvent());
 
-      // Natives surrounded by 3+ invaders are lost - unless restoration shields them
-      const lost = [];
-      for (const i of nativeCells()) {
-        const occ = S.field[i];
-        const surrounded = neighbors(i)
-          .filter(n => S.field[n] && S.field[n].kind === 'invader').length;
-        if (surrounded >= 3) {
-          if (occ.shield) {
-            toast(`🛡️ The ${NATIVES[occ.type].icon} <b>${NATIVES[occ.type].name}</b> was shielded from the invasion!`, 4000);
-          } else {
-            lost.push(i);
-          }
-        }
-      }
-      for (const i of lost) {
-        const nat = NATIVES[S.field[i].type];
-        S.field[i] = null;
-        S.score = Math.max(0, S.score - 25);
-        toast(`💔 The ${nat.icon} <b>${nat.name}</b> was overwhelmed by invaders! (-25)`, 5000);
-      }
-
-      // Restoration shields wear off by one turn
-      for (const i of nativeCells()) {
-        if (S.field[i].shield) S.field[i].shield--;
-      }
+      // Natives surrounded by 3+ invaders are lost - unless shielded
+      const lossEv = resolveNativeLosses();
+      presentEvent(lossEv);
+      const lost = lossEv ? lossEv.cells : [];
 
       // Propagule pressure: new invaders arrive on the wind, in the water, on
       // animals, or via human transport - so a cleared board never stays clear.
-      introduceInvaders();
+      presentEvent(introduceInvaders());
 
       S.turn++;
       S.plays = PLAYS_PER_TURN;
@@ -1804,7 +2154,8 @@
         : (nativeCells().length ? 'The invasion overwhelmed the habitat…' : 'All the native species were lost…');
       document.getElementById('goStats').innerHTML =
         `<span>⭐ ${finalScore}</span><span>🏅 Best ${best}</span>` +
-        `<span>🌱 ${S.turn} turns</span><span>🦋 ${nativeCells().length}/${S.totalNatives} natives saved</span>`;
+        `<span>🌱 ${S.turn} turns</span><span>🦋 ${nativeCells().length}/${S.totalNatives} natives saved</span>` +
+        (S.bounties ? `<span>💰 ${S.bounties} python bounties</span>` : '');
 
       const recap = Object.keys(INVADERS)
         .filter(t => S.removed[t] || invaderCells().some(i => S.field[i].type === t))
@@ -1842,6 +2193,12 @@
 
       const targeting = S.selected != null && !S.over;
       const selType = targeting ? S.hand[S.selected] : null;
+      // Bounty patrol zones: remember the most turns left on each cell
+      const zoneTurns = {};
+      for (const z of (S.bountyZones || [])) {
+        for (const c of z.cells) zoneTurns[c] = Math.max(zoneTurns[c] || 0, z.turns);
+      }
+      const now = Date.now();
       for (let i = 0; i < CELLS; i++) {
         const cellEl = document.createElement('div');
         cellEl.className = 'cell';
@@ -1856,13 +2213,23 @@
         if (occ) {
           const token = document.createElement('div');
           const data = occ.kind === 'invader' ? INVADERS[occ.type] : NATIVES[occ.type];
-          token.className = 'token ' + occ.kind + (occ.shield ? ' shielded' : '');
+          token.className = 'token ' + occ.kind + (occ.shield ? ' shielded' : '') + (occ.fresh ? ' fresh' : '');
           token.textContent = data.icon;
           token.style.fontSize = cellSize * 0.42 + 'px';
           token.style.background = occ.kind === 'invader' ? data.color : '#2E7D32';
           cellEl.appendChild(token);
         }
         if (targeting && validTargetForCard(selType, i)) cellEl.classList.add('valid-target');
+        if (zoneTurns[i]) {
+          cellEl.classList.add('bounty-zone');
+          if (zoneTurns[i] === 1) cellEl.classList.add('bounty-last');
+          cellEl.title = `Bounty patrol: ${zoneTurns[i]} turn${zoneTurns[i] > 1 ? 's' : ''} left`;
+        }
+        const fx = EVENT_FX[i];
+        if (fx) {
+          if (fx.until > now) cellEl.classList.add(fx.cls);
+          else delete EVENT_FX[i];
+        }
 
         cellEl.addEventListener('click', () => onCellTap(i));
         board.appendChild(cellEl);
@@ -2232,6 +2599,7 @@
           case 'good':   tone(523, 0, 0.12); tone(784, 0.1, 0.18); break;
           case 'error':  tone(150, 0, 0.25, 'sawtooth', 0.06); break;
           case 'spread': tone(220, 0, 0.15, 'triangle'); break;
+          case 'event':  tone(330, 0, 0.18, 'square', 0.05); tone(247, 0.16, 0.18, 'square', 0.05); tone(196, 0.32, 0.35, 'square', 0.05); break;
           case 'win':    [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.22)); break;
           case 'lose':   [392, 330, 262].forEach((f, i) => tone(f, i * 0.18, 0.3, 'triangle')); break;
         }
@@ -2387,11 +2755,21 @@
           <p style="font-size: 0.8rem; opacity: 0.8;">A fresh arrival establishes for one turn before it can spread - giving you a window to respond. This is why management never ends.</p>
         </div>
 
+        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">💰 Python Bounty (Area Control)</h3>
+        <div class="guide-card">
+          <p style="font-size: 0.85rem; margin: 0 0 0.4rem;">Modelled on Florida's Python Elimination Program and the annual Florida Python Challenge, which pay hunters to remove Burmese pythons from the Everglades.</p>
+          <p style="margin: 0.3rem 0;"><b>Sweep:</b> removes every python within ${BOUNTY_RADIUS} cells of the target</p>
+          <p style="margin: 0.3rem 0;"><b>Patrol:</b> the swept area stays guarded for ${BOUNTY_PATROL_TURNS} more turns - any python inside it at the end of a turn is caught</p>
+          <p style="margin: 0.3rem 0;"><b>Payout:</b> ${INVADERS.python.points} + ${BOUNTY_BONUS} bounty per python</p>
+          <p style="font-size: 0.8rem; opacity: 0.8;">The card only appears in your hand while pythons are on the board.</p>
+        </div>
+
         <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌪️ Random Events</h3>
         <div class="guide-card">
           <p style="margin: 0.3rem 0;"><b>Chance:</b> 25% per turn (after turn 1)</p>
-          <p style="margin: 0.3rem 0;"><b>Hurricane:</b> Removes 30-50% of invasives randomly</p>
-          <p style="margin: 0.3rem 0;"><b>Wildfire:</b> Removes plants only (Kudzu, Hyacinth); helps burn-adapted natives</p>
+          <p style="margin: 0.3rem 0;"><b>Hurricane:</b> Wipes ~${Math.floor(CELLS * 0.15)} random cells - invaders and natives alike (+10 per invader)</p>
+          <p style="margin: 0.3rem 0;"><b>Wildfire:</b> Burns ~${Math.floor(CELLS * 0.12)} random cells (+15 per invasive plant burned)</p>
+          <p style="margin: 0.3rem 0;">Events, new arrivals, bounty catches and native losses pop up as a banner, and the affected cells flash on the board.</p>
           <p style="font-size: 0.85rem; opacity: 0.8;">Real climate disturbances can help or hurt depending on your ecosystem composition.</p>
         </div>
 
@@ -2432,7 +2810,8 @@
     // host sends and forward the player's taps as intents. Single-player and the
     // older score-only workshop flow are unaffected and work with no network.
     const NET = { peer: null, role: null, code: null, team: null, name: null,
-                  host: null, conns: [], scores: {}, joined: false, lastSent: 0 };
+                  host: null, conns: [], scores: {}, joined: false, lastSent: 0,
+                  feed: [] };
 
     // When true, the host is computing a team's turn off-screen: presentation
     // helpers (render/toast/burst/sound/vibrate) become no-ops so reused rule code
@@ -2443,10 +2822,10 @@
     // lives in the global S; MP only tracks the multiplayer framing around it.
     const MP = { active: false, team: null, myId: null,
                  currentId: null, players: [], round: 1, healthyRounds: 0,
-                 over: false, won: false };
+                 over: false, won: false, rows: [] };
 
     // Host-side team engine: one game object per team, plus the shared session seed.
-    const TM = { running: false, games: {}, baseField: null, firstWinRounds: null };
+    const TM = { running: false, games: {}, baseField: null };
 
     function mpCurrentName() {
       const p = (MP.players || []).find(x => x.id === MP.currentId);
@@ -2531,11 +2910,14 @@
       TM.running = true;
       TM.games = {};
       TM.baseField = baseField;
-      TM.firstWinRounds = null;
+      NET.feed = [];
       teamNames.forEach(t => { TM.games[t] = tmNewGame(t, teams[t], baseField, baseNatives); });
       // Kick off every team.
       teamNames.forEach(t => tmBroadcastTeam(TM.games[t], []));
       tmBroadcastStandings();
+      tmFeed(null, `▶ Games started for <b>${teamNames.length}</b> team${teamNames.length > 1 ? 's' : ''}. Same starting habitat - may the best managers win!`);
+      const title = document.getElementById('wsBoardTitle');
+      if (title) title.textContent = '🏆 Live standings';
       wsSetStatus('wsHostStatus',
         'Games started for ' + teamNames.length + ' team' + (teamNames.length > 1 ? 's' : '') + '.', 'ok');
     }
@@ -2579,10 +2961,15 @@
       if (!ok) return;                                  // invalid target: ignore
       hand.splice(handIdx, 1);
       g.plays--;
+      const bountiesBefore = g.bounties || 0;
       tmWith(g, () => {
         if (isEnhance(type)) applyEnhancement(type, cellIdx);  // may grant +plays (community)
         else applyControl(type, cellIdx);
       });
+      if (type === 'bounty' && g.bounties > bountiesBefore) {
+        const n = g.bounties - bountiesBefore;
+        tmFeed(g.team, `💰 posted a python bounty - <b>${n}</b> 🐍 caught by ${tmEsc(g.names[pid] || 'a player')}'s hunters`);
+      }
       tmBroadcastTeam(g, []);
       tmBroadcastStandings();
     }
@@ -2610,7 +2997,8 @@
       const g = TM.games[team];
       if (!g || g.over) return;
       if (g.currentId !== pid) return;
-      const spreads = tmResolveTurn(g);                 // invasive spread + events + losses
+      const res = tmResolveTurn(g);                     // invasive spread + events + losses
+      res.events.forEach(ev => tmFeedEvent(g.team, ev));
 
       // Advance to the next player on this team; a full lap is one round.
       g.currentIdx = (g.currentIdx + 1) % g.order.length;
@@ -2631,114 +3019,54 @@
       const invaderCount = tmCountInvaders(g);
       if (g.healthyRounds >= WIN_TURNS) {
         g.over = true; g.won = true; g.roundsToWin = g.roundsCompleted;
-        if (TM.firstWinRounds == null) TM.firstWinRounds = g.roundsToWin;
+        tmFeed(g.team, `🏆 <b>stabilized their ecosystem</b> in ${g.roundsToWin} rounds!`);
       } else if (nativeCount === 0 || invaderCount > LOSE_CELLS) {
         g.over = true; g.lost = true;
+        tmFeed(g.team, `🥀 was overrun by the invasion after ${g.roundsCompleted} rounds.`);
+      } else if (roundDone && g.healthyRounds >= WIN_TURNS - 2) {
+        tmFeed(g.team, `🌿 healthy streak at <b>${g.healthyRounds}/${WIN_TURNS}</b> - closing in on the win!`);
       }
 
-      tmBroadcastTeam(g, spreads);
+      tmBroadcastTeam(g, res.spreads, res.events);
       tmBroadcastStandings();
     }
 
-    // Synchronous turn resolution against g (no animation, no DOM). Mirrors the
-    // single-player spread -> random event -> native-loss sequence.
+    // Synchronous turn resolution against g (no animation, no DOM). Runs the
+    // same spread -> patrol -> random event -> native loss -> reintroduction
+    // sequence as single-player, via the shared helpers, and returns the
+    // spreads plus serializable events for clients to announce.
     function tmResolveTurn(g) {
-      const spreads = [];
-      const spreadThisTurn = new Set();  // Track cells just occupied by spreads
-      // Invasive spread: established invaders only (those placed this turn skip).
-      for (let i = 0; i < CELLS; i++) {
-        const cell = g.field[i];
-        if (!cell || cell.kind !== 'invader' || g.newInvaders.has(i)) continue;
-        const sp = INVADERS[cell.type];
-        if (Math.random() < sp.spread) {
-          // Exclude both empty AND newly-spread-into cells
-          const empties = neighbors(i).filter(n => !g.field[n] && !spreadThisTurn.has(n));
-          if (empties.length) {
-            const to = pick(empties);
-            g.field[to] = { kind: 'invader', type: cell.type };
-            g.newInvaders.add(to);
-            spreadThisTurn.add(to);  // Mark as occupied by this turn's spread
-            spreads.push({ to: to, type: cell.type });
-          }
-        }
-      }
-      g.newInvaders.clear();
-
-      // Random event (skip the very first turn of the game).
-      g.turn = (g.turn || 1) + 1;
-      if (Math.random() < RANDOM_EVENT_CHANCE && g.turn > 2) {
-        if (Math.random() < 0.5) {
-          // Hurricane: clears random cells, scores destroyed invaders.
-          const before = tmCountInvaders(g);
-          const hits = Math.max(2, Math.floor(CELLS * 0.15));
-          for (let k = 0; k < hits; k++) {
-            const idx = Math.floor(Math.random() * CELLS);
-            if (g.field[idx]) g.field[idx] = null;
-          }
-          g.score += Math.max(0, before - tmCountInvaders(g)) * 10;
-        } else {
-          // Wildfire: clears random cells, scores burned kudzu/hyacinth.
-          const hits = Math.max(2, Math.floor(CELLS * 0.12));
-          let burned = 0;
-          for (let k = 0; k < hits; k++) {
-            const idx = Math.floor(Math.random() * CELLS);
-            if (g.field[idx]) {
-              if (g.field[idx].kind === 'invader' && ['kudzu', 'hyacinth'].includes(g.field[idx].type)) burned++;
-              g.field[idx] = null;
+      const spreads = [], events = [];
+      tmWith(g, () => {
+        clearFreshFlags();
+        const spreadThisTurn = new Set();  // cells just occupied by spreads
+        // Invasive spread: established invaders only (those placed this turn skip).
+        for (const i of invaderCells()) {
+          if (S.newInvaders.has(i) || spreadThisTurn.has(i)) continue;
+          const type = S.field[i].type;
+          if (Math.random() < INVADERS[type].spread) {
+            const empties = neighbors(i).filter(n => !S.field[n] && !spreadThisTurn.has(n));
+            if (empties.length) {
+              const to = pick(empties);
+              S.field[to] = { kind: 'invader', type };
+              spreadThisTurn.add(to);
+              spreads.push({ to, type });
             }
           }
-          g.score += burned * 15;
         }
-      }
-
-      // Natives surrounded by 3+ invaders are lost unless shielded.
-      const lost = [];
-      for (let i = 0; i < CELLS; i++) {
-        const occ = g.field[i];
-        if (!occ || occ.kind !== 'native') continue;
-        const surrounded = neighbors(i).filter(n => g.field[n] && g.field[n].kind === 'invader').length;
-        if (surrounded >= 3) {
-          if (!occ.shield) lost.push(i);
-        }
-      }
-      for (const i of lost) { g.field[i] = null; g.score = Math.max(0, g.score - 25); }
-      // Shields wear off by one.
-      for (let i = 0; i < CELLS; i++) {
-        if (g.field[i] && g.field[i].kind === 'native' && g.field[i].shield) g.field[i].shield--;
-      }
-
-      // Propagule pressure: stochastic reintroduction so a cleared board never
-      // stays clear for free. Mirrors single-player introduceInvaders().
-      const invCount = tmCountInvaders(g);
-      let introChance = INTRO_BASE_CHANCE;
-      if (invCount === 0) introChance = 1.0;
-      else if (invCount <= 2) introChance = 0.7;
-      if (Math.random() < introChance) {
-        let count = 1;
-        if (invCount <= 2 && g.turn >= 4 && Math.random() < 0.35) count = 2;
-        for (let n = 0; n < count; n++) {
-          // Prefer empty cells not already beside a native, else any empty cell.
-          const open = [];
-          const anyEmpty = [];
-          for (let i = 0; i < CELLS; i++) {
-            if (g.field[i]) continue;
-            anyEmpty.push(i);
-            if (!neighbors(i).some(nb => g.field[nb] && g.field[nb].kind === 'native')) open.push(i);
-          }
-          const pool = open.length ? open : anyEmpty;
-          if (!pool.length) break;
-          const to = pick(pool);
-          const type = pick(Object.keys(INVADERS));
-          g.field[to] = { kind: 'invader', type };
-          g.newInvaders.add(to);
-          spreads.push({ to: to, type: type, introduced: true });
-        }
-      }
-      return spreads;
+        S.newInvaders.clear();
+        S.turn = (S.turn || 1) + 1;
+        const add = ev => { if (ev) events.push(ev); };
+        add(patrolBountyZones());
+        if (S.turn > 2) add(rollRandomEvent());   // skip the very first turn
+        add(resolveNativeLosses());
+        add(introduceInvaders());
+      });
+      return { spreads, events };
     }
 
     // Per-player view of a team's game (each client gets its own hand only).
-    function tmBroadcastTeam(g, spreads) {
+    function tmBroadcastTeam(g, spreads, events) {
       const players = g.order.map(id => ({ id: id, name: g.names[id] }));
       const base = {
         type: g.over ? 'team_over' : 'team_state',
@@ -2751,9 +3079,11 @@
         round: g.roundsCompleted,
         healthyRounds: g.healthyRounds,
         score: g.score,
-        overall: tmTeamScore(g),
+        bounties: g.bounties || 0,
+        bountyZones: g.bountyZones || [],
         over: g.over, won: g.won, lost: g.lost,
-        spreads: spreads || []
+        spreads: spreads || [],
+        events: events || []
       };
       NET.conns.forEach(c => {
         if (c.team !== g.team) return;
@@ -2762,27 +3092,26 @@
       });
     }
 
-    function tmTeamScore(g) {
-      // Overall score = points * (firstWinRounds / roundsThisTeam). Only meaningful
-      // once some team has won; before that we report the raw points.
-      if (TM.firstWinRounds == null) return null;
-      const rounds = g.won ? g.roundsToWin : Math.max(1, g.roundsCompleted);
-      return Math.round(g.score * (TM.firstWinRounds / rounds));
-    }
-
+    // Transparent ranking: winners first (fewest rounds, then points), then
+    // teams still playing, then teams that lost; ties break on the current
+    // healthy streak, then points.
     function tmStandingsRows() {
+      const order = { won: 0, playing: 1, lost: 2 };
       return Object.values(TM.games).map(g => ({
         team: g.team,
+        players: g.order.map(id => g.names[id]),
+        current: g.over ? '' : (g.names[g.currentId] || ''),
         healthy: g.healthyRounds,
         rounds: g.roundsCompleted,
-        points: g.score,
-        overall: tmTeamScore(g),
-        status: g.over ? (g.won ? 'Won 🏆' : 'Lost 🥀') : 'In progress'
+        points: Math.round(g.score / Math.max(1, g.roundsCompleted)),  // same per-round score as the player header
+        bounties: g.bounties || 0,
+        natives: tmCountNatives(g),
+        invaders: tmCountInvaders(g),
+        roundsToWin: g.roundsToWin,
+        status: g.over ? (g.won ? 'won' : 'lost') : 'playing'
       })).sort((a, b) => {
-        // Winners first, then by healthy-round progress, then points.
-        const aw = a.status.startsWith('Won') ? 1 : 0, bw = b.status.startsWith('Won') ? 1 : 0;
-        if (aw !== bw) return bw - aw;
-        if ((b.overall || 0) !== (a.overall || 0)) return (b.overall || 0) - (a.overall || 0);
+        if (a.status !== b.status) return order[a.status] - order[b.status];
+        if (a.status === 'won' && a.roundsToWin !== b.roundsToWin) return a.roundsToWin - b.roundsToWin;
         if (b.healthy !== a.healthy) return b.healthy - a.healthy;
         return b.points - a.points;
       });
@@ -2792,6 +3121,39 @@
       const rows = tmStandingsRows();
       renderTeamLeaderboard('wsLeaderboard', rows);
       NET.conns.forEach(c => { try { c.send({ type: 'team_board', rows: rows }); } catch (_) {} });
+    }
+
+    // ----- Host live feed (projector) -----
+    function tmEsc(str) { return String(str).replace(/[<>&"]/g, ''); }
+
+    function tmFeed(team, html) {
+      NET.feed.unshift({ t: Date.now(), html: (team ? `<b>${tmEsc(team)}</b> ` : '') + html });
+      NET.feed = NET.feed.slice(0, 30);
+      renderFeed();
+    }
+
+    function tmFeedEvent(team, ev) {
+      const p = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+      if (ev.kind === 'hurricane') tmFeed(team, `🌀 hit by a <b>hurricane</b> - ${p(ev.invaders, 'invader')} washed out`);
+      else if (ev.kind === 'wildfire') tmFeed(team, `🔥 hit by a <b>wildfire</b> - ${p(ev.plants, 'invasive plant')} burned`);
+      else if (ev.kind === 'arrival') tmFeed(team, `${ev.arrivals.map(a => INVADERS[a.type].icon).join(' ')} <b>new invader${ev.arrivals.length > 1 ? 's' : ''}</b> arrived`);
+      else if (ev.kind === 'patrol') tmFeed(team, `💰 bounty patrol caught <b>${p(ev.count, 'python')}</b>`);
+      else if (ev.kind === 'lost' && ev.cells.length) tmFeed(team, `💔 lost ${p(ev.cells.length, 'native')}`);
+    }
+
+    function renderFeed() {
+      const el = document.getElementById('wsFeed');
+      if (!el) return;
+      if (!NET.feed.length) {
+        el.innerHTML = '<div class="ws-empty">Events from every team\'s habitat will appear here.</div>';
+        return;
+      }
+      const now = Date.now();
+      el.innerHTML = NET.feed.map(f => {
+        const s = Math.round((now - f.t) / 1000);
+        const ago = s < 60 ? s + 's' : Math.round(s / 60) + 'm';
+        return `<div><span class="ago">${ago}</span>${f.html}</div>`;
+      }).join('');
     }
 
     function genCode() {
@@ -2826,6 +3188,8 @@
       NET.role = 'host';
       NET.scores = {};
       NET.conns = [];
+      NET.feed = [];
+      document.body.classList.add('hosting');
       createHostPeer(genCode(), 1);
       wsSetStatus('wsLobbyStatus', 'Creating room…', 'ok');
     }
@@ -2878,6 +3242,7 @@
         try { conn.send({ type: 'welcome', team: d.team }); } catch (_) {}
         broadcastScores();
         wsSetStatus('wsHostStatus', conn.pname + ' joined team "' + d.team + '"', 'ok');
+        tmFeed(d.team, `🙋 ${tmEsc(conn.pname)} joined`);
         // If a team game is already running, fold this player into their team.
         if (TM.running) tmAddLatePlayer(conn.team, conn.peer, conn.pname);
       } else if (d.type === 'score' && conn.team) {
@@ -2891,6 +3256,10 @@
         tmHandleAction(conn.team, conn.peer, d.handIdx, d.cellIdx);
       } else if (d.type === 'end_turn' && conn.team) {
         tmHandleEndTurn(conn.team, conn.peer);
+      } else if (d.type === 'pass' && conn.team) {
+        tmHandlePass(conn.team, conn.peer);
+      } else if (d.type === 'discard_hand' && conn.team) {
+        tmHandleDiscardHand(conn.team, conn.peer);
       }
     }
 
@@ -2898,11 +3267,13 @@
       return Object.entries(NET.scores).map(([team, info]) => {
         const players = Object.values(info.players || {});
         const total = players.reduce((s, p) => s + (p.score || 0), 0);
-        return { team, total, count: players.length };
+        return { team, total, count: players.length, names: players.map(p => p.name) };
       }).sort((a, b) => b.total - a.total);
     }
 
     function broadcastScores() {
+      // Once team games are running, the team standings are the scoreboard.
+      if (TM.running) { tmBroadcastStandings(); return; }
       const totals = teamTotals();
       NET.conns.forEach(c => { try { c.send({ type: 'scores', totals }); } catch (_) {} });
       renderLeaderboard('wsLeaderboard', totals);
@@ -2975,7 +3346,8 @@
         mpShowGameOver(d);
       } else if (d.type === 'team_board') {
         // Live standings broadcast (round/healthy/score per team)
-        renderTeamLeaderboard('wsClientBoard', d.rows);
+        MP.rows = d.rows || [];
+        renderTeamLeaderboard('wsClientBoard', d.rows, NET.team);
       }
     }
 
@@ -3001,11 +3373,16 @@
     function leaveWorkshop() {
       try { if (NET.peer) NET.peer.destroy(); } catch (_) {}
       NET.peer = null; NET.role = null; NET.host = null; NET.joined = false;
-      NET.conns = []; NET.scores = {};
+      NET.conns = []; NET.scores = {}; NET.feed = [];
       // Reset team-game state on both host and client.
       MP.active = false; MP.team = null; MP.myId = null; MP.currentId = null;
-      MP.players = []; MP.over = false; MP.won = false;
-      TM.running = false; TM.games = {}; TM.baseField = null; TM.firstWinRounds = null;
+      MP.players = []; MP.over = false; MP.won = false; MP.rows = [];
+      TM.running = false; TM.games = {}; TM.baseField = null;
+      document.body.classList.remove('hosting');
+      const panel = document.querySelector('#workshopOverlay .panel');
+      if (panel) panel.classList.remove('projector');
+      const title = document.getElementById('wsBoardTitle');
+      if (title) title.textContent = '🙋 Teams in the room';
       updateWsBadge();
       document.getElementById('wsHostView').style.display = 'none';
       document.getElementById('wsClientView').style.display = 'none';
@@ -3032,8 +3409,10 @@
       S.hand = d.hand || [];
       S.plays = myTurn ? d.plays : 0;
       S.score = d.score;
-      S.healthyTurns = d.healthyRounds;   // drives the 6-step win ticker
+      S.healthyTurns = d.healthyRounds;   // drives the win ticker
       S.turn = d.round;
+      S.bountyZones = d.bountyZones || [];
+      S.bounties = d.bounties || 0;
       S.over = !!d.over;
       S.selected = null;
       S.invasivePhaseActive = false;
@@ -3055,6 +3434,8 @@
       } else if (!firstState && myTurn) {
         toast('🎯 Your turn!', 1400);
       }
+      // Announce events (hurricane, new arrivals, bounty patrols, losses) loudly.
+      (d.events || []).forEach(presentEvent);
     }
 
     function mpShowGameOver(d) {
@@ -3066,19 +3447,21 @@
         ? 'Your team stabilized the ecosystem!'
         : 'The invasion overwhelmed your team…';
       if (stats) {
-        const overall = (d.overall != null) ? d.overall : '—';
+        const rows = MP.rows || [];
+        const idx = rows.findIndex(r => r.team === d.team);
         stats.innerHTML =
-          `<span>⭐ ${d.score} pts</span>` +
+          `<span>⭐ ${Math.round(d.score / Math.max(1, d.round))}</span>` +
           `<span>🔁 ${d.round} rounds</span>` +
           `<span>🌿 ${d.healthyRounds}/${WIN_TURNS} healthy</span>` +
-          `<span>🏅 Overall ${overall}</span>`;
+          (d.bounties ? `<span>💰 ${d.bounties} bounties</span>` : '') +
+          (idx >= 0 ? `<span>🏅 Rank ${idx + 1} of ${rows.length}</span>` : '');
       }
       sound(d.won ? 'win' : 'lose');
       openOverlay('gameOverlay');
     }
 
-    // Rich team standings (host scoreboard + client side panel).
-    function renderTeamLeaderboard(id, rows) {
+    // Team standings (host scoreboard + client side panel).
+    function renderTeamLeaderboard(id, rows, myTeam) {
       const el = document.getElementById(id);
       if (!el) return;
       if (!rows || !rows.length) {
@@ -3087,17 +3470,25 @@
       }
       const medals = ['🥇', '🥈', '🥉'];
       el.innerHTML = rows.map((r, i) => {
-        const rank = r.status.startsWith('Won') ? (medals[i] || (i + 1)) : (i + 1);
-        const team = String(r.team).replace(/[<>&]/g, '');
-        const overall = (r.overall != null) ? r.overall : '—';
-        return `<div class="ws-row${i === 0 ? ' lead' : ''}">` +
-          `<span class="ws-rank">${rank}</span>` +
-          `<span class="ws-team">${team}` +
-          `<small>🌿 ${r.healthy}/${WIN_TURNS} · 🔁 ${r.rounds} · ⭐ ${r.points} · ${r.status}</small></span>` +
-          `<span class="ws-score">${overall}</span></div>`;
+        const team = tmEsc(r.team);
+        const streak = Array.from({ length: WIN_TURNS }, (_, k) =>
+          `<i class="${k < r.healthy ? 'on' : ''}"></i>`).join('');
+        const pill = r.status === 'won' ? `<span class="ws-pill won">WON in ${r.roundsToWin}</span>`
+          : r.status === 'lost' ? '<span class="ws-pill lost">OVERRUN</span>'
+          : (r.current ? `<span class="ws-pill turn">▶ ${tmEsc(r.current)}</span>` : '');
+        const cls = 'ws-row' + (i === 0 ? ' lead' : '') + (r.status === 'won' ? ' won' : '') +
+          (r.status === 'lost' ? ' lost' : '') + (myTeam && r.team === myTeam ? ' mine' : '');
+        return `<div class="${cls}">` +
+          `<span class="ws-rank">${r.status === 'lost' ? (i + 1) : (medals[i] || (i + 1))}</span>` +
+          `<span class="ws-team">${team}${pill}` +
+          `<small><span class="ws-streak" title="Healthy streak">${streak}</span>` +
+          `R${r.rounds} · 🦋 ${r.natives} · 🌿 ${r.invaders}` +
+          (r.bounties ? ` · 💰 ${r.bounties}` : '') + `</small></span>` +
+          `<span class="ws-score">${r.points}<small>score</small></span></div>`;
       }).join('');
     }
 
+    // Pre-game lobby / solo-practice scores.
     function renderLeaderboard(id, totals) {
       const el = document.getElementById(id);
       if (!el) return;
@@ -3105,15 +3496,12 @@
         el.innerHTML = '<div class="ws-empty">Waiting for teams to join…</div>';
         return;
       }
-      const medals = ['🥇', '🥈', '🥉'];
       el.innerHTML = totals.map((t, i) => {
-        const rank = medals[i] || (i + 1);
-        const players = t.count + (t.count === 1 ? ' player' : ' players');
-        const safeTeam = String(t.team).replace(/[<>&]/g, '');
-        return `<div class="ws-row${i === 0 ? ' lead' : ''}">` +
-          `<span class="ws-rank">${rank}</span>` +
-          `<span class="ws-team">${safeTeam}<small>${players}</small></span>` +
-          `<span class="ws-score">${t.total}</span></div>`;
+        const names = (t.names || []).map(tmEsc).join(', ') || (t.count + ' players');
+        return `<div class="ws-row">` +
+          `<span class="ws-rank">${i + 1}</span>` +
+          `<span class="ws-team">${tmEsc(t.team)}<small>🙋 ${names}</small></span>` +
+          `<span class="ws-score">${t.total}<small>practice</small></span></div>`;
       }).join('');
     }
 
@@ -3167,7 +3555,7 @@
           } else if (e.target.id === 'invasiveCount' || e.target.parentElement.id === 'invasiveCount') {
             showTooltip('🌿 <b>Invasive species</b><br>Species you\'re managing. Invasives spread each turn. Lose if invasives exceed ' + LOSE_CELLS + ' cells.', e.target.id === 'invasiveCount' ? e.target : e.target.parentElement);
           } else if (e.target.id === 'score' || e.target.parentElement.className.includes('score')) {
-            showTooltip('⭐ <b>Score</b><br>Points from removing invasives and protecting natives, divided by the number of rounds played — so faster, cleaner games score higher.', document.querySelector('.score-display'));
+            showTooltip('⭐ <b>Score</b><br>Points from removing invasives and protecting natives, divided by the number of rounds played — so faster, cleaner games score higher. In team games, winners rank first (fewest rounds), then healthy streak, then score.', document.querySelector('.score-display'));
           }
         });
       }
@@ -3206,8 +3594,23 @@
         closeOverlay('menuOverlay');
         openOverlay('workshopOverlay');
       });
+      document.getElementById('ebBtn').addEventListener('click', dismissBanner);
       document.getElementById('btnHostRoom').addEventListener('click', hostWorkshop);
       document.getElementById('btnStartTeams').addEventListener('click', tmStartGames);
+      document.getElementById('btnProjector').addEventListener('click', () => {
+        const panel = document.querySelector('#workshopOverlay .panel');
+        const on = panel.classList.toggle('projector');
+        document.getElementById('btnProjector').textContent = on ? '📱 Compact view' : '📺 Projector view';
+        if (on && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+      });
+      document.getElementById('btnEndRoom').addEventListener('click', () => {
+        leaveWorkshop();
+        document.getElementById('btnHostRoom').style.display = 'block';
+        document.getElementById('btnProjector').textContent = '📺 Projector view';
+        toast('🚪 Room closed.');
+      });
+      // Keep the feed's "time ago" fresh on the projector.
+      setInterval(() => { if (NET.role === 'host') renderFeed(); }, 15000);
       document.getElementById('btnJoinRoom').addEventListener('click', () => {
         document.getElementById('btnHostRoom').style.display = 'none';
         joinWorkshop(

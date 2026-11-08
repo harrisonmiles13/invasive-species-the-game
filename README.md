@@ -35,7 +35,7 @@ Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
 | 🌺 Water Hyacinth | Amazon Basin | ✂️ Mechanical harvest · 🐾 Weevils |
 | 🐚 Zebra Mussel | Caspian Sea region | 👐 Hunting & scraping · 💧 Clean-Drain-Dry |
 | 🪲 Emerald Ash Borer | Northeast Asia | 🐾 Parasitoid wasps · 💊 Targeted treatment |
-| 🐍 Burmese Python | Southeast Asia | 👐 Trained trackers (nothing else works!) |
+| 🐍 Burmese Python | Southeast Asia | 👐 Trained trackers · 💰 Python bounty |
 | 🐟 Asian Carp | East Asia | 👐 Hunting · ✂️ Netting · 💧 Barriers |
 | 🦠 Chytrid Fungus | East Asia | 💧 Disinfection · 💊 Antifungal treatment |
 
@@ -48,6 +48,7 @@ Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
 - 💧 **Water Management** — drawdowns, hot-water washes, barriers
 - 🔥 **Prescribed Burn** — planned fire that helps natives return
 - 💊 **Targeted Treatment** — precise, last-resort pesticide
+- 💰 **Python Bounty** — area control modelled on Florida's Python Elimination Program: hunters sweep every python within 2 cells, then patrol that zone for 2 more turns (only dealt while pythons are present)
 
 **Native enhancements (build up natives):**
 - 🌱 **Native Planting** — establish a new native on an empty cell
@@ -59,10 +60,12 @@ Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
 
 Built for facilitated group sessions:
 
-- One device **hosts a room** (great on a projector) and shows a **live leaderboard**.
+- One device **hosts a room** and shows a **live scoreboard** plus a **live event feed**
+  (hurricanes, new arrivals, bounties, wins). Tap **📺 Projector view** for a full-screen layout.
 - Teams join from their phones with a **team name** (bar-trivia style) via the room
   code, a shared link, or a **QR code**.
-- Each team's score streams in **live** for high-energy competition between groups.
+- Teams take turns on a shared habitat; every team starts from the same board.
+- **Ranking:** winners first (fewest rounds), then the longest healthy streak, then score (points ÷ rounds).
 - Up to **5 teams** per room; single player works too.
 
 Multiplayer uses [PeerJS](https://peerjs.com/) free peer-to-peer signaling, so it
@@ -72,8 +75,12 @@ game falls back to single-player automatically.
 ## 🌀 Random Events
 
 Each turn there's a chance of a real-world disturbance:
-- **Hurricanes** scatter and destroy some invaders.
-- **Wildfires / prescribed fire** hit invasive plants especially hard.
+- **Hurricanes** wipe random cells — invaders and natives alike.
+- **Wildfires** burn random cells; invasive plants score extra.
+
+Events, new invader arrivals, bounty catches and native losses appear as a
+full-screen banner, and the affected cells flash on the board. New arrivals
+carry a pulsing **NEW** tag until the next turn.
 
 ## 🔬 Educational Goals
 
