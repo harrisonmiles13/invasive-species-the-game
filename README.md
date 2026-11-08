@@ -21,7 +21,7 @@ Works great on phones — add it to your home screen for a fullscreen app feel.
 2. **Match the method to the species** — every invader has real-world weaknesses. Wrong method = the invader survives and you lose points.
 3. **End your turn** and watch out: invaders **spread** to neighbouring cells, one at a time.
 4. **Protect the natives** — they're lost if invaders surround them. Plant more and restore habitat to keep your balance.
-5. **Win** by maintaining a **healthy ecosystem** (70% natives) for **5 consecutive turns** — about one game in a 50-minute workshop slot.
+5. **Win** by maintaining a **healthy ecosystem** (70% natives) for **5 consecutive turns** — a game takes about 5-15 minutes.
 6. **Lose** if the invasion meter fills up or all natives are lost.
 
 Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
@@ -56,27 +56,43 @@ Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
 - 🌾 **Habitat Restoration** — clear one invader (any species) and plant two natives in its place
 - 🤝 **Community Day** — rally volunteers to protect every native and gain an action
 
-## 👥 Workshop Mode (multiplayer)
+## 🏆 Global Leaderboard (classrooms & workshops)
 
-Built for facilitated group sessions:
+Everyone plays their own single-player game on their phone; one screen shows the
+live leaderboard.
 
-- One device **hosts a room** and shows a **live scoreboard** plus a **live event feed**
-  (hurricanes, new arrivals, bounties, wins). Tap **📺 Projector view** for a full-screen layout.
-- Teams join from their phones with a **team name** (bar-trivia style) via the room
-  code, a shared link, or a **QR code**.
-- Teams take turns on a shared habitat; every team starts from the same board.
-- **Ranking:** winners first (fewest rounds), then the longest healthy streak, then score (points ÷ rounds).
-- Up to **5 teams** per room; single player works too.
+- Open **`leaderboard.html`** on the projector
+  (https://harrisonmiles13.github.io/invasive-species-the-game/leaderboard.html).
+  It shows a **QR code** for the game, this **room's** top players, the
+  **all-time** top players and a feed of recent wins. It refreshes every 10 seconds.
+- The QR code carries a room code (`?s=ABCD`), so wins from those phones post to
+  the room board as well as the all-time board. **🔄 New room** starts a fresh room
+  board; all-time scores are kept.
+- After a **win**, players enter a name or initials and tap **🏆 Post**. Losses
+  aren't posted. Each player's best win is shown.
+- **Final score** = `5000 ÷ turns played` (speed; a perfect 5-turn win = 1000)
+  `+ 40 × natives saved` (habitat). The in-game ⭐ points are live feedback only.
 
-Multiplayer uses [PeerJS](https://peerjs.com/) free peer-to-peer signaling, so it
-runs on plain static hosting with no backend. If the network is unavailable, the
-game falls back to single-player automatically.
+### Setting up the leaderboard (one time, free)
+
+Scores are stored in a free Firebase Realtime Database through its REST API (no SDK).
+
+1. Create a project at https://console.firebase.google.com and add a
+   **Realtime Database** (start in locked mode).
+2. In the database's **Rules** tab, paste [`database.rules.json`](database.rules.json)
+   and publish. The rules make scores append-only, check every field, and
+   reject a score that doesn't match its turns and natives.
+3. Put the database URL (e.g. `https://your-project-default-rtdb.firebaseio.com`) in
+   [`leaderboard-config.js`](leaderboard-config.js) and push.
+
+Until the URL is set, the game works as normal and the post button stays hidden;
+`leaderboard.html` shows these setup steps.
 
 ## 🌀 Random Events
 
 Each turn there's a chance of a real-world disturbance:
 - **Hurricanes** wipe random cells — invaders and natives alike.
-- **Wildfires** burn random cells; invasive plants score extra.
+- **Wildfires** burn random cells; invasive plants burned earn bonus ⭐ points.
 
 Events, new invader arrivals, bounty catches and native losses appear as a
 full-screen banner, and the affected cells flash on the board. New arrivals
@@ -93,7 +109,8 @@ engagement) is as important as removing invaders.
 
 ## 🧪 Development
 
-The whole game lives in `index.html` (no build step, no dependencies beyond the
-optional PeerJS CDN for Workshop Mode). Game balance was tuned by simulation: a
-player who consistently picks the right intervention wins most games within the
-6-turn healthy-ratio target.
+The whole game lives in `index.html` (no build step, no dependencies). The
+leaderboard is `leaderboard.html` + `leaderboard-config.js` + `database.rules.json`.
+Balance is checked by bot playtests: in 100 simulated games a player who picks the
+right intervention wins about 88% of the time (median 10 turns), while a player
+choosing cards at random never wins.

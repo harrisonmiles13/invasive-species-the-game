@@ -1,0 +1,40 @@
+{
+  "rules": {
+    "scores": {
+      "all": {
+        ".read": true,
+        ".indexOn": ["score", "ts"],
+        "$id": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChildren(['name', 'score', 'won', 'turns', 'natives', 'ts'])",
+          "name":    { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16" },
+          "score":   { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4000 && newData.val() <= 5000 / newData.parent().child('turns').val() + 40 * newData.parent().child('natives').val() + 1" },
+          "won":     { ".validate": "newData.val() === true" },
+          "turns":   { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 500" },
+          "natives": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 72" },
+          "session": { ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{3,12}$/)" },
+          "ts":      { ".validate": "newData.val() == now" },
+          "$other":  { ".validate": false }
+        }
+      },
+      "sessions": {
+        "$session": {
+          ".read": "$session.matches(/^[A-Z0-9]{3,12}$/)",
+          ".indexOn": ["score", "ts"],
+          "$id": {
+            ".write": "!data.exists() && $session.matches(/^[A-Z0-9]{3,12}$/)",
+            ".validate": "newData.hasChildren(['name', 'score', 'won', 'turns', 'natives', 'ts'])",
+            "name":    { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16" },
+            "score":   { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4000 && newData.val() <= 5000 / newData.parent().child('turns').val() + 40 * newData.parent().child('natives').val() + 1" },
+            "won":     { ".validate": "newData.val() === true" },
+            "turns":   { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 500" },
+            "natives": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 72" },
+            "session": { ".validate": "newData.isString() && newData.val() == $session" },
+            "ts":      { ".validate": "newData.val() == now" },
+            "$other":  { ".validate": false }
+          }
+        }
+      }
+    }
+  }
+}

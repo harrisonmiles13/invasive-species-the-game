@@ -19,10 +19,8 @@
       padding: 0;
     }
 
-    /* Portrait mode only (except a host running the projector scoreboard) */
+    /* Portrait mode only */
     @media (orientation: landscape) {
-      body.hosting .app { display: flex; }
-      body.hosting::after { display: none !important; }
       .app {
         display: none;
       }
@@ -639,108 +637,6 @@
       text-align: center;
     }
 
-    /* Workshop mode */
-    .ws-input {
-      display: block;
-      width: 100%;
-      padding: 0.7rem 0.9rem;
-      margin-bottom: 0.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      border-radius: 0.6rem;
-      background: rgba(255, 255, 255, 0.08);
-      color: white;
-      font-size: 1rem;
-      -webkit-appearance: none;
-    }
-    .ws-input::placeholder { color: rgba(255, 255, 255, 0.5); }
-    .ws-input:focus { outline: none; border-color: #43A047; background: rgba(255, 255, 255, 0.14); }
-
-    .ws-code-box {
-      text-align: center;
-      background: rgba(67, 160, 71, 0.18);
-      border: 1px solid rgba(67, 160, 71, 0.5);
-      border-radius: 0.8rem;
-      padding: 0.7rem;
-      margin-bottom: 0.7rem;
-    }
-    .ws-code-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
-    .ws-code { font-size: 2.2rem; font-weight: 800; letter-spacing: 0.25em; margin-top: 0.1rem; }
-
-    .ws-qr {
-      display: block;
-      width: 180px;
-      height: 180px;
-      margin: 0 auto 0.6rem;
-      background: #fff;
-      border-radius: 0.6rem;
-      padding: 6px;
-    }
-    .ws-link {
-      font-size: 0.72rem;
-      text-align: center;
-      opacity: 0.85;
-      word-break: break-all;
-      margin-bottom: 0.4rem;
-    }
-
-    .ws-leaderboard { display: flex; flex-direction: column; gap: 0.4rem; }
-    .ws-row {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 0.55rem 0.7rem;
-      border-radius: 0.6rem;
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      animation: slideUp 0.2s ease;
-    }
-    .ws-row.lead { background: rgba(255, 213, 79, 0.18); border-color: rgba(255, 213, 79, 0.55); }
-    .ws-rank { font-size: 1.1rem; font-weight: 800; width: 1.7rem; text-align: center; }
-    .ws-team { flex: 1; font-weight: 700; }
-    .ws-team small { display: block; font-weight: 400; font-size: 0.7rem; opacity: 0.7; }
-    .ws-score { font-size: 1.15rem; font-weight: 800; text-align: right; }
-    .ws-score small { display: block; font-size: 0.6rem; font-weight: 600; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.06em; }
-    .ws-row.mine { border-color: #81C784; box-shadow: inset 0 0 0 1px #81C784; }
-    .ws-row.won { background: rgba(255, 213, 79, 0.22); border-color: rgba(255, 213, 79, 0.75); }
-    .ws-row.lost { opacity: 0.6; }
-    .ws-streak { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 0.3rem; }
-    .ws-streak i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.18); display: inline-block; }
-    .ws-streak i.on { background: #66BB6A; box-shadow: 0 0 5px #66BB6A; }
-    .ws-pill { font-size: 0.6rem; font-weight: 800; padding: 0.08rem 0.4rem; border-radius: 999px; margin-left: 0.35rem; vertical-align: middle; background: rgba(255,255,255,0.15); }
-    .ws-pill.turn { background: rgba(129, 199, 132, 0.35); }
-    .ws-pill.won { background: #FFC107; color: #3a2e00; }
-    .ws-pill.lost { background: rgba(239, 83, 80, 0.6); }
-    .ws-feed { display: flex; flex-direction: column; gap: 0.25rem; max-height: 210px; overflow-y: auto; }
-    .ws-feed div { font-size: 0.78rem; padding: 0.3rem 0.5rem; border-radius: 0.45rem; background: rgba(255,255,255,0.05); animation: slideUp 0.25s ease; }
-    .ws-feed div b { font-weight: 800; }
-    .ws-feed .ago { float: right; opacity: 0.5; font-size: 0.68rem; }
-
-    /* Projector mode: the host scoreboard fills the screen */
-    .panel.projector { width: min(98vw, 1200px); max-height: 96dvh; padding: 1.6rem 2rem; }
-    .panel.projector .ws-host-grid { display: grid; grid-template-columns: 260px 1fr; gap: 1.6rem; align-items: start; }
-    .panel.projector .ws-row { padding: 0.9rem 1.1rem; }
-    .panel.projector .ws-team { font-size: 1.5rem; }
-    .panel.projector .ws-team small { font-size: 0.95rem; }
-    .panel.projector .ws-score { font-size: 2rem; }
-    .panel.projector .ws-rank { font-size: 1.7rem; width: 2.4rem; }
-    .panel.projector .ws-feed { max-height: 34dvh; }
-    .panel.projector .ws-feed div { font-size: 1rem; }
-    .panel.projector .ws-streak i { width: 14px; height: 14px; }
-    .ws-empty { text-align: center; opacity: 0.6; font-size: 0.85rem; padding: 0.8rem; }
-    .ws-status { font-size: 0.78rem; margin-top: 0.6rem; min-height: 1.1rem; opacity: 0.9; }
-    .ws-status.err { color: #ff8a80; }
-    .ws-status.ok { color: #b9f6ca; }
-
-    /* Live workshop badge on the header */
-    .ws-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.12rem 0.5rem;
-      border-radius: 999px;
-      background: rgba(67, 160, 71, 0.85);
-      white-space: nowrap;
-    }
-
     /* Field guide */
     .guide-card {
       border: 1px solid rgba(255, 255, 255, 0.14);
@@ -816,6 +712,41 @@
       margin-bottom: 0.6rem;
     }
 
+    .go-final { text-align: center; margin-bottom: 0.7rem; }
+    .go-final-num { font-size: 2.6rem; font-weight: 800; line-height: 1.05; color: #FFD54F; }
+    .go-final-parts { font-size: 0.82rem; opacity: 0.9; line-height: 1.4; }
+    .go-final-parts small { opacity: 0.7; }
+    .lb-post { margin: 0 0 0.9rem; }
+    .lb-post-row { display: flex; gap: 0.5rem; align-items: stretch; }
+    .lb-input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 0.6rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      font-size: 1rem;
+      -webkit-appearance: none;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .lb-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .lb-input:focus { outline: none; border-color: #43A047; }
+    .lb-btn { width: auto; margin: 0; padding: 0.6rem 1rem; white-space: nowrap; }
+    .lb-status { font-size: 0.78rem; margin-top: 0.4rem; min-height: 1rem; text-align: center; opacity: 0.9; }
+    .lb-status.err { color: #ff8a80; }
+    .lb-status.ok { color: #b9f6ca; }
+    .lb-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.12rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(255, 193, 7, 0.85);
+      color: #3a2e00;
+      white-space: nowrap;
+    }
+
     .go-stats {
       display: flex;
       justify-content: center;
@@ -878,9 +809,6 @@
       .app-header { padding: 0.25rem 0.6rem; }
     }
   </style>
-  <!-- PeerJS: free peer-to-peer signaling for Workshop Mode. Optional -
-       single-player works fully without it (graceful degradation). -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
   <div class="app">
@@ -897,6 +825,7 @@
         </div>
       </div>
       <div class="header-center">
+        <span class="lb-badge" id="lbBadge" style="display:none;" title="Your wins post to this room's leaderboard"></span>
         <div class="score-display" title="Your management score">⭐ <span id="score">0</span></div>
         <div title="Native species remaining">🦋 <span id="nativeCount">0</span></div>
         <div title="Invasive species present">🌿 <span id="invasiveCount">0</span></div>
@@ -904,7 +833,6 @@
           <span style="opacity: 0.9;">Healthy turns:</span>
           <div class="win-ticker-header" id="winTickerHeader"></div>
         </div>
-        <span class="ws-badge" id="wsBadge" style="display:none;" title="Connected to a workshop room"></span>
       </div>
     </header>
 
@@ -955,12 +883,12 @@
           <button class="btn-close" data-close="menuOverlay">×</button>
         </div>
         <button class="menu-btn primary" id="btnNewGame">🎮 New Game</button>
-        <button class="menu-btn" id="btnWorkshop">👥 Workshop Mode</button>
         <button class="menu-btn" id="btnHelp">❓ How to Play</button>
         <button class="menu-btn" id="btnGuide2">📖 Field Guide</button>
         <button class="menu-btn" id="btnGlossary">📚 Glossary</button>
         <button class="menu-btn" id="btnScience">🔬 Game Science</button>
         <button class="menu-btn" id="btnSettings">⚙️ Settings</button>
+        <a class="menu-btn" id="btnLeaderboard" href="leaderboard.html" target="_blank" rel="noopener" style="display:none;text-decoration:none;">🏆 Global Leaderboard</a>
         <button class="menu-btn" id="btnQR">📱 Share via QR Code</button>
         <div class="eco-note">Best score: <span id="bestScore">0</span> ⭐</div>
       </div>
@@ -1047,84 +975,6 @@
       </div>
     </div>
 
-    <!-- Workshop Overlay -->
-    <div class="overlay" id="workshopOverlay">
-      <div class="panel">
-        <div class="panel-header">
-          <h2>👥 Workshop Mode</h2>
-          <button class="btn-close" data-close="workshopOverlay">×</button>
-        </div>
-
-        <!-- Lobby: choose host or join -->
-        <div id="wsLobby">
-          <p style="font-size:0.82rem;opacity:0.88;margin-bottom:0.8rem;">
-            Run a high-energy group session. One device <b>hosts</b> the room and shows a
-            live scoreboard (great on a projector). Each team joins from their phones with a
-            <b>team name</b> and competes to manage the best ecosystem.
-          </p>
-          <button class="menu-btn primary" id="btnHostRoom">📺 Host a room (projector)</button>
-          <div style="margin:0.9rem 0 0.4rem;font-size:0.85rem;font-weight:600;">Or join a team:</div>
-          <input class="ws-input" id="wsRoomInput" maxlength="12" placeholder="Room code (e.g. ABCD)" autocomplete="off" />
-          <input class="ws-input" id="wsTeamInput" maxlength="20" placeholder="Team name" autocomplete="off" />
-          <input class="ws-input" id="wsNameInput" maxlength="16" placeholder="Your name (optional)" autocomplete="off" />
-          <button class="menu-btn" id="btnJoinRoom">🙋 Join team</button>
-          <div class="ws-status" id="wsLobbyStatus"></div>
-        </div>
-
-        <!-- Host view: code, link, QR, live scoreboard + event feed -->
-        <div id="wsHostView" style="display:none;">
-          <div class="ws-host-grid">
-            <div>
-              <div class="ws-code-box">
-                <div class="ws-code-label">Room code</div>
-                <div class="ws-code" id="wsHostCode">····</div>
-              </div>
-              <img id="wsQR" class="ws-qr" alt="Join QR code" />
-              <div class="ws-link" id="wsHostLink"></div>
-              <button class="menu-btn primary" id="btnStartTeams" style="margin-top:0.5rem;">▶ Start team games</button>
-              <button class="menu-btn" id="btnProjector" style="margin-top:0.4rem;">📺 Projector view</button>
-              <button class="menu-btn" id="btnEndRoom" style="margin-top:0.4rem;">🚪 Close room</button>
-              <div class="ws-status" id="wsHostStatus"></div>
-            </div>
-            <div>
-              <h3 style="margin:0.9rem 0 0.4rem;font-size:0.95rem;" id="wsBoardTitle">🙋 Teams in the room</h3>
-              <div id="wsLeaderboard" class="ws-leaderboard">
-                <div class="ws-empty">Waiting for teams to join…</div>
-              </div>
-              <h3 style="margin:0.9rem 0 0.4rem;font-size:0.95rem;">📣 Live feed</h3>
-              <div id="wsFeed" class="ws-feed">
-                <div class="ws-empty">Events from every team's habitat will appear here.</div>
-              </div>
-              <p style="font-size:0.74rem;opacity:0.8;margin-top:0.6rem;">
-                Every team gets the same starting board, then plays it independently. Within a team,
-                players take turns; each full lap of the team is one round. <b>Ranking:</b> teams that
-                won rank first (fewest rounds wins), then the longest current healthy streak, then score (points ÷ rounds).
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Client view: connected, playing -->
-        <div id="wsClientView" style="display:none;">
-          <div class="ws-code-box">
-            <div class="ws-code-label">You're on team</div>
-            <div class="ws-code" id="wsClientTeam">-</div>
-          </div>
-          <p style="font-size:0.82rem;opacity:0.88;margin:0.6rem 0;">
-            You're connected. When the host starts team games, your team shares one habitat and
-            takes turns. Until then, practise solo - your score shows on the host screen.
-          </p>
-          <h3 style="margin:0.6rem 0 0.4rem;font-size:0.9rem;">Standings</h3>
-          <div id="wsClientBoard" class="ws-leaderboard">
-            <div class="ws-empty">Connecting…</div>
-          </div>
-          <button class="menu-btn primary" data-close="workshopOverlay" style="margin-top:0.8rem;">▶ Keep playing</button>
-          <button class="menu-btn" id="btnLeaveRoom" style="margin-top:0.4rem;">🚪 Leave team</button>
-          <div class="ws-status" id="wsClientStatus"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- How to Play Overlay -->
     <div class="overlay" id="helpOverlay">
       <div class="panel">
@@ -1150,6 +1000,14 @@
       <div class="panel">
         <div class="go-hero" id="goHero">🏆</div>
         <div class="go-title" id="goTitle">Habitat saved!</div>
+        <div class="go-final" id="goFinal"></div>
+        <div class="lb-post" id="lbPost" style="display:none;">
+          <div class="lb-post-row">
+            <input class="lb-input" id="lbName" maxlength="16" placeholder="Your name or initials" autocomplete="off" />
+            <button class="menu-btn primary lb-btn" id="btnPostScore">🏆 Post</button>
+          </div>
+          <div class="lb-status" id="lbStatus"></div>
+        </div>
         <div class="go-stats" id="goStats"></div>
         <div class="go-recap">
           <h3>🔬 What you learned</h3>
@@ -1160,6 +1018,7 @@
     </div>
   </div>
 
+  <script src="leaderboard-config.js"></script>
   <script>
     'use strict';
 
@@ -1191,6 +1050,10 @@
     // Other tuning numbers surfaced in the Game Science tab
     const SPRAY_NATIVE_RISK = 0.35, SPRAY_NATIVE_PENALTY = 15;
     const WRONG_CONTROL_PENALTY = 5, NATIVE_LOST_PENALTY = 25;
+    // Final score (wins only - losses don't go on the leaderboard):
+    //   speed:   SPEED_PAR / turns played  (a perfect 5-turn win = 1000)
+    //   habitat: NATIVE_WEIGHT per native species still alive
+    const SPEED_PAR = 5000, NATIVE_WEIGHT = 40;
     const PTS = { plant: 8, seedPerNative: 6, restoreBase: 12, restorePerNative: 8,
                   community: 10, winBonus: 50, winPerNative: 10,
                   hurricanePerInvader: 10, wildfirePerPlant: 15 };
@@ -1281,7 +1144,7 @@
       restore:   { icon: '🌾', short: 'Restore', name: 'Habitat Restoration', target: 'invader',
         desc: 'Reclaim a patch: clears one invader (any species, no matter its weaknesses) and plants two natives in its place to rebuild the ecosystem.' },
       community: { icon: '🤝', short: 'Rally', name: 'Community Day', target: 'any',
-        desc: 'Rally volunteers: shields every native from being overwhelmed this turn and energizes the team (+1 action).' }
+        desc: 'Rally volunteers: shields every native from being overwhelmed this turn and energizes your crew (+1 action).' }
     };
 
     // Unified card lookups across controls + enhancements
@@ -1314,7 +1177,7 @@
     try {
       soundOn = localStorage.getItem('nd-sound') !== 'off';
       hintsOn = localStorage.getItem('nd-hints') === 'on';
-      best = parseInt(localStorage.getItem('nd-best') || '0', 10) || 0;
+      best = parseInt(localStorage.getItem('nd-best-final') || '0', 10) || 0;
     } catch (e) { /* private mode */ }
 
     function newState() {
@@ -1456,40 +1319,6 @@
 
     // ===== Core rules =========================================================
     function playCard(handIdx, cellIdx) {
-      // Team multiplayer: client sends the move as an intent to the host, which
-      // owns the authoritative board. Nothing is mutated locally.
-      if (MP.active) {
-        if (MP.over) return false;
-        if (MP.currentId !== MP.myId) {
-          toast('⏳ Waiting for ' + (mpCurrentName() || 'your teammate') + ' to play…');
-          sound('error');
-          return false;
-        }
-        if (handIdx == null || !S.hand[handIdx]) return false;
-        const type = S.hand[handIdx];
-        if (!validTargetForCard(type, cellIdx)) {
-          if (isEnhance(type)) {
-            const tgt = ENHANCEMENTS[type].target;
-            if (tgt === 'empty') toast('🌱 Plant this on an <b>empty</b> cell (highlighted green).');
-            else if (tgt === 'native') toast('🌾 Use this on one of your <b>native species</b> (gold rings).');
-            else if (tgt === 'invader') toast('🌾 Use this on an <b>invasive species</b> (red rings) - it clears one and plants natives.');
-            else toast('Tap a highlighted cell to use this card.');
-          } else {
-            toast('🚫 Aim for an <b>invasive species</b> - the ones with <b>red rings</b>.');
-          }
-          sound('error');
-          return false;
-        }
-        if (S.plays <= 0) {
-          toast('⚡ No actions left - tap <b>End Turn 🌙</b>.');
-          sound('error');
-          return false;
-        }
-        S.selected = null;
-        mpSendIntent({ type: 'action', handIdx, cellIdx });
-        return true;
-      }
-
       if (S.over || handIdx == null || !S.hand[handIdx]) return false;
       const type = S.hand[handIdx];
 
@@ -1760,15 +1589,6 @@
     }
 
     function endTurn() {
-      // Team multiplayer: client asks the host to resolve the turn.
-      if (MP.active) {
-        if (MP.over || MP.currentId !== MP.myId) return;
-        S.selected = null;
-        S.invasivePhaseActive = true;
-        render();
-        mpSendIntent({ type: 'end_turn' });
-        return;
-      }
       if (S.over || S.invasivePhaseActive) return;  // Prevent multiple clicks
       S.selected = null;
       S.invasivePhaseActive = true;  // Lock out further clicks
@@ -1834,12 +1654,6 @@
     }
 
     function passAction() {
-      // Team multiplayer: client asks host to process the pass
-      if (MP.active) {
-        if (MP.over || MP.currentId !== MP.myId) return;
-        mpSendIntent({ type: 'pass' });
-        return;
-      }
       // Single player: just decrement plays locally
       if (S.over || S.invasivePhaseActive || S.plays <= 0) return;
       S.plays--;
@@ -1848,12 +1662,6 @@
     }
 
     function discardHand() {
-      // Team multiplayer: client asks host to process the discard
-      if (MP.active) {
-        if (MP.over || MP.currentId !== MP.myId) return;
-        mpSendIntent({ type: 'discard_hand' });
-        return;
-      }
       // Single player: discard all cards and end turn
       if (S.over || S.invasivePhaseActive || S.hand.length === 0) return;
       S.hand = [];
@@ -1865,10 +1673,9 @@
       setTimeout(() => endTurn(), 800);
     }
 
-    // ===== Turn-end helpers (shared by single-player and the team engine) =====
-    // Each operates on the global S (the team engine swaps S via tmWith), mutates
-    // the board, and returns a plain, serializable event object (or null) that
-    // presentEvent() turns into a banner - locally, or on a client's phone.
+    // ===== Turn-end helpers =====================================================
+    // Each mutates the board in S and returns a plain event object (or null)
+    // that presentEvent() turns into a banner.
 
     function clearFreshFlags() {
       for (let i = 0; i < CELLS; i++) if (S.field[i] && S.field[i].fresh) delete S.field[i].fresh;
@@ -1986,10 +1793,9 @@
     let bannerTimer = null, bannerShowing = false;
 
     function flashCells(cells, kind, ms) {
-      if (HOST_SIM) return;
       const until = Date.now() + (ms || 3200);
       for (const c of cells) EVENT_FX[c] = { cls: 'fx-' + kind, until };
-      setTimeout(() => { if (S && !HOST_SIM) renderBoard(); }, (ms || 3200) + 50);
+      setTimeout(() => { if (S) renderBoard(); }, (ms || 3200) + 50);
     }
 
     function describeEvent(ev) {
@@ -2043,7 +1849,7 @@
 
     // Show an event loudly: banner (queued), board flash, shake, sound, buzz.
     function presentEvent(ev) {
-      if (HOST_SIM || !ev) return;
+      if (!ev) return;
       const info = describeEvent(ev);
       if (!info) return;
       if (ev.cells && ev.cells.length) flashCells(ev.cells, ev.kind, 4200);
@@ -2134,7 +1940,7 @@
         S.healthyTurns = 0;
       }
 
-      if (!nativeCount) {
+      if (!nativeCount || invCount > LOSE_CELLS) {
         S.invasivePhaseActive = false;  // Re-enable for next game
         endGame(false);
         return;
@@ -2157,24 +1963,34 @@
       S.invasivePhaseActive = false;  // Clear flag on game end
       S.selected = null;
       if (won) S.score += PTS.winBonus + nativeCells().length * PTS.winPerNative;
-      const finalScore = effScore();
-      if (finalScore > best) {
-        best = finalScore;
-        try { localStorage.setItem('nd-best', String(best)); } catch (e) {}
+      const turns = turnsPlayed();
+      const fs = won ? finalScore(turns, nativeCells().length) : null;
+      if (fs && fs.total > best) {
+        best = fs.total;
+        try { localStorage.setItem('nd-best-final', String(best)); } catch (e) {}
       }
       render();
-      netPushScore(true);
       sound(won ? 'win' : 'lose');
       vibrate(won ? [80, 60, 80, 60, 160] : [350]);
 
       document.getElementById('goHero').textContent = won ? '🏆' : '🥀';
       document.getElementById('goTitle').textContent = won
         ? 'Invasion managed! The ecosystem is stable.'
-        : (nativeCells().length ? 'The invasion overwhelmed the habitat…' : 'All the native species were lost…');
+        : (!nativeCells().length ? 'All the native species were lost…'
+          : invaderCells().length > LOSE_CELLS ? 'The invasion meter filled up - the habitat was overrun…'
+          : 'The invasion overwhelmed the habitat…');
+      document.getElementById('goFinal').innerHTML = won
+        ? `<div class="go-final-num">${fs.total}</div>` +
+          `<div class="go-final-parts">⚡ Speed ${fs.speed} <small>(${SPEED_PAR} ÷ ${turns} turns)</small> + ` +
+          `🦋 Habitat ${fs.habitat} <small>(${NATIVE_WEIGHT} × ${nativeCells().length} natives)</small></div>`
+        : '<div class="go-final-parts">Only wins earn a final score. Keep the habitat healthy for ' +
+          `${WIN_TURNS} turns in a row to get on the leaderboard!</div>`;
       document.getElementById('goStats').innerHTML =
-        `<span>⭐ ${finalScore}</span><span>🏅 Best ${best}</span>` +
-        `<span>🌱 ${S.turn} turns</span><span>🦋 ${nativeCells().length}/${S.totalNatives} natives saved</span>` +
+        `<span>🏅 Best ${best}</span>` +
+        `<span>🌱 ${turns} turn${turns === 1 ? '' : 's'}</span><span>🦋 ${nativeCells().length}/${S.totalNatives} natives saved</span>` +
+        `<span>⭐ ${S.score} points</span>` +
         (S.bounties ? `<span>💰 ${S.bounties} python bounties</span>` : '');
+      lbPrepare(won, fs, turns);
 
       const recap = Object.keys(INVADERS)
         .filter(t => S.removed[t] || invaderCells().some(i => S.field[i].type === t))
@@ -2332,42 +2148,39 @@
     // higher. S.score keeps the raw running total; effScore() is what we show.
     function effScore() { return Math.round(S.score / Math.max(1, S.turn)); }
 
+    // S.turn is the turn now being played, so after the last end-of-turn it is
+    // one ahead of the number of turns actually played.
+    function turnsPlayed() { return Math.max(1, S.turn - 1); }
+
+    // Final (leaderboard) score for a win: rewards a fast win and a rich habitat.
+    function finalScore(turns, natives) {
+      const speed = Math.round(SPEED_PAR / Math.max(1, turns));
+      const habitat = NATIVE_WEIGHT * natives;
+      return { speed, habitat, total: speed + habitat };
+    }
+
     function render() {
-      if (HOST_SIM) return;  // Host resolving a team turn off-screen: skip rendering
       renderHand();   // first: the hand's height decides how much room the board gets
-      // In team multiplayer, show whose turn it is on this team
-      const handHeader = document.querySelector('.hand-header span');
-      const myTurn = !MP.active || MP.currentId === MP.myId;
-      if (handHeader) {
-        if (MP.active) {
-          handHeader.textContent = myTurn
-            ? '🎯 Your turn - tap a card, then tap a target'
-            : '⏳ ' + (mpCurrentName() || 'Teammate') + '\'s turn…';
-        } else {
-          handHeader.textContent = 'Your interventions - tap a card, then tap a target';
-        }
-      }
 
       // Show Pass button when player has actions remaining
       const passBtn = document.getElementById('btnPass');
       if (passBtn) {
         const canPass = S.plays > 0 && !S.invasivePhaseActive && !S.over;
-        passBtn.style.display = (canPass && myTurn) ? 'block' : 'none';
+        passBtn.style.display = canPass ? 'block' : 'none';
       }
 
       // Show Discard Hand button when player has cards and actions remaining
       const discardBtn = document.getElementById('btnDiscard');
       if (discardBtn) {
         const canDiscard = S.hand.length > 0 && S.plays > 0 && !S.invasivePhaseActive && !S.over;
-        discardBtn.style.display = (canDiscard && myTurn) ? 'block' : 'none';
+        discardBtn.style.display = canDiscard ? 'block' : 'none';
       }
 
       // Show End Turn button only when all actions are used (and invasive phase is not active).
-      // In team mode, also require that it's this player's turn.
       const endBtn = document.getElementById('btnEndTurn');
       if (endBtn) {
         const canEndTurn = S.plays <= 0 && !S.invasivePhaseActive && !S.over;
-        endBtn.style.display = (canEndTurn && myTurn) ? 'block' : 'none';
+        endBtn.style.display = canEndTurn ? 'block' : 'none';
       }
 
       document.getElementById('score').textContent = effScore();
@@ -2411,7 +2224,6 @@
       renderBoard();
       // The board may have changed size: keep any visible message clear of it.
       if (document.getElementById('toast').classList.contains('show')) placeToast();
-      netPushScore();
     }
 
     // ===== Interaction ========================================================
@@ -2632,7 +2444,6 @@
     }
 
     function toast(html, ms) {
-      if (HOST_SIM) return;  // Host resolving a team turn off-screen: no UI side effects
       const el = document.getElementById('toast');
       el.innerHTML = html;
       hideTooltip();  // never stack a hover tooltip on top of a message
@@ -2647,7 +2458,6 @@
 
     // Custom tooltip system - positioned to avoid overlapping the field
     function showTooltip(text, targetEl) {
-      if (HOST_SIM) return;
       let tooltip = document.getElementById('customTooltip');
       if (!tooltip) {
         tooltip = document.createElement('div');
@@ -2668,14 +2478,12 @@
     }
 
     function vibrate(pattern) {
-      if (HOST_SIM) return;
       if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
     }
 
     let audioCtx = null;
 
     function sound(type) {
-      if (HOST_SIM) return;
       if (!soundOn) return;
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -2709,7 +2517,6 @@
     }
 
     function burst(cellIdx, color) {
-      if (HOST_SIM) return;
       const board = document.getElementById('board');
       const rect = board.getBoundingClientRect();
       const { x, y } = cellPos(cellIdx);
@@ -2847,7 +2654,7 @@
         <div class="guide-card">
           ${P(`<b>Win:</b> keep the habitat healthy for <b>${WIN_TURNS}</b> turns in a row.`)}
           ${P(`<b>Healthy</b> = at least ${pct(HEALTHY_RATIO / (1 + HEALTHY_RATIO))} natives (natives ÷ invaders ≥ ${HEALTHY_RATIO.toFixed(2)}), or no invaders at all. One unhealthy turn resets the streak.`)}
-          ${P(`<b>Lose:</b> every native species is lost. In team games a team is also overrun if invaders cover more than ${LOSE_CELLS} cells.`)}
+          ${P(`<b>Lose:</b> every native species is lost, or the invasion meter fills up (more than ${LOSE_CELLS} invaded cells).`)}
         </div>
 
         ${H('🔁 Turn Order')}
@@ -2931,7 +2738,17 @@
             ['Native killed by spray', `-${SPRAY_NATIVE_PENALTY}`],
             ['Native overwhelmed', `-${NATIVE_LOST_PENALTY}`]
           ])}
-          ${P('<b>Your score</b> is total points ÷ turns played, so faster, cleaner games score higher. Team standings use the same per-round score.')}
+          ${NOTE('⭐ Points are live feedback while you play; the header shows points per turn.')}
+        </div>
+
+        ${H('🏆 Final Score (Leaderboard)')}
+        <div class="guide-card">
+          ${P(`Only <b>wins</b> earn a final score: <b>${SPEED_PAR} ÷ turns played</b> (speed) <b>+ ${NATIVE_WEIGHT} × natives saved</b> (habitat).`)}
+          ${TABLE(['Win', 'Speed', 'Habitat', 'Final'], [[5, 15], [7, 20], [10, 15], [15, 25]].map(([t, n]) => {
+            const f = finalScore(t, n);
+            return [`${t} turns, ${n} natives`, f.speed, f.habitat, `<b>${f.total}</b>`];
+          }))}
+          ${NOTE(`The fastest possible win takes ${WIN_TURNS} turns (speed ${finalScore(WIN_TURNS, 0).speed}). Losses aren't posted to the leaderboard. Removal points don't count here: clearing invaders only matters if it saves the habitat.`)}
         </div>
 
         ${H('🔬 Real-World Parallels')}
@@ -2956,721 +2773,79 @@
         soundOn ? '🔊 Sound: On' : '🔇 Sound: Off';
     }
 
-    // ===== Workshop / multiplayer (PeerJS, optional) ==========================
-    // Topology: one host device (projector) is the hub. Phones connect as clients
-    // and join a named team. In a TEAM GAME the host is authoritative: it owns one
-    // independent board per team, validates every move, resolves invasive spread,
-    // and broadcasts the result. Clients are thin terminals - they render what the
-    // host sends and forward the player's taps as intents. Single-player and the
-    // older score-only workshop flow are unaffected and work with no network.
-    const NET = { peer: null, role: null, code: null, team: null, name: null,
-                  host: null, conns: [], scores: {}, joined: false, lastSent: 0,
-                  feed: [] };
-
-    // When true, the host is computing a team's turn off-screen: presentation
-    // helpers (render/toast/burst/sound/vibrate) become no-ops so reused rule code
-    // mutates state without touching the host's own DOM.
-    let HOST_SIM = false;
-
-    // Client-side team-game state (what THIS device renders). The board itself
-    // lives in the global S; MP only tracks the multiplayer framing around it.
-    const MP = { active: false, team: null, myId: null,
-                 currentId: null, players: [], round: 1, healthyRounds: 0,
-                 over: false, won: false, rows: [] };
-
-    // Host-side team engine: one game object per team, plus the shared session seed.
-    const TM = { running: false, games: {}, baseField: null };
-
-    function mpCurrentName() {
-      const p = (MP.players || []).find(x => x.id === MP.currentId);
-      return p ? p.name : '';
-    }
-
-    function mpSendIntent(msg) {
-      if (NET.role === 'client' && NET.host) {
-        try { NET.host.send(msg); } catch (_) {}
-      } else if (NET.role === 'host') {
-        // Host-as-player path is not used in team mode (host is the hub), but keep
-        // a safe local route in case a future build lets the host play a team.
-        if (msg.type === 'action') tmHandleAction(MP.team, MP.myId, msg.handIdx, msg.cellIdx);
-        else if (msg.type === 'pass') tmHandlePass(MP.team, MP.myId);
-        else if (msg.type === 'discard_hand') tmHandleDiscardHand(MP.team, MP.myId);
-        else if (msg.type === 'end_turn') tmHandleEndTurn(MP.team, MP.myId);
-      }
-    }
-
-    // ===== Host-authoritative team engine =====================================
-    // Run reused rule code (setupBoard / applyControl / applyEnhancement /
-    // refillHand / validTargetForCard) against a team's game object by swapping
-    // the global S and suppressing presentation. Always synchronous, so each
-    // incoming intent is processed atomically - no two teams interleave.
-    function tmWith(g, fn) {
-      const savedS = S, savedSim = HOST_SIM;
-      S = g; HOST_SIM = true;
-      try { return fn(); } finally { S = savedS; HOST_SIM = savedSim; }
-    }
-
-    function tmCountInvaders(g) {
-      let n = 0; for (let i = 0; i < CELLS; i++) if (g.field[i] && g.field[i].kind === 'invader') n++;
-      return n;
-    }
-    function tmCountNatives(g) {
-      let n = 0; for (let i = 0; i < CELLS; i++) if (g.field[i] && g.field[i].kind === 'native') n++;
-      return n;
-    }
-
-    // Build a fresh S-shaped game object for a team and deal each player a hand.
-    function tmNewGame(team, players, baseField, baseNatives) {
-      const g = newState();
-      g.team = team;
-      g.field = baseField.map(c => (c ? Object.assign({}, c) : null));
-      g.totalNatives = baseNatives;
-      g.order = players.map(p => p.id);
-      g.names = {}; players.forEach(p => { g.names[p.id] = p.name; });
-      g.hands = {};
-      g.currentIdx = 0;
-      g.currentId = g.order[0];
-      g.plays = PLAYS_PER_TURN;
-      g.roundsCompleted = 0;
-      g.healthyRounds = 0;
-      g.won = false; g.lost = false; g.roundsToWin = null;
-      // Deal a stochastic hand per player against this team's starting board.
-      players.forEach(p => {
-        tmWith(g, () => { g.hand = []; refillHand(); g.hands[p.id] = g.hand; });
-      });
-      return g;
-    }
-
-    function tmStartGames() {
-      if (peerMissing('wsHostStatus')) return;
-      // Group currently-connected clients by team.
-      const teams = {};
-      NET.conns.forEach(c => {
-        if (!c.team || !c.peer) return;
-        (teams[c.team] = teams[c.team] || []).push({ id: c.peer, name: c.pname || 'Player' });
-      });
-      const teamNames = Object.keys(teams);
-      if (!teamNames.length) {
-        wsSetStatus('wsHostStatus', 'No teams have joined yet - share the room code first.', 'err');
-        return;
-      }
-      // One shared random starting board for every team (same start, then diverge).
-      let baseField = null, baseNatives = 0;
-      tmWith(newState(), function () {
-        setupBoard();           // mutates the temp state (now S)
-        baseField = S.field.map(c => (c ? Object.assign({}, c) : null));
-        baseNatives = S.totalNatives;
-      });
-      TM.running = true;
-      TM.games = {};
-      TM.baseField = baseField;
-      NET.feed = [];
-      teamNames.forEach(t => { TM.games[t] = tmNewGame(t, teams[t], baseField, baseNatives); });
-      // Kick off every team.
-      teamNames.forEach(t => tmBroadcastTeam(TM.games[t], []));
-      tmBroadcastStandings();
-      tmFeed(null, `▶ Games started for <b>${teamNames.length}</b> team${teamNames.length > 1 ? 's' : ''}. Same starting habitat - may the best managers win!`);
-      const title = document.getElementById('wsBoardTitle');
-      if (title) title.textContent = '🏆 Live standings';
-      wsSetStatus('wsHostStatus',
-        'Games started for ' + teamNames.length + ' team' + (teamNames.length > 1 ? 's' : '') + '.', 'ok');
-    }
-
-    // A late joiner is folded onto the end of their team's turn order.
-    function tmAddLatePlayer(team, id, name) {
-      const g = TM.games[team];
-      if (!g || g.over) return;
-      if (g.order.includes(id)) return;
-      g.order.push(id);
-      g.names[id] = name;
-      tmWith(g, () => { g.hand = []; refillHand(); g.hands[id] = g.hand; });
-      tmBroadcastTeam(g, []);
-    }
-
-    function tmRemovePlayer(team, id) {
-      const g = TM.games[team];
-      if (!g) return;
-      const idx = g.order.indexOf(id);
-      if (idx < 0) return;
-      const wasCurrent = (g.currentId === id);
-      g.order.splice(idx, 1);
-      delete g.hands[id]; delete g.names[id];
-      if (!g.order.length) { return; }   // whole team gone; leave game dormant
-      if (idx < g.currentIdx) g.currentIdx--;
-      if (g.currentIdx >= g.order.length) g.currentIdx = 0;
-      g.currentId = g.order[g.currentIdx];
-      if (wasCurrent) { g.plays = PLAYS_PER_TURN; }
-      tmBroadcastTeam(g, []);
-    }
-
-    function tmHandleAction(team, pid, handIdx, cellIdx) {
-      const g = TM.games[team];
-      if (!g || g.over) return;
-      if (g.currentId !== pid) return;                 // not this player's turn
-      if (g.plays <= 0) return;
-      const hand = g.hands[pid];
-      if (!hand || handIdx == null || !hand[handIdx]) return;
-      const type = hand[handIdx];
-      const ok = tmWith(g, () => validTargetForCard(type, cellIdx));
-      if (!ok) return;                                  // invalid target: ignore
-      hand.splice(handIdx, 1);
-      g.plays--;
-      const bountiesBefore = g.bounties || 0;
-      tmWith(g, () => {
-        if (isEnhance(type)) applyEnhancement(type, cellIdx);  // may grant +plays (community)
-        else applyControl(type, cellIdx);
-      });
-      if (type === 'bounty' && g.bounties > bountiesBefore) {
-        const n = g.bounties - bountiesBefore;
-        tmFeed(g.team, `💰 posted a python bounty - <b>${n}</b> 🐍 caught by ${tmEsc(g.names[pid] || 'a player')}'s hunters`);
-      }
-      tmBroadcastTeam(g, []);
-      tmBroadcastStandings();
-    }
-
-    function tmHandlePass(team, pid) {
-      const g = TM.games[team];
-      if (!g || g.over) return;
-      if (g.currentId !== pid) return;                 // not this player's turn
-      if (g.plays <= 0) return;                        // no plays left
-      g.plays--;
-      tmBroadcastTeam(g, []);
-    }
-
-    function tmHandleDiscardHand(team, pid) {
-      const g = TM.games[team];
-      if (!g || g.over) return;
-      if (g.currentId !== pid) return;                 // not this player's turn
-      if (g.hands[pid].length === 0) return;           // no cards to discard
-      g.hands[pid] = [];                               // clear hand
-      g.plays = 0;                                     // exhaust all plays
-      tmHandleEndTurn(team, pid);                      // immediately end turn
-    }
-
-    function tmHandleEndTurn(team, pid) {
-      const g = TM.games[team];
-      if (!g || g.over) return;
-      if (g.currentId !== pid) return;
-      const res = tmResolveTurn(g);                     // invasive spread + events + losses
-      res.events.forEach(ev => tmFeedEvent(g.team, ev));
-
-      // Advance to the next player on this team; a full lap is one round.
-      g.currentIdx = (g.currentIdx + 1) % g.order.length;
-      const roundDone = (g.currentIdx === 0);
-      if (roundDone) {
-        g.roundsCompleted++;
-        const inv = tmCountInvaders(g), nat = tmCountNatives(g);
-        const healthy = inv === 0 ? true : (nat / inv) >= HEALTHY_RATIO;
-        g.healthyRounds = healthy ? g.healthyRounds + 1 : 0;
-      }
-      g.currentId = g.order[g.currentIdx];
-      g.plays = PLAYS_PER_TURN;
-      // Refill the now-active player's hand against the current board.
-      tmWith(g, () => { g.hand = g.hands[g.currentId] || []; refillHand(); g.hands[g.currentId] = g.hand; });
-
-      // Resolve win / loss.
-      const nativeCount = tmCountNatives(g);
-      const invaderCount = tmCountInvaders(g);
-      if (g.healthyRounds >= WIN_TURNS) {
-        g.over = true; g.won = true; g.roundsToWin = g.roundsCompleted;
-        tmFeed(g.team, `🏆 <b>stabilized their ecosystem</b> in ${g.roundsToWin} rounds!`);
-      } else if (nativeCount === 0 || invaderCount > LOSE_CELLS) {
-        g.over = true; g.lost = true;
-        tmFeed(g.team, `🥀 was overrun by the invasion after ${g.roundsCompleted} rounds.`);
-      } else if (roundDone && g.healthyRounds >= WIN_TURNS - 2) {
-        tmFeed(g.team, `🌿 healthy streak at <b>${g.healthyRounds}/${WIN_TURNS}</b> - closing in on the win!`);
-      }
-
-      tmBroadcastTeam(g, res.spreads, res.events);
-      tmBroadcastStandings();
-    }
-
-    // Synchronous turn resolution against g (no animation, no DOM). Runs the
-    // same spread -> patrol -> random event -> native loss -> reintroduction
-    // sequence as single-player, via the shared helpers, and returns the
-    // spreads plus serializable events for clients to announce.
-    function tmResolveTurn(g) {
-      const spreads = [], events = [];
-      tmWith(g, () => {
-        clearFreshFlags();
-        const spreadThisTurn = new Set();  // cells just occupied by spreads
-        // Invasive spread: established invaders only (those placed this turn skip).
-        for (const i of invaderCells()) {
-          if (S.newInvaders.has(i) || spreadThisTurn.has(i)) continue;
-          const type = S.field[i].type;
-          if (Math.random() < INVADERS[type].spread) {
-            const empties = neighbors(i).filter(n => !S.field[n] && !spreadThisTurn.has(n));
-            if (empties.length) {
-              const to = pick(empties);
-              S.field[to] = { kind: 'invader', type };
-              spreadThisTurn.add(to);
-              spreads.push({ to, type });
-            }
-          }
-        }
-        S.newInvaders.clear();
-        S.turn = (S.turn || 1) + 1;
-        const add = ev => { if (ev) events.push(ev); };
-        add(patrolBountyZones());
-        if (S.turn > 2) add(rollRandomEvent());   // skip the very first turn
-        add(resolveNativeLosses());
-        add(introduceInvaders());
-      });
-      return { spreads, events };
-    }
-
-    // Per-player view of a team's game (each client gets its own hand only).
-    function tmBroadcastTeam(g, spreads, events) {
-      const players = g.order.map(id => ({ id: id, name: g.names[id] }));
-      const base = {
-        type: g.over ? 'team_over' : 'team_state',
-        team: g.team,
-        field: g.field,
-        plays: g.plays,
-        currentId: g.currentId,
-        currentName: g.names[g.currentId] || '',
-        players: players,
-        round: g.roundsCompleted,
-        healthyRounds: g.healthyRounds,
-        score: g.score,
-        bounties: g.bounties || 0,
-        bountyZones: g.bountyZones || [],
-        over: g.over, won: g.won, lost: g.lost,
-        spreads: spreads || [],
-        events: events || []
-      };
-      NET.conns.forEach(c => {
-        if (c.team !== g.team) return;
-        const msg = Object.assign({}, base, { myId: c.peer, hand: g.hands[c.peer] || [] });
-        try { c.send(msg); } catch (_) {}
-      });
-    }
-
-    // Transparent ranking: winners first (fewest rounds, then points), then
-    // teams still playing, then teams that lost; ties break on the current
-    // healthy streak, then points.
-    function tmStandingsRows() {
-      const order = { won: 0, playing: 1, lost: 2 };
-      return Object.values(TM.games).map(g => ({
-        team: g.team,
-        players: g.order.map(id => g.names[id]),
-        current: g.over ? '' : (g.names[g.currentId] || ''),
-        healthy: g.healthyRounds,
-        rounds: g.roundsCompleted,
-        points: Math.round(g.score / Math.max(1, g.roundsCompleted)),  // same per-round score as the player header
-        bounties: g.bounties || 0,
-        natives: tmCountNatives(g),
-        invaders: tmCountInvaders(g),
-        roundsToWin: g.roundsToWin,
-        status: g.over ? (g.won ? 'won' : 'lost') : 'playing'
-      })).sort((a, b) => {
-        if (a.status !== b.status) return order[a.status] - order[b.status];
-        if (a.status === 'won' && a.roundsToWin !== b.roundsToWin) return a.roundsToWin - b.roundsToWin;
-        if (b.healthy !== a.healthy) return b.healthy - a.healthy;
-        return b.points - a.points;
-      });
-    }
-
-    function tmBroadcastStandings() {
-      const rows = tmStandingsRows();
-      renderTeamLeaderboard('wsLeaderboard', rows);
-      NET.conns.forEach(c => { try { c.send({ type: 'team_board', rows: rows }); } catch (_) {} });
-    }
-
-    // ----- Host live feed (projector) -----
-    function tmEsc(str) { return String(str).replace(/[<>&"]/g, ''); }
-
-    function tmFeed(team, html) {
-      NET.feed.unshift({ t: Date.now(), html: (team ? `<b>${tmEsc(team)}</b> ` : '') + html });
-      NET.feed = NET.feed.slice(0, 30);
-      renderFeed();
-    }
-
-    function tmFeedEvent(team, ev) {
-      const p = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
-      if (ev.kind === 'hurricane') tmFeed(team, `🌀 hit by a <b>hurricane</b> - ${p(ev.invaders, 'invader')} washed out`);
-      else if (ev.kind === 'wildfire') tmFeed(team, `🔥 hit by a <b>wildfire</b> - ${p(ev.plants, 'invasive plant')} burned`);
-      else if (ev.kind === 'arrival') tmFeed(team, `${ev.arrivals.map(a => INVADERS[a.type].icon).join(' ')} <b>new invader${ev.arrivals.length > 1 ? 's' : ''}</b> arrived`);
-      else if (ev.kind === 'patrol') tmFeed(team, `💰 bounty patrol caught <b>${p(ev.count, 'python')}</b>`);
-      else if (ev.kind === 'lost' && ev.cells.length) tmFeed(team, `💔 lost ${p(ev.cells.length, 'native')}`);
-    }
-
-    function renderFeed() {
-      const el = document.getElementById('wsFeed');
-      if (!el) return;
-      if (!NET.feed.length) {
-        el.innerHTML = '<div class="ws-empty">Events from every team\'s habitat will appear here.</div>';
-        return;
-      }
-      const now = Date.now();
-      el.innerHTML = NET.feed.map(f => {
-        const s = Math.round((now - f.t) / 1000);
-        const ago = s < 60 ? s + 's' : Math.round(s / 60) + 'm';
-        return `<div><span class="ago">${ago}</span>${f.html}</div>`;
-      }).join('');
-    }
-
-    function genCode() {
-      const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I/O to avoid confusion
-      let s = '';
-      for (let i = 0; i < 4; i++) s += a[Math.floor(Math.random() * a.length)];
-      return s;
-    }
-
-    function wsSetStatus(id, msg, cls) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = msg || '';
-      el.className = 'ws-status' + (cls ? ' ' + cls : '');
-    }
-
-    function joinUrl(code) {
-      return location.origin + location.pathname + '?room=' + code;
-    }
-
-    function peerMissing(statusId) {
-      if (typeof Peer === 'undefined') {
-        wsSetStatus(statusId, '⚠️ Multiplayer library could not load (offline?). Single-player still works.', 'err');
-        return true;
-      }
-      return false;
-    }
-
-    // ---- Host ----
-    function hostWorkshop() {
-      if (peerMissing('wsLobbyStatus')) return;
-      NET.role = 'host';
-      NET.scores = {};
-      NET.conns = [];
-      NET.feed = [];
-      document.body.classList.add('hosting');
-      createHostPeer(genCode(), 1);
-      wsSetStatus('wsLobbyStatus', 'Creating room…', 'ok');
-    }
-
-    function createHostPeer(code, triesLeft) {
-      NET.code = code;
-      NET.peer = new Peer('istg-' + code);
-      NET.peer.on('open', () => { showHostView(); updateWsBadge(); });
-      NET.peer.on('connection', conn => {
-        NET.conns.push(conn);
-        conn.on('data', d => hostOnData(conn, d));
-        conn.on('close', () => { hostForget(conn); broadcastScores(); });
-      });
-      NET.peer.on('error', e => {
-        if (e.type === 'unavailable-id' && triesLeft > 0) {
-          try { NET.peer.destroy(); } catch (_) {}
-          createHostPeer(genCode(), triesLeft - 1);
-        } else {
-          wsSetStatus('wsHostStatus', 'Connection error: ' + e.type, 'err');
-        }
-      });
-    }
-
-    function hostForget(conn) {
-      const t = NET.scores[conn.team];
-      if (t && t.players) delete t.players[conn.peer];
-      NET.conns = NET.conns.filter(c => c !== conn);
-      if (TM.running) tmRemovePlayer(conn.team, conn.peer);
-    }
-
-    // Send a message to every connected client on a given team.
-    function tmSendTeam(team, msg) {
-      NET.conns.forEach(c => {
-        if (c.team === team) { try { c.send(msg); } catch (_) {} }
-      });
-    }
-
-    function hostOnData(conn, d) {
-      if (!d || !d.type) return;
-      if (d.type === 'hello') {
-        const isNewTeam = !NET.scores[d.team];
-        if (isNewTeam && Object.keys(NET.scores).length >= 5) {
-          try { conn.send({ type: 'full' }); } catch (_) {}
-          return;
-        }
-        conn.team = d.team;
-        conn.pname = d.name || 'Player';
-        if (isNewTeam) NET.scores[d.team] = { players: {} };
-        NET.scores[d.team].players[conn.peer] = { name: conn.pname, score: 0, turn: 1, over: false };
-        try { conn.send({ type: 'welcome', team: d.team }); } catch (_) {}
-        broadcastScores();
-        wsSetStatus('wsHostStatus', conn.pname + ' joined team "' + d.team + '"', 'ok');
-        tmFeed(d.team, `🙋 ${tmEsc(conn.pname)} joined`);
-        // If a team game is already running, fold this player into their team.
-        if (TM.running) tmAddLatePlayer(conn.team, conn.peer, conn.pname);
-      } else if (d.type === 'score' && conn.team) {
-        const t = NET.scores[conn.team];
-        if (!t) return;
-        t.players[conn.peer] = { name: conn.pname, score: d.score, turn: d.turn, over: d.over };
-        broadcastScores();
-      }
-      // Team game intents from a client: validate and resolve on the host.
-      else if (d.type === 'action' && conn.team) {
-        tmHandleAction(conn.team, conn.peer, d.handIdx, d.cellIdx);
-      } else if (d.type === 'end_turn' && conn.team) {
-        tmHandleEndTurn(conn.team, conn.peer);
-      } else if (d.type === 'pass' && conn.team) {
-        tmHandlePass(conn.team, conn.peer);
-      } else if (d.type === 'discard_hand' && conn.team) {
-        tmHandleDiscardHand(conn.team, conn.peer);
-      }
-    }
-
-    function teamTotals() {
-      return Object.entries(NET.scores).map(([team, info]) => {
-        const players = Object.values(info.players || {});
-        const total = players.reduce((s, p) => s + (p.score || 0), 0);
-        return { team, total, count: players.length, names: players.map(p => p.name) };
-      }).sort((a, b) => b.total - a.total);
-    }
-
-    function broadcastScores() {
-      // Once team games are running, the team standings are the scoreboard.
-      if (TM.running) { tmBroadcastStandings(); return; }
-      const totals = teamTotals();
-      NET.conns.forEach(c => { try { c.send({ type: 'scores', totals }); } catch (_) {} });
-      renderLeaderboard('wsLeaderboard', totals);
-    }
-
-    function showHostView() {
-      document.getElementById('wsLobby').style.display = 'none';
-      document.getElementById('wsClientView').style.display = 'none';
-      document.getElementById('wsHostView').style.display = 'block';
-      document.getElementById('wsHostCode').textContent = NET.code;
-      const url = joinUrl(NET.code);
-      document.getElementById('wsHostLink').textContent = url;
-      document.getElementById('wsQR').src =
-        'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=' + encodeURIComponent(url);
-      renderLeaderboard('wsLeaderboard', teamTotals());
-      wsSetStatus('wsHostStatus', 'Room is live. Share the code or QR to let teams join.', 'ok');
-    }
-
-    // ---- Client ----
-    function joinWorkshop(code, team, name) {
-      if (peerMissing('wsLobbyStatus')) return;
-      code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      team = (team || '').trim();
-      if (!code) { wsSetStatus('wsLobbyStatus', 'Enter the room code.', 'err'); return; }
-      if (!team) { wsSetStatus('wsLobbyStatus', 'Enter a team name.', 'err'); return; }
-      NET.role = 'client';
-      NET.code = code;
-      NET.team = team;
-      NET.name = (name || '').trim() || 'Player';
-      NET.joined = false;
-      wsSetStatus('wsLobbyStatus', 'Connecting to room "' + code + '"…', 'ok');
-      NET.peer = new Peer();
-      NET.peer.on('open', () => {
-        const conn = NET.peer.connect('istg-' + code, { reliable: true });
-        NET.host = conn;
-        conn.on('open', () => { try { conn.send({ type: 'hello', team: NET.team, name: NET.name }); } catch (_) {} });
-        conn.on('data', d => clientOnData(d));
-        conn.on('close', () => wsSetStatus('wsClientStatus', 'Disconnected from host.', 'err'));
-        setTimeout(() => {
-          if (!NET.joined) wsSetStatus('wsLobbyStatus', 'Could not reach room "' + code + '". Double-check the code.', 'err');
-        }, 9000);
-      });
-      NET.peer.on('error', e => {
-        const msg = e.type === 'peer-unavailable'
-          ? 'No room found with code "' + code + '".'
-          : 'Connection error: ' + e.type;
-        wsSetStatus('wsLobbyStatus', msg, 'err');
-      });
-    }
-
-    function clientOnData(d) {
-      if (!d || !d.type) return;
-      if (d.type === 'welcome') {
-        NET.joined = true;
-        showClientView();
-        updateWsBadge();
-        netPushScore(true);
-        closeOverlay('workshopOverlay');
-        openOverlay('helpOverlay');
-      } else if (d.type === 'full') {
-        wsSetStatus('wsLobbyStatus', 'That room already has 5 teams (the maximum).', 'err');
-      } else if (d.type === 'scores') {
-        renderLeaderboard('wsClientBoard', d.totals);
-      }
-      // ----- Team game messages (host is authoritative) -----
-      else if (d.type === 'team_state') {
-        mpApplyState(d);
-      } else if (d.type === 'team_over') {
-        mpApplyState(d);
-        mpShowGameOver(d);
-      } else if (d.type === 'team_board') {
-        // Live standings broadcast (round/healthy/score per team)
-        MP.rows = d.rows || [];
-        renderTeamLeaderboard('wsClientBoard', d.rows, NET.team);
-      }
-    }
-
-    function showClientView() {
-      document.getElementById('wsLobby').style.display = 'none';
-      document.getElementById('wsHostView').style.display = 'none';
-      document.getElementById('wsClientView').style.display = 'block';
-      document.getElementById('wsClientTeam').textContent = NET.team;
-      wsSetStatus('wsClientStatus', 'Connected! Your score is now live on the host board.', 'ok');
-    }
-
-    function netPushScore(force) {
-      if (MP.active) return;  // Team mode pushes state via the host engine instead
-      if (NET.role !== 'client' || !NET.host || !NET.joined) return;
-      const now = Date.now();
-      if (!force && now - NET.lastSent < 700) return;
-      NET.lastSent = now;
+    // ===== Global leaderboard (Firebase Realtime Database REST API) ============
+    // Wins are posted to /scores/all and, when the game was opened from a room
+    // QR code (?s=CODE), also to /scores/sessions/CODE. leaderboard.html reads
+    // them. Without a configured database URL all of this stays hidden.
+    const LB_URL = String(window.LEADERBOARD_DB_URL || '').trim().replace(/\/+$/, '');
+    const LB_SESSION = (() => {
       try {
-        NET.host.send({ type: 'score', score: S ? S.score : 0, turn: S ? S.turn : 1, over: S ? S.over : false });
-      } catch (_) {}
+        const v = new URLSearchParams(location.search).get('s') || '';
+        const code = v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+        return code.length >= 3 ? code : '';
+      } catch (e) { return ''; }
+    })();
+    let lbEntry = null;     // the win waiting to be posted
+    let lbPosted = false;
+
+    function lbCleanName(v) { return String(v || '').replace(/[<>&"]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16); }
+
+    function lbSetStatus(msg, cls) {
+      const el = document.getElementById('lbStatus');
+      el.textContent = msg || '';
+      el.className = 'lb-status' + (cls ? ' ' + cls : '');
     }
 
-    function leaveWorkshop() {
-      try { if (NET.peer) NET.peer.destroy(); } catch (_) {}
-      NET.peer = null; NET.role = null; NET.host = null; NET.joined = false;
-      NET.conns = []; NET.scores = {}; NET.feed = [];
-      // Reset team-game state on both host and client.
-      MP.active = false; MP.team = null; MP.myId = null; MP.currentId = null;
-      MP.players = []; MP.over = false; MP.won = false; MP.rows = [];
-      TM.running = false; TM.games = {}; TM.baseField = null;
-      document.body.classList.remove('hosting');
-      const panel = document.querySelector('#workshopOverlay .panel');
-      if (panel) panel.classList.remove('projector');
-      const title = document.getElementById('wsBoardTitle');
-      if (title) title.textContent = '🙋 Teams in the room';
-      updateWsBadge();
-      document.getElementById('wsHostView').style.display = 'none';
-      document.getElementById('wsClientView').style.display = 'none';
-      document.getElementById('wsLobby').style.display = 'block';
-      wsSetStatus('wsLobbyStatus', '', '');
+    // Called from endGame: offer to post a win.
+    function lbPrepare(won, fs, turns) {
+      const box = document.getElementById('lbPost');
+      lbEntry = null; lbPosted = false;
+      if (!LB_URL || !won) { box.style.display = 'none'; return; }
+      lbEntry = { score: fs.total, won: true, turns, natives: nativeCells().length };
+      if (LB_SESSION) lbEntry.session = LB_SESSION;
+      let saved = '';
+      try { saved = localStorage.getItem('nd-name') || ''; } catch (e) {}
+      document.getElementById('lbName').value = saved;
+      document.getElementById('btnPostScore').disabled = false;
+      lbSetStatus(LB_SESSION ? `Posts to room ${LB_SESSION} and the all-time board.` : 'Posts to the all-time board.');
+      box.style.display = '';
     }
 
-    // ----- Client-side team-game view -----
-    function mpApplyState(d) {
-      const firstState = !MP.active;
-      MP.active = true;
-      MP.team = d.team;
-      MP.myId = d.myId;
-      MP.currentId = d.currentId;
-      MP.players = d.players || [];
-      MP.round = d.round;
-      MP.healthyRounds = d.healthyRounds;
-      MP.over = !!d.over;
-      MP.won = !!d.won;
-
-      const myTurn = (d.currentId === d.myId);
-      if (!S) S = newState();
-      S.field = d.field;
-      S.hand = d.hand || [];
-      S.plays = myTurn ? d.plays : 0;
-      S.score = d.score;
-      S.healthyTurns = d.healthyRounds;   // drives the win ticker
-      S.turn = d.round;
-      S.bountyZones = d.bountyZones || [];
-      S.bounties = d.bounties || 0;
-      S.over = !!d.over;
-      S.selected = null;
-      S.invasivePhaseActive = false;
-
-      if (firstState) {
-        closeOverlay('workshopOverlay');
-        closeOverlay('menuOverlay');
-        closeOverlay('helpOverlay');
-        toast('🎮 Team game started! ' + (myTurn ? "You're up first." : 'Watch your teammate.'), 2500);
+    async function lbPost() {
+      if (!lbEntry || lbPosted) return;
+      const name = lbCleanName(document.getElementById('lbName').value);
+      if (!name) { lbSetStatus('Enter a name or initials first.', 'err'); return; }
+      try { localStorage.setItem('nd-name', name); } catch (e) {}
+      const btn = document.getElementById('btnPostScore');
+      btn.disabled = true;
+      lbSetStatus('Posting…');
+      const body = JSON.stringify(Object.assign({ name }, lbEntry, { ts: { '.sv': 'timestamp' } }));
+      const paths = ['scores/all'].concat(LB_SESSION ? ['scores/sessions/' + LB_SESSION] : []);
+      try {
+        const res = await Promise.all(paths.map(path =>
+          fetch(`${LB_URL}/${path}.json`, { method: 'POST', body })));
+        const bad = res.find(r => !r.ok);
+        if (bad) throw new Error('HTTP ' + bad.status);
+        lbPosted = true;
+        lbSetStatus(`✓ Posted ${lbEntry.score} for ${name}!`, 'ok');
+        sound('good');
+      } catch (e) {
+        btn.disabled = false;
+        lbSetStatus("Couldn't reach the leaderboard - check the connection and try again.", 'err');
       }
-      render();
-
-      // Flash any cells the invasion spread into this turn.
-      if (d.spreads && d.spreads.length) {
-        sound('spread');
-        d.spreads.forEach((s, i) => {
-          setTimeout(() => { try { burst(s.to, '#EF5350'); } catch (_) {} }, i * 180);
-        });
-      } else if (!firstState && myTurn) {
-        toast('🎯 Your turn!', 1400);
-      }
-      // Announce events (hurricane, new arrivals, bounty patrols, losses) loudly.
-      (d.events || []).forEach(presentEvent);
     }
 
-    function mpShowGameOver(d) {
-      const hero = document.getElementById('goHero');
-      const title = document.getElementById('goTitle');
-      const stats = document.getElementById('goStats');
-      if (hero) hero.textContent = d.won ? '🏆' : '🥀';
-      if (title) title.textContent = d.won
-        ? 'Your team stabilized the ecosystem!'
-        : 'The invasion overwhelmed your team…';
-      if (stats) {
-        const rows = MP.rows || [];
-        const idx = rows.findIndex(r => r.team === d.team);
-        stats.innerHTML =
-          `<span>⭐ ${Math.round(d.score / Math.max(1, d.round))}</span>` +
-          `<span>🔁 ${d.round} rounds</span>` +
-          `<span>🌿 ${d.healthyRounds}/${WIN_TURNS} healthy</span>` +
-          (d.bounties ? `<span>💰 ${d.bounties} bounties</span>` : '') +
-          (idx >= 0 ? `<span>🏅 Rank ${idx + 1} of ${rows.length}</span>` : '');
+    function lbInit() {
+      if (!LB_URL) return;
+      document.getElementById('btnLeaderboard').style.display = '';
+      document.getElementById('btnLeaderboard').href = 'leaderboard.html' + (LB_SESSION ? '?s=' + LB_SESSION : '');
+      if (LB_SESSION) {
+        const b = document.getElementById('lbBadge');
+        b.textContent = '🏆 Room ' + LB_SESSION;
+        b.style.display = '';
       }
-      sound(d.won ? 'win' : 'lose');
-      openOverlay('gameOverlay');
-    }
-
-    // Team standings (host scoreboard + client side panel).
-    function renderTeamLeaderboard(id, rows, myTeam) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (!rows || !rows.length) {
-        el.innerHTML = '<div class="ws-empty">Waiting for the host to start games…</div>';
-        return;
-      }
-      const medals = ['🥇', '🥈', '🥉'];
-      el.innerHTML = rows.map((r, i) => {
-        const team = tmEsc(r.team);
-        const streak = Array.from({ length: WIN_TURNS }, (_, k) =>
-          `<i class="${k < r.healthy ? 'on' : ''}"></i>`).join('');
-        const pill = r.status === 'won' ? `<span class="ws-pill won">WON in ${r.roundsToWin}</span>`
-          : r.status === 'lost' ? '<span class="ws-pill lost">OVERRUN</span>'
-          : (r.current ? `<span class="ws-pill turn">▶ ${tmEsc(r.current)}</span>` : '');
-        const cls = 'ws-row' + (i === 0 ? ' lead' : '') + (r.status === 'won' ? ' won' : '') +
-          (r.status === 'lost' ? ' lost' : '') + (myTeam && r.team === myTeam ? ' mine' : '');
-        return `<div class="${cls}">` +
-          `<span class="ws-rank">${r.status === 'lost' ? (i + 1) : (medals[i] || (i + 1))}</span>` +
-          `<span class="ws-team">${team}${pill}` +
-          `<small><span class="ws-streak" title="Healthy streak">${streak}</span>` +
-          `R${r.rounds} · 🦋 ${r.natives} · 🌿 ${r.invaders}` +
-          (r.bounties ? ` · 💰 ${r.bounties}` : '') + `</small></span>` +
-          `<span class="ws-score">${r.points}<small>score</small></span></div>`;
-      }).join('');
-    }
-
-    // Pre-game lobby / solo-practice scores.
-    function renderLeaderboard(id, totals) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (!totals || !totals.length) {
-        el.innerHTML = '<div class="ws-empty">Waiting for teams to join…</div>';
-        return;
-      }
-      el.innerHTML = totals.map((t, i) => {
-        const names = (t.names || []).map(tmEsc).join(', ') || (t.count + ' players');
-        return `<div class="ws-row">` +
-          `<span class="ws-rank">${i + 1}</span>` +
-          `<span class="ws-team">${tmEsc(t.team)}<small>🙋 ${names}</small></span>` +
-          `<span class="ws-score">${t.total}<small>practice</small></span></div>`;
-      }).join('');
-    }
-
-    function updateWsBadge() {
-      const badge = document.getElementById('wsBadge');
-      if (!badge) return;
-      if (NET.role === 'host') {
-        badge.style.display = '';
-        badge.textContent = '📺 Hosting ' + NET.code;
-      } else if (NET.role === 'client' && NET.joined) {
-        badge.style.display = '';
-        badge.textContent = '👥 ' + NET.team;
-      } else {
-        badge.style.display = 'none';
-      }
+      document.getElementById('btnPostScore').addEventListener('click', lbPost);
+      document.getElementById('lbName').addEventListener('keydown', e => { if (e.key === 'Enter') lbPost(); });
     }
 
     function bindUI() {
@@ -3709,7 +2884,7 @@
           } else if (e.target.id === 'invasiveCount' || e.target.parentElement.id === 'invasiveCount') {
             showTooltip('🌿 <b>Invasive species</b><br>Species you\'re managing. Invasives spread each turn. Lose if invasives exceed ' + LOSE_CELLS + ' cells.', e.target.id === 'invasiveCount' ? e.target : e.target.parentElement);
           } else if (e.target.id === 'score' || e.target.parentElement.className.includes('score')) {
-            showTooltip('⭐ <b>Score</b><br>Points from removing invasives and protecting natives, divided by the number of rounds played — so faster, cleaner games score higher. In team games, winners rank first (fewest rounds), then healthy streak, then score.', document.querySelector('.score-display'));
+            showTooltip('⭐ <b>Points per turn</b><br>Live feedback while you play. If you win, your final score is ' + SPEED_PAR + ' ÷ turns played + ' + NATIVE_WEIGHT + ' × natives saved.', document.querySelector('.score-display'));
           }
         });
       }
@@ -3744,41 +2919,7 @@
         closeOverlay('menuOverlay');
         openOverlay('qrOverlay');
       });
-      document.getElementById('btnWorkshop').addEventListener('click', () => {
-        closeOverlay('menuOverlay');
-        openOverlay('workshopOverlay');
-      });
       document.getElementById('ebBtn').addEventListener('click', dismissBanner);
-      document.getElementById('btnHostRoom').addEventListener('click', hostWorkshop);
-      document.getElementById('btnStartTeams').addEventListener('click', tmStartGames);
-      document.getElementById('btnProjector').addEventListener('click', () => {
-        const panel = document.querySelector('#workshopOverlay .panel');
-        const on = panel.classList.toggle('projector');
-        document.getElementById('btnProjector').textContent = on ? '📱 Compact view' : '📺 Projector view';
-        if (on && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
-      });
-      document.getElementById('btnEndRoom').addEventListener('click', () => {
-        leaveWorkshop();
-        document.getElementById('btnHostRoom').style.display = 'block';
-        document.getElementById('btnProjector').textContent = '📺 Projector view';
-        toast('🚪 Room closed.');
-      });
-      // Keep the feed's "time ago" fresh on the projector.
-      setInterval(() => { if (NET.role === 'host') renderFeed(); }, 15000);
-      document.getElementById('btnJoinRoom').addEventListener('click', () => {
-        document.getElementById('btnHostRoom').style.display = 'none';
-        joinWorkshop(
-          document.getElementById('wsRoomInput').value,
-          document.getElementById('wsTeamInput').value,
-          document.getElementById('wsNameInput').value
-        );
-      });
-      document.getElementById('btnLeaveRoom').addEventListener('click', () => {
-        leaveWorkshop();
-        document.getElementById('btnHostRoom').style.display = 'block';
-        closeOverlay('workshopOverlay');
-        toast('🚪 Left the workshop room.');
-      });
       document.getElementById('btnNewGame').addEventListener('click', () => {
         closeOverlay('menuOverlay');
         initGame();
@@ -3844,6 +2985,7 @@
       }
 
       bindUI();
+      lbInit();
       buildGuide();
       buildGlossary();
       buildScience();
@@ -3852,18 +2994,6 @@
       initGame();
       openOverlay('helpOverlay');  // Show tutorial on every game start
 
-      // Deep link: ?room=CODE opens Workshop Mode pre-filled to join
-      let roomParam = null;
-      try { roomParam = new URLSearchParams(location.search).get('room'); } catch (e) {}
-      if (roomParam) {
-        const rc = roomParam.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
-        const input = document.getElementById('wsRoomInput');
-        if (input) input.value = rc;
-        closeOverlay('helpOverlay');  // Close tutorial before opening workshop
-        openOverlay('workshopOverlay');
-        wsSetStatus('wsLobbyStatus', 'Enter a team name to join room "' + rc + '".', 'ok');
-        return;
-      }
     });
 
     // Warn on accidental refresh during active game
