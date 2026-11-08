@@ -71,7 +71,9 @@ live leaderboard.
 - After a **win**, players enter a name or initials and tap **🏆 Post**. Losses
   aren't posted. Each player's best win is shown.
 - **Final score** = `5000 ÷ turns played` (speed; a perfect 5-turn win = 1000)
-  `+ 40 × natives saved` (habitat). The in-game ⭐ points are live feedback only.
+  `+ 37 × natives saved` (habitat). The weight 37 makes speed and habitat swing
+  the score equally across playtested wins. The in-game ⭐ points are live
+  feedback only.
 
 ### Setting up the leaderboard (one time, free)
 
@@ -80,13 +82,37 @@ Scores are stored in a free Firebase Realtime Database through its REST API (no 
 1. Create a project at https://console.firebase.google.com and add a
    **Realtime Database** (start in locked mode).
 2. In the database's **Rules** tab, paste [`database.rules.json`](database.rules.json)
-   and publish. The rules make scores append-only, check every field, and
-   reject a score that doesn't match its turns and natives.
+   and publish. The rules make scores and logs append-only, check every field,
+   reject a score that doesn't match its turns and natives, and keep logs
+   unreadable from browsers (you read them in the Firebase console).
 3. Put the database URL (e.g. `https://your-project-default-rtdb.firebaseio.com`) in
    [`leaderboard-config.js`](leaderboard-config.js) and push.
 
 Until the URL is set, the game works as normal and the post button stays hidden;
 `leaderboard.html` shows these setup steps.
+
+## 📊 Anonymous Gameplay Data (research)
+
+When the database is configured, each game uploads one anonymous record to
+`/logs` so you can study how people play. It is designed to contain nothing that
+identifies a person:
+
+- **Collected:** game version, the UTC **date** (no time), the game's random seed,
+  outcome (win / loss / abandoned), turns, final counts, and the **move list**:
+  each card played, its target, whether it was the right control, invalid taps,
+  passes, discards and turn ends, each with the seconds since the previous move.
+- **Not collected:** names, room codes, device or browser IDs, user agent, screen
+  size, location, exact times or IP addresses. Logs can't be matched to
+  leaderboard entries, and browsers can't read them back (`.read: false`).
+- Players see a notice in **How to Play** and can switch it off in **⚙️ Settings**.
+
+Whether your use needs ethics review is your institution's call; this is built to
+avoid identifiable data.
+
+**Replays:** every random event comes from a seeded generator, so a record's
+`seed` + `moves` replays the game exactly. Open `index.html?replay`, paste a
+record exported from the Firebase console, and watch it play back. Records carry
+a `v` (game version); bump `GAME_VERSION` in `index.html` whenever rules change.
 
 ## 🌀 Random Events
 
@@ -110,7 +136,8 @@ engagement) is as important as removing invaders.
 ## 🧪 Development
 
 The whole game lives in `index.html` (no build step, no dependencies). The
-leaderboard is `leaderboard.html` + `leaderboard-config.js` + `database.rules.json`.
+leaderboard is `leaderboard.html` + `leaderboard-config.js` + `database.rules.json`
+(which also covers `/logs`).
 Balance is checked by bot playtests: in 100 simulated games a player who picks the
 right intervention wins about 88% of the time (median 10 turns), while a player
 choosing cards at random never wins.

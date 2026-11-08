@@ -819,7 +819,6 @@
           <h1>🌿 <span class="title-text">Invasive Species: The Game!</span></h1>
         </div>
         <div class="header-right">
-          <button class="btn-icon" id="btnFeedback" title="Send feedback">💭</button>
           <button class="btn-icon" id="btnGuide" title="Field Guide">📖</button>
           <button class="btn-icon" id="btnMenu" title="Menu">☰</button>
         </div>
@@ -903,31 +902,31 @@
         </div>
         <button class="menu-btn" id="btnHints">💡 Hints: Off</button>
         <button class="menu-btn" id="btnSound">🔊 Sound: On</button>
+        <button class="menu-btn" id="btnResearch">📊 Anonymous play data: On</button>
+        <p style="font-size:0.74rem;opacity:0.8;margin-top:0.4rem;line-height:1.4;">
+          To help improve the game, it records your moves anonymously: no names, device
+          details, location or exact times - only the game's moves, outcome and date.
+        </p>
         <button class="menu-btn" id="btnFullscreen">⛶ Fullscreen</button>
       </div>
     </div>
 
-    <!-- Feedback Overlay -->
-    <div class="overlay" id="feedbackOverlay">
-      <div class="panel" style="max-width: 500px;">
+    <!-- Replay Overlay (researchers: open index.html?replay) -->
+    <div class="overlay" id="replayOverlay">
+      <div class="panel">
         <div class="panel-header">
-          <h2>💭 Send Feedback</h2>
-          <button class="btn-close" data-close="feedbackOverlay">×</button>
+          <h2>▶ Replay a logged game</h2>
+          <button class="btn-close" data-close="replayOverlay">×</button>
         </div>
-        <form id="feedbackForm" action="https://formsubmit.co/harrisonmiles13@gmail.com" method="POST" style="display: flex; flex-direction: column; gap: 0.8rem;">
-          <label style="font-size: 0.9rem;">
-            <span style="opacity: 0.9;">Your name (optional)</span>
-            <input type="text" name="name" placeholder="Your name" style="width: 100%; padding: 0.5rem; margin-top: 0.3rem; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); color: white; border-radius: 4px;">
-          </label>
-          <label style="font-size: 0.9rem;">
-            <span style="opacity: 0.9;">Your feedback *</span>
-            <textarea name="message" placeholder="Tell me what you think... bugs, ideas, fun moments, etc." style="width: 100%; padding: 0.5rem; margin-top: 0.3rem; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); color: white; border-radius: 4px; font-family: inherit; min-height: 150px; resize: vertical;" required></textarea>
-          </label>
-          <button type="submit" class="menu-btn primary" style="margin-top: 0.4rem;">📧 Send Feedback</button>
-          <p style="font-size: 0.75rem; opacity: 0.7; margin: 0;">Your feedback is sent directly to me and helps me improve the game. ❤️</p>
-        </form>
+        <p style="font-size:0.8rem;opacity:0.85;margin-bottom:0.5rem;">Paste one record from <code>/logs</code> (JSON with <code>seed</code> and <code>moves</code>).</p>
+        <textarea id="replayInput" class="lb-input" style="width:100%;min-height:140px;font-family:monospace;font-size:0.75rem;"></textarea>
+        <label style="display:block;font-size:0.8rem;margin:0.5rem 0;">Step delay (ms):
+          <input id="replaySpeed" class="lb-input" type="number" value="700" min="0" style="width:6rem;display:inline-block;"></label>
+        <button class="menu-btn primary" id="btnReplayGo">▶ Replay</button>
+        <div class="lb-status" id="replayErr"></div>
       </div>
     </div>
+    <div id="replayStatus" style="position:fixed;left:8px;bottom:8px;z-index:600;font-size:0.72rem;background:rgba(0,0,0,0.7);padding:0.2rem 0.5rem;border-radius:0.4rem;pointer-events:none;"></div>
 
     <!-- QR Code Overlay -->
     <div class="overlay" id="qrOverlay">
@@ -991,6 +990,7 @@
         <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. <b>Plant</b> more and <b>restore</b> habitat to keep your ratio healthy!</span></div>
         <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining 70% natives for 5 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
         <div class="eco-note">💡 Once a species becomes invasive, complete eradication is nearly impossible. Management is about maintaining a balance. Tap any creature to learn about it.</div>
+        <div class="eco-note" style="border-left-color:#90CAF9;">📊 Your moves are recorded anonymously (no names or device info) to help improve the game. You can turn this off in ⚙️ Settings.</div>
         <button class="menu-btn primary" data-close="helpOverlay" style="margin-top:0.8rem;">Let's go! 🌿</button>
       </div>
     </div>
@@ -1053,7 +1053,7 @@
     // Final score (wins only - losses don't go on the leaderboard):
     //   speed:   SPEED_PAR / turns played  (a perfect 5-turn win = 1000)
     //   habitat: NATIVE_WEIGHT per native species still alive
-    const SPEED_PAR = 5000, NATIVE_WEIGHT = 40;
+    const SPEED_PAR = 5000, NATIVE_WEIGHT = 37;  // 37: speed and habitat swing real wins equally
     const PTS = { plant: 8, seedPerNative: 6, restoreBase: 12, restorePerNative: 8,
                   community: 10, winBonus: 50, winPerNative: 10,
                   hurricanePerInvader: 10, wildfirePerPlant: 15 };
@@ -1240,11 +1240,28 @@
       return out;
     }
 
-    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    // ===== Seeded randomness ===================================================
+    // Every random game decision (board setup, hands, spread, events, arrivals,
+    // biocontrol, spray) draws from this seeded generator, so a game's seed plus
+    // its move list replays it exactly. Visual effects still use Math.random.
+    let rngState = 1;
+    function seedRng(seed) { rngState = (seed >>> 0) || 1; }
+    function rng() { // mulberry32
+      let t = rngState = (rngState + 0x6D2B79F5) >>> 0;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    function newSeed() {
+      try { return crypto.getRandomValues(new Uint32Array(1))[0]; }
+      catch (e) { return Math.floor(Math.random() * 4294967296); }
+    }
+
+    function pick(arr) { return arr[Math.floor(rng() * arr.length)]; }
 
     function findCell(pred) {
       for (let k = 0; k < 300; k++) {
-        const i = Math.floor(Math.random() * CELLS);
+        const i = Math.floor(rng() * CELLS);
         if (pred(i)) return i;
       }
       for (let i = 0; i < CELLS; i++) if (pred(i)) return i;
@@ -1298,7 +1315,7 @@
         if (present.length && !hasUseful) {
           // Guarantee at least one control that works on a present invader
           S.hand.push(pick(INVADERS[pick(present)].controls));
-        } else if (Math.random() < 0.3) {
+        } else if (rng() < 0.3) {
           // Mix in a native enhancement card
           S.hand.push(pick(enhanceTypes));
         } else {
@@ -1307,11 +1324,15 @@
       }
     }
 
-    function initGame() {
+    function initGame(seed) {
+      logUpload('abandoned');   // a game left unfinished still tells us something
       bannerQueue.length = 0;
       for (const k in EVENT_FX) delete EVENT_FX[k];
       if (bannerShowing) dismissBanner();
       S = newState();
+      S.seed = (seed == null) ? newSeed() : seed;
+      seedRng(S.seed);
+      logStart();
       setupBoard();
       refillHand();
       render();
@@ -1332,6 +1353,7 @@
         } else {
           toast('🚫 Aim for an <b>invasive species</b> - the ones with <b>red rings</b>.');
         }
+        logMove(['x', type, cellIdx]);  // tried an invalid target (no effect on the game)
         sound('error');
         return false;
       }
@@ -1341,6 +1363,9 @@
         return false;
       }
 
+      const occ = S.field[cellIdx];
+      logMove(['p', handIdx, cellIdx, type, occ ? occ.type : '',
+        (!isEnhance(type) && occ && occ.kind === 'invader') ? (INVADERS[occ.type].controls.includes(type) ? 1 : 0) : -1]);
       S.hand.splice(handIdx, 1);
       S.selected = null;
       S.plays--;
@@ -1438,7 +1463,7 @@
           if (S.field[adjIdx]) {
             if (S.field[adjIdx].kind === 'invader' && S.field[adjIdx].type === cell.type) {
               toRemove.push(adjIdx);
-            } else if (S.field[adjIdx].kind === 'native' && Math.random() < SPRAY_NATIVE_RISK) {
+            } else if (S.field[adjIdx].kind === 'native' && rng() < SPRAY_NATIVE_RISK) {
               damagedNatives.push(adjIdx);
             }
           }
@@ -1465,7 +1490,7 @@
           if (S.field[i] && S.field[i].kind === 'invader' && S.field[i].type === cell.type) pop.push(i);
         }
         for (const i of pop) {
-          if (i !== cellIdx && Math.random() >= BIO_KILL_CHANCE) continue;  // survivor
+          if (i !== cellIdx && rng() >= BIO_KILL_CHANCE) continue;  // survivor
           S.field[i] = null;
           S.newInvaders.delete(i);
           burst(i, '#4CAF50');
@@ -1588,8 +1613,9 @@
       }
     }
 
-    function endTurn() {
+    function endTurn(fromDiscard) {
       if (S.over || S.invasivePhaseActive) return;  // Prevent multiple clicks
+      if (!fromDiscard) logMove(['end']);
       S.selected = null;
       S.invasivePhaseActive = true;  // Lock out further clicks
       clearFreshFlags();
@@ -1605,7 +1631,7 @@
         if (S.newInvaders.has(i)) continue;
 
         const sp = INVADERS[S.field[i].type];
-        if (Math.random() < sp.spread) {
+        if (rng() < sp.spread) {
           // Exclude both empty AND cells already targeted by spreads this turn
           const empties = neighbors(i).filter(n => !S.field[n] && !spreadTargets.has(n));
           if (empties.length) {
@@ -1656,6 +1682,7 @@
     function passAction() {
       // Single player: just decrement plays locally
       if (S.over || S.invasivePhaseActive || S.plays <= 0) return;
+      logMove(['pass']);
       S.plays--;
       sound('select');
       render();
@@ -1664,13 +1691,14 @@
     function discardHand() {
       // Single player: discard all cards and end turn
       if (S.over || S.invasivePhaseActive || S.hand.length === 0) return;
+      logMove(['disc']);
       S.hand = [];
       S.plays = 0;
       S.selected = null;
       sound('select');
       toast('🗑️ Hand discarded. Turn ending...');
       render();
-      setTimeout(() => endTurn(), 800);
+      setTimeout(() => endTurn(true), 800);
     }
 
     // ===== Turn-end helpers =====================================================
@@ -1707,12 +1735,12 @@
 
     // Random disturbance: hurricane or wildfire strikes random cells.
     function rollRandomEvent() {
-      if (Math.random() >= RANDOM_EVENT_CHANCE) return null;
-      const kind = Math.random() < 0.5 ? 'hurricane' : 'wildfire';
+      if (rng() >= RANDOM_EVENT_CHANCE) return null;
+      const kind = rng() < 0.5 ? 'hurricane' : 'wildfire';
       const hits = Math.max(2, Math.floor(CELLS * (kind === 'hurricane' ? 0.15 : 0.12)));
       const ev = { kind, cells: [], invaders: 0, plants: 0, natives: 0, score: 0 };
       for (let k = 0; k < hits; k++) {
-        const idx = Math.floor(Math.random() * CELLS);
+        const idx = Math.floor(rng() * CELLS);
         const occ = S.field[idx];
         ev.cells.push(idx);
         if (!occ) continue;
@@ -1764,11 +1792,11 @@
       let chance = INTRO_BASE_CHANCE;
       if (invCount === 0) chance = 1.0;
       else if (invCount <= 2) chance = 0.7;
-      if (Math.random() >= chance) return null;
+      if (rng() >= chance) return null;
 
       // Occasionally a second propagule arrives later in the game.
       let count = 1;
-      if (invCount <= 2 && S.turn >= 4 && Math.random() < 0.35) count = 2;
+      if (invCount <= 2 && S.turn >= 4 && rng() < 0.35) count = 2;
 
       const arrivals = [];
       for (let n = 0; n < count; n++) {
@@ -1991,6 +2019,7 @@
         `<span>⭐ ${S.score} points</span>` +
         (S.bounties ? `<span>💰 ${S.bounties} python bounties</span>` : '');
       lbPrepare(won, fs, turns);
+      logUpload(won ? 'win' : 'loss', fs);
 
       const recap = Object.keys(INVADERS)
         .filter(t => S.removed[t] || invaderCells().some(i => S.field[i].type === t))
@@ -2848,21 +2877,100 @@
       document.getElementById('lbName').addEventListener('keydown', e => { if (e.key === 'Enter') lbPost(); });
     }
 
+    // ===== Anonymous gameplay logs (for studying how people play) ============
+    // One record per game, sent to /logs in the same database as the
+    // leaderboard. Deliberately NOT collected: names, room codes, device or
+    // browser IDs, user agent, screen size, location, exact times. A record
+    // holds only the game version, the UTC day, the game's random seed, the
+    // outcome and the move list, so it cannot be linked back to a person or to
+    // a leaderboard entry. Players can switch it off in Settings.
+    //
+    // Move format (each ends with the seconds since the previous move):
+    //   ['p', handIdx, cellIdx, card, targetType, correct, t]  play a card
+    //        correct: 1 right control, 0 wrong control, -1 not a control
+    //   ['x', card, cellIdx, t]  tapped an invalid target (no effect)
+    //   ['pass', t]  ['disc', t]  ['end', t]
+    // With the seed, the move list replays the game exactly (see ?replay).
+    const GAME_VERSION = '2026.11.1';  // bump whenever rules change, so replays use matching rules
+    const LOG = { moves: [], last: 0, done: true, off: false };
+    let researchOn = true;
+    try { researchOn = localStorage.getItem('nd-research') !== 'off'; } catch (e) {}
+
+    function logStart() {
+      LOG.moves = []; LOG.last = performance.now(); LOG.done = false;
+    }
+    function logMove(m) {
+      if (LOG.off || LOG.done) return;
+      const now = performance.now();
+      m.push(Math.round((now - LOG.last) / 100) / 10);
+      LOG.last = now;
+      LOG.moves.push(m);
+    }
+    function logRecord(outcome, fs) {
+      const rec = {
+        v: GAME_VERSION,
+        day: new Date().toISOString().slice(0, 10),
+        seed: S.seed,
+        outcome,
+        turns: turnsPlayed(),
+        natives: nativeCells().length,
+        invaders: invaderCells().length,
+        moves: LOG.moves
+      };
+      if (fs) rec.final = fs.total;
+      return rec;
+    }
+    // Upload once per game. Abandoned games need at least one move to be worth keeping.
+    function logUpload(outcome, fs, beacon) {
+      if (LOG.off || LOG.done || !S) return;
+      if (outcome === 'abandoned' && !LOG.moves.length) { LOG.done = true; return; }
+      LOG.done = true;
+      if (!researchOn || !LB_URL) return;
+      const body = JSON.stringify(logRecord(outcome, fs));
+      const url = `${LB_URL}/logs.json`;
+      try {
+        if (beacon && navigator.sendBeacon) navigator.sendBeacon(url, body);
+        else fetch(url, { method: 'POST', body, keepalive: true }).catch(() => {});
+      } catch (e) { /* offline: drop it */ }
+    }
+
+    function updateResearchBtn() {
+      document.getElementById('btnResearch').textContent =
+        researchOn ? '📊 Anonymous play data: On' : '📊 Anonymous play data: Off';
+    }
+
+    // ===== Replay a logged game (researchers): open index.html?replay ========
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    async function waitIdle() {
+      while (S.invasivePhaseActive && !S.over) await sleep(50);
+    }
+    async function replayGame(rec, stepMs) {
+      if (rec.v !== GAME_VERSION) {
+        toast(`⚠️ This log is from version ${rec.v}; this build is ${GAME_VERSION}. The replay may diverge.`, 4000);
+        await sleep(1500);
+      }
+      LOG.off = true;
+      closeOverlay('replayOverlay');
+      initGame(rec.seed);
+      const status = document.getElementById('replayStatus');
+      for (let k = 0; k < rec.moves.length && !S.over; k++) {
+        const m = rec.moves[k];
+        status.textContent = `▶ Replay ${k + 1}/${rec.moves.length} · turn ${S.turn} · ${m.slice(0, -1).join(' ')}`;
+        await sleep(stepMs);
+        if (m[0] === 'p') playCard(m[1], m[2]);
+        else if (m[0] === 'pass') passAction();
+        else if (m[0] === 'disc') { discardHand(); await sleep(900); }
+        else if (m[0] === 'end') endTurn();
+        await waitIdle();
+      }
+      const ok = S.over ? (S.healthyTurns >= WIN_TURNS ? 'win' : 'loss') : 'abandoned';
+      status.textContent = `■ Replay finished: ${ok} after ${turnsPlayed()} turns` +
+        (ok === rec.outcome && turnsPlayed() === rec.turns ? ' ✓ matches the log' : ` ⚠️ log says ${rec.outcome} after ${rec.turns}`);
+      LOG.off = false;
+    }
+
     function bindUI() {
       document.getElementById('btnMenu').addEventListener('click', () => openOverlay('menuOverlay'));
-      document.getElementById('btnFeedback').addEventListener('click', () => openOverlay('feedbackOverlay'));
-      document.getElementById('feedbackForm')?.addEventListener('submit', (e) => {
-        const form = document.getElementById('feedbackForm');
-        const text = form.querySelector('textarea').value;
-        if (!text.trim()) return;  // require message
-        // FormSubmit will handle the POST; show a success toast after a short delay
-        setTimeout(() => {
-          toast('💭 Feedback sent! Thanks for helping me improve the game!', 3000);
-          document.getElementById('feedbackForm').reset();
-          closeOverlay('feedbackOverlay');
-        }, 500);
-      });
-
       // Balance meter tooltip on click
       document.getElementById('invasionMeter')?.addEventListener('click', (e) => {
         const invCount = invaderCells().length;
@@ -2938,6 +3046,23 @@
         updateHintsBtn();
         sound('select');
       });
+      document.getElementById('btnResearch').addEventListener('click', () => {
+        researchOn = !researchOn;
+        try { localStorage.setItem('nd-research', researchOn ? 'on' : 'off'); } catch (e) {}
+        updateResearchBtn();
+        sound('select');
+      });
+      document.getElementById('btnReplayGo').addEventListener('click', () => {
+        let rec = null;
+        try { rec = JSON.parse(document.getElementById('replayInput').value); } catch (e) {}
+        if (!rec || typeof rec.seed !== 'number' || !rec.moves) {
+          document.getElementById('replayErr').textContent = 'That doesn\'t look like a game log.';
+          document.getElementById('replayErr').className = 'lb-status err';
+          return;
+        }
+        if (!Array.isArray(rec.moves)) rec.moves = Object.values(rec.moves);  // Firebase may return an object
+        replayGame(rec, Math.max(0, +document.getElementById('replaySpeed').value || 0));
+      });
       document.getElementById('btnSound').addEventListener('click', () => {
         soundOn = !soundOn;
         try { localStorage.setItem('nd-sound', soundOn ? 'on' : 'off'); } catch (e) {}
@@ -2991,10 +3116,18 @@
       buildScience();
       updateHintsBtn();
       updateSoundBtn();
+      updateResearchBtn();
       initGame();
       openOverlay('helpOverlay');  // Show tutorial on every game start
+      if (new URLSearchParams(location.search).has('replay')) {
+        closeOverlay('helpOverlay');
+        openOverlay('replayOverlay');
+      }
 
     });
+
+    // Leaving mid-game: send what we have as an abandoned game
+    window.addEventListener('pagehide', () => logUpload('abandoned', null, true));
 
     // Warn on accidental refresh during active game
     window.addEventListener('beforeunload', (e) => {
