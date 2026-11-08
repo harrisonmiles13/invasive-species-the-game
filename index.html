@@ -1181,6 +1181,19 @@
     const BOUNTY_RADIUS = 2;        // hexes swept around the target
     const BOUNTY_PATROL_TURNS = 2;  // turns the patrol zone stays active afterwards
     const BOUNTY_BONUS = 15;        // bounty paid per python on top of its points
+    // Biological control is not 100% effective: the targeted cell is always
+    // cleared, but every other cell of that species is cleared only with
+    // BIO_KILL_CHANCE. The larger the population, the more likely one or two
+    // individuals slip through.
+    const BIO_KILL_CHANCE = 0.9;
+    // Chance that at least one of a population of n survives a release.
+    function bioSurviveChance(n) { return 1 - Math.pow(BIO_KILL_CHANCE, Math.max(0, n - 1)); }
+    // Other tuning numbers surfaced in the Game Science tab
+    const SPRAY_NATIVE_RISK = 0.35, SPRAY_NATIVE_PENALTY = 15;
+    const WRONG_CONTROL_PENALTY = 5, NATIVE_LOST_PENALTY = 25;
+    const PTS = { plant: 8, seedPerNative: 6, restoreBase: 12, restorePerNative: 8,
+                  community: 10, winBonus: 50, winPerNative: 10,
+                  hurricanePerInvader: 10, wildfirePerPlant: 15 };
     // How a brand-new invader arrived (educational flavor, keyed by species).
     const DISPERSAL = {
       kudzu:    { icon: '🌬️', vector: 'Wind-blown seeds' },
@@ -1198,7 +1211,7 @@
       shears: { icon: '✂️', short: 'Cut', name: 'Mechanical Control',
         desc: 'Cutting, mowing, harvesting and netting. Repeatedly stripping biomass exhausts an invader until it can no longer rebound.', class: 'shears' },
       bio:    { icon: '🐾', short: 'Bio', name: 'Biological Control',
-        desc: "Introduce carefully tested natural predators or pathogens - weevils, parasitoid wasps, fungi - that target the invader without harming natives.", class: 'bio' },
+        desc: "Introduce carefully tested natural predators or pathogens - weevils, parasitoid wasps, fungi - that target the invader without harming natives. Hits the species across the whole board, but it's never 100%: the larger the population, the more likely one or two survive.", class: 'bio' },
       cdd:    { icon: '💧', short: 'CDD', name: 'Clean, Drain, Dry',
         desc: 'Drawdowns, hot-water washes and barriers. The proven prevention strategy for aquatic hitchhikers.', class: 'cdd' },
       burn:   { icon: '🔥', short: 'Burn', name: 'Prescribed Burn',
@@ -1516,7 +1529,7 @@
 
       if (!sp.controls.includes(ctrl)) {
         // Failed control
-        S.score = Math.max(0, S.score - 5);
+        S.score = Math.max(0, S.score - WRONG_CONTROL_PENALTY);
         vibrate(150);
         sound('error');
         burst(cellIdx, '#F44336');
@@ -1596,7 +1609,7 @@
           if (S.field[adjIdx]) {
             if (S.field[adjIdx].kind === 'invader' && S.field[adjIdx].type === cell.type) {
               toRemove.push(adjIdx);
-            } else if (S.field[adjIdx].kind === 'native' && Math.random() < 0.35) {
+            } else if (S.field[adjIdx].kind === 'native' && Math.random() < SPRAY_NATIVE_RISK) {
               damagedNatives.push(adjIdx);
             }
           }
@@ -1613,18 +1626,24 @@
           S.field[idx] = null;
           burst(idx, '#FF6B6B');
           toast(`💔 Spray damage: <b>${nat.name}</b> harmed!`, 2500);
-          S.score = Math.max(0, S.score - 15);
+          S.score = Math.max(0, S.score - SPRAY_NATIVE_PENALTY);
         }
       } else if (ctrl === 'bio') {
-        // Bio Control: remove all of that species
+        // Bio Control: the target is cleared; every other cell of the species
+        // is cleared with BIO_KILL_CHANCE, so large populations often keep a few.
+        const pop = [];
         for (let i = 0; i < CELLS; i++) {
-          if (S.field[i] && S.field[i].kind === 'invader' && S.field[i].type === cell.type) {
-            S.field[i] = null;
-            burst(i, '#4CAF50');
-            removed++;
-            totalScore += sp.points;
-          }
+          if (S.field[i] && S.field[i].kind === 'invader' && S.field[i].type === cell.type) pop.push(i);
         }
+        for (const i of pop) {
+          if (i !== cellIdx && Math.random() >= BIO_KILL_CHANCE) continue;  // survivor
+          S.field[i] = null;
+          S.newInvaders.delete(i);
+          burst(i, '#4CAF50');
+          removed++;
+          totalScore += sp.points;
+        }
+        S.lastBio = { pop: pop.length, removed };
       } else if (ctrl === 'cdd') {
         // CDD: target + all adjacent of same type (area draining effect)
         const toRemove = [cellIdx];
@@ -1668,6 +1687,13 @@
           `The gold zone stays patrolled for <b>${BOUNTY_PATROL_TURNS}</b> more turns.`, 5200);
         return;
       }
+      if (ctrl === 'bio') {
+        const b = S.lastBio, left = b.pop - b.removed;
+        toast(`🐾 <b>+${totalScore}</b> Biocontrol cleared <b>${b.removed} of ${b.pop}</b> ${sp.icon} ${sp.name}.` +
+          (left ? `<br><b>${left}</b> slipped through - biocontrol is never 100%.` : ''), 5200);
+        if (!S.seenFacts[cell.type]) S.seenFacts[cell.type] = true;
+        return;
+      }
       if (!S.seenFacts[cell.type]) {
         S.seenFacts[cell.type] = true;
         toast(`✅ <b>+${totalScore}</b> ${sp.icon} <b>${sp.name}</b> removed (${removed})!<br>${sp.harm}`, 5200);
@@ -1683,7 +1709,7 @@
         const t = pick(Object.keys(NATIVES));
         S.field[cellIdx] = { kind: 'native', type: t };
         S.totalNatives++;
-        S.score += 8;
+        S.score += PTS.plant;
         burst(cellIdx, '#66BB6A');
         toast(`🌱 Planted a ${NATIVES[t].icon} <b>${NATIVES[t].name}</b>! Healthy natives improve your ratio.`, 4200);
       } else if (type === 'seedbomb') {
@@ -1698,7 +1724,7 @@
             planted++;
           }
         }
-        S.score += planted * 6;
+        S.score += planted * PTS.seedPerNative;
         toast(`🌻 Seed bomb! Established <b>${planted}</b> new native${planted !== 1 ? 's' : ''}.`, 4200);
       } else if (type === 'restore') {
         // Reclaim a patch: clear one invader (any species, regardless of its
@@ -1721,13 +1747,13 @@
             planted++;
           }
         }
-        S.score += 12 + planted * 8;
+        S.score += PTS.restoreBase + planted * PTS.restorePerNative;
         toast(`🌾 Habitat restored! Cleared ${cleared ? cleared.icon + ' <b>' + cleared.name + '</b>' : 'an invader'} and planted <b>${planted}</b> native${planted !== 1 ? 's' : ''}.`, 4600);
       } else if (type === 'community') {
         let n = 0;
         for (const i of nativeCells()) { S.field[i].shield = Math.max(S.field[i].shield || 0, 1); n++; }
         S.plays += 2; // refund this card's cost and grant a bonus action
-        S.score += 10;
+        S.score += PTS.community;
         burst(cellIdx, '#FBC02D');
         toast(`🤝 Community Day! Volunteers shielded <b>${n}</b> native${n !== 1 ? 's' : ''} this turn (+1 action).`, 4600);
       }
@@ -1893,7 +1919,7 @@
         S.newInvaders.delete(idx);
       }
       ev.cells = [...new Set(ev.cells)];
-      ev.score = kind === 'hurricane' ? ev.invaders * 10 : ev.plants * 15;
+      ev.score = kind === 'hurricane' ? ev.invaders * PTS.hurricanePerInvader : ev.plants * PTS.wildfirePerPlant;
       S.score += ev.score;
       return ev;
     }
@@ -1909,7 +1935,7 @@
       const types = lost.map(i => S.field[i].type);
       for (const i of lost) {
         S.field[i] = null;
-        S.score = Math.max(0, S.score - 25);
+        S.score = Math.max(0, S.score - NATIVE_LOST_PENALTY);
       }
       // Shields wear off by one turn
       for (const i of nativeCells()) {
@@ -2007,7 +2033,7 @@
         return {
           tone: 'bad', kicker: 'Natives lost', icon: ev.types.map(t => NATIVES[t].icon).join(' '),
           title: ev.cells.length > 1 ? `${ev.cells.length} natives overwhelmed` : `${NATIVES[ev.types[0]].name} overwhelmed`,
-          body: `Surrounded by 3+ invaders. <b>-${25 * ev.cells.length}</b>` +
+          body: `Surrounded by 3+ invaders. <b>-${NATIVE_LOST_PENALTY * ev.cells.length}</b>` +
             (ev.shielded ? `<br>🛡️ ${plural(ev.shielded, 'native')} survived thanks to a shield.` : ''),
           learn: 'Keep invaders from encircling natives - or rally a Community Day to shield them.'
         };
@@ -2130,7 +2156,7 @@
       S.over = true;
       S.invasivePhaseActive = false;  // Clear flag on game end
       S.selected = null;
-      if (won) S.score += 50 + nativeCells().length * 10;
+      if (won) S.score += PTS.winBonus + nativeCells().length * PTS.winPerNative;
       const finalScore = effScore();
       if (finalScore > best) {
         best = finalScore;
@@ -2783,84 +2809,136 @@
     }
 
     function buildScience() {
-      let spreadTable = '<table style="width:100%; font-size:0.85rem; border-collapse:collapse;">';
-      spreadTable += '<tr style="border-bottom:1px solid rgba(255,255,255,0.2);"><th style="text-align:left;padding:0.3rem;">Species</th><th style="text-align:center;">Spread Rate</th><th style="text-align:right;">Chance/Turn</th></tr>';
-      for (const [key, sp] of Object.entries(INVADERS)) {
-        spreadTable += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td>${sp.icon} ${sp.name}</td><td style="text-align:center;">${sp.spread}</td><td style="text-align:right;">${Math.round(sp.spread * 100)}%</td></tr>`;
-      }
-      spreadTable += '</table>';
+      const H = t => `<h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">${t}</h3>`;
+      const P = t => `<p style="margin: 0.3rem 0;">${t}</p>`;
+      const NOTE = t => `<p style="font-size: 0.8rem; opacity: 0.85; margin: 0.3rem 0;">${t}</p>`;
+      const pct = x => Math.round(x * 100) + '%';
+      const TABLE = (head, rows) =>
+        '<table style="width:100%; font-size:0.8rem; border-collapse:collapse;">' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.2);">' +
+        head.map((h, i) => `<th style="text-align:${i ? 'center' : 'left'};padding:0.25rem;">${h}</th>`).join('') + '</tr>' +
+        rows.map(r => '<tr style="border-bottom:1px solid rgba(255,255,255,0.1);">' +
+          r.map((c, i) => `<td style="text-align:${i ? 'center' : 'left'};padding:0.25rem;">${c}</td>`).join('') + '</tr>').join('') +
+        '</table>';
+      const worksOn = ctrl => Object.values(INVADERS).filter(sp => sp.controls.includes(ctrl)).map(sp => sp.icon).join(' ') || '-';
+
+      // What each control removes (keep in sync with applyControl)
+      const AREA = {
+        manual: 'The target only',
+        shears:  'Target + 1 adjacent of the same species',
+        burn:   'The whole connected patch of that species',
+        cdd:    'Target + every adjacent cell of the same species',
+        chem:   `Target + every adjacent of the same species; each adjacent native has a ${pct(SPRAY_NATIVE_RISK)} chance to die (-${SPRAY_NATIVE_PENALTY})`,
+        bio:    `Target + every other cell of that species anywhere, each with a ${pct(BIO_KILL_CHANCE)} chance (see below)`,
+        bounty: `Every python within ${BOUNTY_RADIUS} cells, then a ${BOUNTY_PATROL_TURNS}-turn patrol`
+      };
+      const controlRows = Object.keys(CONTROLS).map(k =>
+        [`${CONTROLS[k].icon} ${CONTROLS[k].name}`, AREA[k] || '', worksOn(k)]);
+
+      const spreadRows = Object.values(INVADERS).map(sp =>
+        [`${sp.icon} ${sp.name}`, pct(sp.spread), sp.points]);
+      const kudzu = INVADERS.kudzu;
+
+      const bioRows = [1, 2, 4, 6, 8, 10, 15, 20].map(n =>
+        [n, pct(bioSurviveChance(n)), ((n - 1) * (1 - BIO_KILL_CHANCE)).toFixed(1)]);
 
       const html = `
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🎯 Victory & Defeat</h3>
+        ${H('🎯 Victory & Defeat')}
         <div class="guide-card">
-          <p><b>Win:</b> Maintain 70% natives (ratio 2.3:1) for 5 consecutive turns</p>
-          <p style="margin: 0.3rem 0; font-size: 0.9rem;">• Healthy = 70% natives or more (2.3:1 ratio minimum)</p>
-          <p><b>Lose:</b> All native species eliminated</p>
+          ${P(`<b>Win:</b> keep the habitat healthy for <b>${WIN_TURNS}</b> turns in a row.`)}
+          ${P(`<b>Healthy</b> = at least ${pct(HEALTHY_RATIO / (1 + HEALTHY_RATIO))} natives (natives ÷ invaders ≥ ${HEALTHY_RATIO.toFixed(2)}), or no invaders at all. One unhealthy turn resets the streak.`)}
+          ${P(`<b>Lose:</b> every native species is lost. In team games a team is also overrun if invaders cover more than ${LOSE_CELLS} cells.`)}
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🧬 Invasive Spread Rates</h3>
+        ${H('🔁 Turn Order')}
         <div class="guide-card">
-          <p style="font-size: 0.85rem; margin: 0 0 0.4rem;">Each turn, every invasive cell has a <b>probability</b> to spread to an empty neighbor:</p>
-          ${spreadTable}
-          <p style="font-size: 0.8rem; margin-top: 0.4rem; opacity: 0.9;">Math: <code>if (Math.random() &lt; spread_rate)</code> → spreads to random empty neighbor</p>
-          <p style="font-size: 0.8rem; opacity: 0.8;">Example: Kudzu (0.5) spreads ~50% of the time per cell. With 10 Kudzu cells, expect ~5 to spread per turn.</p>
+          ${P(`1. You get <b>${PLAYS_PER_TURN}</b> actions (play a card or pass). Your hand refills to ${HAND_SIZE}, always with at least one control that works on an invader on the board.`)}
+          ${P('2. Invaders spread → 3. bounty patrols catch pythons → 4. random event (from turn 2) → 5. surrounded natives are lost → 6. new invaders may arrive → 7. the healthy check.')}
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">💊 Control Card Effectiveness</h3>
+        ${H('🧬 Invasive Spread')}
         <div class="guide-card">
-          <p style="margin: 0.3rem 0;"><b>✓ Correct method:</b> Remove invader + gain points (20-40 depending on species)</p>
-          <p style="margin: 0.3rem 0;"><b>✗ Wrong method:</b> Invader survives - 5 points</p>
-          <p style="margin: 0.3rem 0; font-size: 0.85rem;">Each species works with specific controls based on real biology (e.g., aquatic species immune to spray).</p>
+          ${NOTE('Each turn, every established invader has its own chance to spread into one random empty neighbouring cell:')}
+          ${TABLE(['Species', 'Spread chance', 'Points'], spreadRows)}
+          ${NOTE(`Example: ${kudzu.icon} ${kudzu.name} spreads ${pct(kudzu.spread)} of the time per cell - 10 cells of it make ~${Math.round(kudzu.spread * 10)} new cells next turn.`)}
+          ${NOTE('Invaders that arrived or spread this turn wait a turn before they spread, and no cell can be colonized twice in one turn.')}
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌱 Native Enhancement Effects</h3>
+        ${H('🛠 Control Methods')}
         <div class="guide-card">
-          <p style="margin: 0.3rem 0;"><b>Plant 🌱:</b> Create new native on empty cell</p>
-          <p style="margin: 0.3rem 0;"><b>Seed Bomb 🌻:</b> Plant natives on 3 random cells (spread effect)</p>
-          <p style="margin: 0.3rem 0;"><b>Restore 🌾:</b> Clear one invader (any species, ignores weaknesses) and plant 2 natives in its place</p>
-          <p style="margin: 0.3rem 0;"><b>Community Day 🤝:</b> Protect all natives from overwhelm + gain 1 bonus action</p>
+          ${TABLE(['Method', 'What it removes', 'Works on'], controlRows)}
+          ${P(`<b>✓ Right method:</b> each invader removed scores its species' points (${Math.min(...Object.values(INVADERS).map(s => s.points))}-${Math.max(...Object.values(INVADERS).map(s => s.points))}).`)}
+          ${P(`<b>✗ Wrong method:</b> the invader survives, you lose ${WRONG_CONTROL_PENALTY} points, and it <b>spreads immediately</b> into an empty neighbour.`)}
+          ${NOTE('Each species has real weaknesses: e.g. no spray or fire touches a python, and aquatic species shrug off fire.')}
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌬️ Propagule Pressure (Reintroduction)</h3>
+        ${H('🐾 Biological Control (Never 100%)')}
         <div class="guide-card">
-          <p style="font-size: 0.85rem; margin: 0 0 0.4rem;">New invaders keep arriving each turn via natural and human dispersal, so a cleared board never stays clear for free:</p>
-          <p style="margin: 0.3rem 0;"><b>Base chance:</b> ${Math.round(INTRO_BASE_CHANCE * 100)}% per turn</p>
-          <p style="margin: 0.3rem 0;"><b>Nearly clear (≤2 invaders):</b> 70% chance (an open niche is inviting)</p>
-          <p style="margin: 0.3rem 0;"><b>Completely clear (0 invaders):</b> 100% - the empty habitat <i>will</i> be colonized</p>
-          <p style="margin: 0.3rem 0; font-size: 0.85rem;">Vectors: 🌬️ wind-blown seeds, 💧 water-borne fragments &amp; eggs, 🚤 boat hitchhikers, 🪵 firewood, 🐍 released pets, 🦠 contaminated gear.</p>
-          <p style="font-size: 0.8rem; opacity: 0.8;">A fresh arrival establishes for one turn before it can spread - giving you a window to respond. This is why management never ends.</p>
+          ${NOTE('Natural enemies (weevils, parasitoid wasps, fungi) rarely find every last host, so a release knocks a species back hard but seldom wipes it out.')}
+          ${P(`The cell you target is always cleared. Every <b>other</b> cell of that species is cleared with a <b>${pct(BIO_KILL_CHANCE)}</b> chance each, so the larger the population, the more likely one or two survive.`)}
+          ${TABLE(['Population', 'Chance some survive', 'Expected survivors'], bioRows)}
+          ${NOTE('Follow up any survivors with another method before they spread again.')}
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">💰 Python Bounty (Area Control)</h3>
+        ${H('🦋 Native Survival')}
         <div class="guide-card">
-          <p style="font-size: 0.85rem; margin: 0 0 0.4rem;">Modelled on Florida's Python Elimination Program and the annual Florida Python Challenge, which pay hunters to remove Burmese pythons from the Everglades.</p>
-          <p style="margin: 0.3rem 0;"><b>Sweep:</b> removes every python within ${BOUNTY_RADIUS} cells of the target</p>
-          <p style="margin: 0.3rem 0;"><b>Patrol:</b> the swept area stays guarded for ${BOUNTY_PATROL_TURNS} more turns - any python inside it at the end of a turn is caught</p>
-          <p style="margin: 0.3rem 0;"><b>Payout:</b> ${INVADERS.python.points} + ${BOUNTY_BONUS} bounty per python</p>
-          <p style="font-size: 0.8rem; opacity: 0.8;">The card only appears in your hand while pythons are on the board.</p>
+          ${P(`A native with <b>3 or more</b> invaders next to it at the end of the turn is lost (-${NATIVE_LOST_PENALTY}), unless shielded by a Community Day.`)}
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🌪️ Random Events</h3>
+        ${H('🌱 Native Enhancement Effects')}
         <div class="guide-card">
-          <p style="margin: 0.3rem 0;"><b>Chance:</b> 25% per turn (after turn 1)</p>
-          <p style="margin: 0.3rem 0;"><b>Hurricane:</b> Wipes ~${Math.floor(CELLS * 0.15)} random cells - invaders and natives alike (+10 per invader)</p>
-          <p style="margin: 0.3rem 0;"><b>Wildfire:</b> Burns ~${Math.floor(CELLS * 0.12)} random cells (+15 per invasive plant burned)</p>
-          <p style="margin: 0.3rem 0;">Events, new arrivals, bounty catches and native losses pop up as a banner, and the affected cells flash on the board.</p>
-          <p style="font-size: 0.85rem; opacity: 0.8;">Real climate disturbances can help or hurt depending on your ecosystem composition.</p>
+          ${P(`<b>🌱 Plant:</b> one native on an empty cell (+${PTS.plant}).`)}
+          ${P(`<b>🌻 Seed Bomb:</b> natives on the empty target and up to 2 empty neighbours (+${PTS.seedPerNative} each).`)}
+          ${P(`<b>🌾 Restore:</b> clear one invader of any species and plant up to 2 natives in its place (+${PTS.restoreBase}, +${PTS.restorePerNative} per native).`)}
+          ${P(`<b>🤝 Community Day:</b> shield every native for this turn's check and gain +1 action - the card refunds itself (+${PTS.community}).`)}
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">📊 Scoring</h3>
+        ${H('🌬️ Propagule Pressure (Reintroduction)')}
         <div class="guide-card">
-          <p style="margin: 0.3rem 0;"><b>Correct control:</b> +20 to +40 points (harder species = more)</p>
-          <p style="margin: 0.3rem 0;"><b>Wrong control:</b> -5 points</p>
-          <p style="margin: 0.3rem 0;"><b>Native lost:</b> -25 points</p>
-          <p style="font-size: 0.85rem; opacity: 0.8;">Strategy matters: Learning species ≈ winning consistently.</p>
+          ${NOTE('New invaders keep arriving each turn via natural and human dispersal, so a cleared board never stays clear for free:')}
+          ${P(`<b>Base chance:</b> ${pct(INTRO_BASE_CHANCE)} per turn`)}
+          ${P('<b>Nearly clear (≤2 invaders):</b> 70% chance (an open niche is inviting); from turn 4, 35% of those bring two arrivals')}
+          ${P('<b>Completely clear (0 invaders):</b> 100% - the empty habitat <i>will</i> be colonized')}
+          ${NOTE('Vectors: 🌬️ wind-blown seeds, 💧 water-borne fragments &amp; eggs, 🚤 boat hitchhikers, 🪵 firewood, 🐍 released pets, 🦠 contaminated gear. Arrivals prefer open ground away from natives, wear a pulsing NEW tag, and wait a turn before spreading.')}
         </div>
 
-        <h3 style="margin: 0.8rem 0 0.5rem; font-size: 0.95rem;">🔬 Real-World Parallels</h3>
+        ${H('💰 Python Bounty (Area Control)')}
+        <div class="guide-card">
+          ${NOTE("Modelled on Florida's Python Elimination Program and the annual Florida Python Challenge, which pay hunters to remove Burmese pythons from the Everglades.")}
+          ${P(`<b>Sweep:</b> removes every python within ${BOUNTY_RADIUS} cells of the target`)}
+          ${P(`<b>Patrol:</b> the swept area stays guarded for ${BOUNTY_PATROL_TURNS} more turns - any python inside it at the end of a turn is caught`)}
+          ${P(`<b>Payout:</b> ${INVADERS.python.points} + ${BOUNTY_BONUS} bounty per python`)}
+          ${NOTE('The card only appears in your hand while pythons are on the board.')}
+        </div>
+
+        ${H('🌪️ Random Events')}
+        <div class="guide-card">
+          ${P(`<b>Chance:</b> ${pct(RANDOM_EVENT_CHANCE)} per turn (after turn 1)`)}
+          ${P(`<b>🌀 Hurricane:</b> hits ~${Math.floor(CELLS * 0.15)} random cells - invaders and natives alike (+${PTS.hurricanePerInvader} per invader)`)}
+          ${P(`<b>🔥 Wildfire:</b> burns ~${Math.floor(CELLS * 0.12)} random cells (+${PTS.wildfirePerPlant} per invasive plant burned)`)}
+          ${NOTE('Events, new arrivals, bounty catches and native losses pop up as a banner, and the affected cells flash on the board.')}
+        </div>
+
+        ${H('📊 Scoring')}
+        <div class="guide-card">
+          ${TABLE(['Action', 'Points'], [
+            ['Invader removed (right method)', `+${Math.min(...Object.values(INVADERS).map(s => s.points))} to +${Math.max(...Object.values(INVADERS).map(s => s.points))}`],
+            ['Python bounty bonus', `+${BOUNTY_BONUS} per python`],
+            ['Planting / restoring natives', `+${PTS.seedPerNative} to +${PTS.restoreBase + 2 * PTS.restorePerNative}`],
+            ['Hurricane / wildfire', `+${PTS.hurricanePerInvader} / +${PTS.wildfirePerPlant} each`],
+            ['Win', `+${PTS.winBonus} +${PTS.winPerNative} per surviving native`],
+            ['Wrong method', `-${WRONG_CONTROL_PENALTY}`],
+            ['Native killed by spray', `-${SPRAY_NATIVE_PENALTY}`],
+            ['Native overwhelmed', `-${NATIVE_LOST_PENALTY}`]
+          ])}
+          ${P('<b>Your score</b> is total points ÷ turns played, so faster, cleaner games score higher. Team standings use the same per-round score.')}
+        </div>
+
+        ${H('🔬 Real-World Parallels')}
         <div class="guide-card">
           <p><b>No quick fix:</b> Invasive control is a never-ending management problem, not a puzzle to solve.</p>
           <p><b>Species unique:</b> Each invasive needs different strategies (biology matters).</p>
+          <p><b>Biocontrol isn't eradication:</b> agents keep a host low, but a few individuals almost always survive.</p>
           <p><b>Prevention first:</b> Preventing introduction beats any control method.</p>
           <p><b>Native rebuilding:</b> Restoration and community engagement matter as much as removal.</p>
         </div>

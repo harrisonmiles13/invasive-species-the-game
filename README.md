@@ -44,7 +44,7 @@ Tap any creature on the board for a fun fact, and check the 📖 Field Guide,
 **Controls (manage invaders):**
 - 👐 **Hunting & Trapping** — tracking, trapping and removing invasive animals by hand
 - ✂️ **Mechanical Control** — cutting, mowing, harvesting and netting to strip biomass
-- 🐾 **Biological Control** — tested natural enemies from the invader's homeland
+- 🐾 **Biological Control** — tested natural enemies from the invader's homeland. Reaches the species across the whole board, but it's never 100%: the targeted cell is always cleared and every other cell has a 90% chance, so the larger the population, the more likely one or two survive
 - 💧 **Water Management** — drawdowns, hot-water washes, barriers
 - 🔥 **Prescribed Burn** — planned fire that helps natives return
 - 💊 **Targeted Treatment** — precise, last-resort pesticide
