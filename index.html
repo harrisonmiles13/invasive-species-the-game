@@ -228,7 +228,7 @@
     .game-area {
       flex: 1;
       display: flex;
-      align-items: center;
+      align-items: flex-end;  /* free space gathers above the board for messages */
       justify-content: center;
       padding: 0.5rem;
       overflow: hidden;
@@ -359,21 +359,11 @@
       border-radius: 6px;
       font-size: 0.8rem;
       line-height: 1.3;
-      max-width: 360px;
       white-space: normal;
       z-index: 10000;
       pointer-events: none;
       border: 1px solid rgba(255, 255, 255, 0.2);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-
-    .custom-tooltip::after {
-      content: '';
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      background: rgba(0, 0, 0, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     /* Shielded native indicator */
@@ -536,12 +526,13 @@
     }
 
     /* Toast */
+    /* Position, width and font size are set by placeBesideBoard() so the
+       toast sits in empty space and never covers board tiles. */
     .toast {
-      position: absolute;
-      top: 0.75rem;
-      left: 50%;
-      transform: translateX(-50%) translateY(-10px);
-      max-width: min(92%, 460px);
+      position: fixed;
+      top: 0.5rem;
+      left: 0.5rem;
+      transform: translateY(-10px);
       background: rgba(15, 25, 20, 0.94);
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 0.85rem;
@@ -556,9 +547,11 @@
 
     .toast.show {
       opacity: 1;
-      transform: translateX(-50%) translateY(0);
+      transform: translateY(0);
       pointer-events: auto;
     }
+    /* Borrowing the header or hand area: let taps reach the buttons underneath */
+    .toast.show.passthru { pointer-events: none; }
 
     /* Overlays */
     .overlay {
@@ -926,8 +919,8 @@
       <!-- Main Game Area -->
       <main class="game-area" id="gameArea">
         <div class="board" id="board"></div>
-        <div class="toast" id="toast"></div>
       </main>
+      <div class="toast" id="toast"></div>
       <div class="event-tint" id="eventTint"></div>
       <div class="event-banner" id="eventBanner" role="alertdialog" aria-live="assertive">
         <div class="eb-kicker" id="ebKicker"></div>
@@ -2183,9 +2176,12 @@
       const board = document.getElementById('board');
       const rect = area.getBoundingClientRect();
       const pad = 12;
+      // Keep a band free above the board for messages (toasts, tooltips), as
+      // long as the board itself can stay a playable size.
+      const reserve = Math.min(MSG_BAND_MIN, Math.max(0, rect.height - 360));
       cellSize = Math.max(26, Math.min(
         (rect.width - pad) / (COLS + 0.5),
-        (rect.height - pad) / (1 + (ROWS - 1) * 0.87),
+        (rect.height - pad - reserve) / (1 + (ROWS - 1) * 0.87),
         64));
       board.style.width = cellSize * (COLS + 0.5) + 'px';
       board.style.height = cellSize * (1 + (ROWS - 1) * 0.87) + 'px';
@@ -2271,7 +2267,8 @@
         cardEl.innerHTML = `<span>${def.icon}</span><span class="card-label">${def.short}</span>`;
         cardEl.addEventListener('pointerdown', onCardPointerDown);
         cardEl.addEventListener('pointerenter', (e) => {
-          if (cardEl.dataset.tooltip) {
+          // Hover info is for mice only; a tap shows the same info as a message.
+          if (e.pointerType === 'mouse' && cardEl.dataset.tooltip && S.selected == null) {
             showTooltip(cardEl.dataset.tooltip, cardEl);
           }
         });
@@ -2311,12 +2308,7 @@
 
     function render() {
       if (HOST_SIM) return;  // Host resolving a team turn off-screen: skip rendering
-      renderBoard();
-      renderHand();
-      document.getElementById('score').textContent = effScore();
-      document.getElementById('actionPips').textContent =
-        '▲'.repeat(Math.max(0, S.plays)) + '△'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
-
+      renderHand();   // first: the hand's height decides how much room the board gets
       // In team multiplayer, show whose turn it is on this team
       const handHeader = document.querySelector('.hand-header span');
       const myTurn = !MP.active || MP.currentId === MP.myId;
@@ -2352,6 +2344,10 @@
         endBtn.style.display = (canEndTurn && myTurn) ? 'block' : 'none';
       }
 
+      document.getElementById('score').textContent = effScore();
+      document.getElementById('actionPips').textContent =
+        '▲'.repeat(Math.max(0, S.plays)) + '△'.repeat(Math.max(0, PLAYS_PER_TURN - S.plays));
+
       const invCount = invaderCells().length;
       const nativeCount = nativeCells().length;
       document.getElementById('nativeCount').textContent = nativeCount;
@@ -2383,6 +2379,12 @@
       }
 
       document.getElementById('bestScore').textContent = best;
+
+      // Board last: everything above changes the header/hand height, which
+      // decides how much room the board gets.
+      renderBoard();
+      // The board may have changed size: keep any visible message clear of it.
+      if (document.getElementById('toast').classList.contains('show')) placeToast();
       netPushScore();
     }
 
@@ -2473,7 +2475,7 @@
             const tgt = def.target === 'empty' ? 'an empty cell'
               : def.target === 'native' ? 'a native species'
               : 'any cell';
-            msg += `<br><br>Target: ${tgt}`;
+            msg += `<br>Target: ${tgt}`;
           } else {
             const works = Object.entries(INVADERS)
               .filter(([_, sp]) => sp.controls.includes(type))
@@ -2483,8 +2485,8 @@
               .filter(([_, sp]) => !sp.controls.includes(type))
               .map(([_, sp]) => sp.icon)
               .join(' ');
-            if (works) msg += `<br><br>✓ Works: ${works}`;
-            if (fails) msg += `<br><br>✗ Won't work: ${fails}`;
+            if (works) msg += `<br>✓ Works: ${works}`;
+            if (fails) msg += `<br>✗ Won't work: ${fails}`;
           }
           toast(msg, 6000);
         }
@@ -2519,10 +2521,96 @@
     // ===== Feedback: toast, sound, haptics, particles =========================
     let toastTimer = null;
 
+    // ===== Message placement: keep messages off the board =====================
+    const MSG_BAND_MIN = 84;   // px kept free above the board when height-limited
+    const MSG_MAX_WIDTH = 760; // keep line length readable on wide screens
+    const MSG_FONTS = [0.85, 0.8, 0.75, 0.7]; // rem, tried largest first
+
+    // Size and position `el` (fixed-position coordinates in the viewport) inside
+    // the empty space around the board: the band above it, the band below it,
+    // or the side gutters in landscape. Width adapts to the space available and
+    // the font steps down until the text fits. Returns the chosen box.
+    function placeBesideBoard(el, prefer) {
+      const area = document.getElementById('gameArea').getBoundingClientRect();
+      const b = document.getElementById('board').getBoundingClientRect();
+      const g = 8; // gap from board edge / screen edge (also clears the target glow)
+      const bands = {
+        top:    { x: area.left + g, y: area.top + g, w: area.width - 2 * g, h: b.top - area.top - 2 * g, anchor: 'bottom' },
+        bottom: { x: area.left + g, y: b.bottom + g, w: area.width - 2 * g, h: area.bottom - b.bottom - 2 * g, anchor: 'top' },
+        left:   { x: area.left + g, y: area.top + g, w: b.left - area.left - 2 * g, h: area.height - 2 * g, anchor: 'top' },
+        right:  { x: b.right + g, y: area.top + g, w: area.right - b.right - 2 * g, h: area.height - 2 * g, anchor: 'top' }
+      };
+      // Last resorts before touching the board: borrow the header above it, or
+      // the hand area below it (messages are brief and tap-to-dismiss).
+      const hand = document.querySelector('.player-area').getBoundingClientRect();
+      const vw = window.innerWidth;
+      bands.overHeader = { x: g, y: g, w: vw - 2 * g, h: b.top - 2 * g, anchor: 'bottom' };
+      bands.overHand = { x: g, y: b.bottom + g, w: vw - 2 * g, h: hand.bottom - b.bottom - 2 * g, anchor: 'top' };
+      const inArea = (prefer === 'bottom' ? ['bottom', 'top'] : ['top', 'bottom']).concat(['left', 'right']);
+      const borrowKeys = prefer === 'bottom' ? ['overHand', 'overHeader'] : ['overHeader', 'overHand'];
+      const usable = r => r.w >= 160 && r.h >= 28;
+      const order = inArea.map(k => bands[k]).filter(usable);
+      const borrow = borrowKeys.map(k => bands[k]).filter(usable);
+
+      const prevVis = el.style.visibility;
+      el.style.visibility = 'hidden';
+      const measure = (w, fs) => {
+        el.style.width = w + 'px';
+        el.style.fontSize = fs + 'rem';
+        return el.offsetHeight;
+      };
+      let pick = null;
+      // Free space first: largest font that fits in any free band.
+      for (const fs of MSG_FONTS) {
+        for (const r of order) {
+          const w = Math.min(r.w, MSG_MAX_WIDTH);
+          const h = measure(w, fs);
+          if (h <= r.h) { pick = { r, w, h, fs }; break; }
+        }
+        if (pick) break;
+      }
+      // Then borrowed space, one area at a time (header before hand for
+      // messages, so the cards stay visible), stepping the font down in each.
+      for (const r of pick ? [] : borrow) {
+        for (const fs of MSG_FONTS) {
+          const w = Math.min(r.w, MSG_MAX_WIDTH);
+          const h = measure(w, fs);
+          if (h <= r.h) { pick = { r, w, h, fs }; break; }
+        }
+        if (pick) break;
+      }
+      if (!pick) {
+        // Nothing fits even at the smallest font (tiny screen + long text):
+        // use the roomiest band at the smallest font; this is the only case
+        // where the message may reach over the board.
+        const r = order.concat(borrow).sort((a, b2) => b2.h - a.h)[0] ||
+          { x: area.left + g, y: area.top + g, w: area.width - 2 * g, h: 0, anchor: 'top' };
+        const w = Math.min(r.w, MSG_MAX_WIDTH);
+        pick = { r, w, h: measure(w, MSG_FONTS[MSG_FONTS.length - 1]), fs: MSG_FONTS[MSG_FONTS.length - 1] };
+      }
+      const { r, w, h } = pick;
+      const borrowed = borrow.includes(r);  // over header/hand, not free space
+      const left = r.x + (r.w - w) / 2;
+      // Top band: sit just above the board (closest to the action); otherwise start at the band's top.
+      const top = r.anchor === 'bottom' ? Math.max(r.y, r.y + r.h - h) : r.y;
+      el.style.visibility = prevVis;
+      return { left, top, width: w, borrowed };
+    }
+
+    function placeToast() {
+      const el = document.getElementById('toast');
+      const box = placeBesideBoard(el, 'top');
+      el.style.left = box.left + 'px';
+      el.style.top = box.top + 'px';
+      el.classList.toggle('passthru', box.borrowed);
+    }
+
     function toast(html, ms) {
       if (HOST_SIM) return;  // Host resolving a team turn off-screen: no UI side effects
       const el = document.getElementById('toast');
       el.innerHTML = html;
+      hideTooltip();  // never stack a hover tooltip on top of a message
+      placeToast();
       el.classList.add('show');
       clearTimeout(toastTimer);
       if (ms !== 0) {
@@ -2542,22 +2630,10 @@
         document.body.appendChild(tooltip);
       }
       tooltip.innerHTML = text;
-      const rect = targetEl.getBoundingClientRect();
-      const tooltipHeight = 80;  // approximate
-      const tooltipWidth = 360;
-      const spacing = 8;
-
-      // Prefer positioning above the target, fall back to below
-      if (rect.top > tooltipHeight + spacing) {
-        // Above
-        tooltip.style.top = (rect.top - tooltipHeight - spacing) + 'px';
-        tooltip.style.left = Math.max(8, Math.min(window.innerWidth - tooltipWidth - 8, rect.left + rect.width / 2 - tooltipWidth / 2)) + 'px';
-      } else {
-        // Below
-        tooltip.style.top = (rect.bottom + spacing) + 'px';
-        tooltip.style.left = Math.max(8, Math.min(window.innerWidth - tooltipWidth - 8, rect.left + rect.width / 2 - tooltipWidth / 2)) + 'px';
-      }
       tooltip.style.display = 'block';
+      const box = placeBesideBoard(tooltip, 'top');
+      tooltip.style.left = box.left + 'px';
+      tooltip.style.top = box.top + 'px';
     }
 
     function hideTooltip() {
@@ -3672,7 +3748,11 @@
       let resizeTimer = null;
       window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(render, 120);
+        resizeTimer = setTimeout(() => {
+          render();
+          if (document.getElementById('toast').classList.contains('show')) placeToast();
+          hideTooltip();
+        }, 120);
       });
     }
 
