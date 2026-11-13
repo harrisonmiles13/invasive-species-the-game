@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard · Invasive Species: The Game!</title>
+  <meta name="theme-color" content="#064e3b">
+  <style>
+    :root {
+      --bg1: #064e3b; --bg2: #065f46; --bg3: #0c4a6e;
+      --panel: rgba(0, 0, 0, 0.22);
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #ffffff; --muted: rgba(255, 255, 255, 0.7);
+      --gold: #FFD54F; --green: #81C784; --red: #ff8a80;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(160deg, var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%) fixed;
+      color: var(--text);
+      padding: clamp(16px, 2.5vw, 36px);
+    }
+    h1 { font-size: clamp(1.3rem, 2.6vw, 2.4rem); font-weight: 800; }
+    h2 { font-size: clamp(1rem, 1.6vw, 1.45rem); font-weight: 800; margin-bottom: 0.6em; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: clamp(12px, 2vw, 28px); }
+    .tools { display: flex; gap: 0.5rem; }
+    button {
+      font: inherit; font-weight: 700; color: var(--text); cursor: pointer;
+      background: rgba(255, 255, 255, 0.1); border: 1px solid var(--line);
+      border-radius: 999px; padding: 0.5rem 1rem;
+    }
+    button:hover { background: rgba(255, 255, 255, 0.18); }
+
+    .grid { display: grid; grid-template-columns: minmax(240px, 0.8fr) 1.4fr 1fr; gap: clamp(12px, 2vw, 28px); align-items: start; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: 1fr 1fr; } .join { grid-column: 1 / -1; } }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 1rem; padding: clamp(14px, 1.8vw, 24px); }
+
+    .join { text-align: center; }
+    .join .scan { font-size: clamp(1rem, 1.5vw, 1.3rem); font-weight: 700; margin-bottom: 0.7rem; }
+    .qr { width: min(100%, 320px); aspect-ratio: 1; background: #fff; border-radius: 0.8rem; padding: 10px; display: block; margin: 0 auto 0.7rem; }
+    .room-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+    .room { font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 800; letter-spacing: 0.2em; }
+    .url { font-size: 0.8rem; color: var(--muted); word-break: break-all; margin-top: 0.4rem; }
+    .stats { display: flex; justify-content: center; gap: 1.2rem; margin-top: 0.9rem; font-weight: 700; }
+    .stats b { display: block; font-size: clamp(1.4rem, 2.4vw, 2rem); color: var(--gold); }
+    .stats span { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+
+    ol.board { list-style: none; display: flex; flex-direction: column; gap: 0.45rem; }
+    ol.board li {
+      display: grid; grid-template-columns: 2.4em 1fr auto; align-items: center; gap: 0.7rem;
+      padding: 0.55em 0.8em; border-radius: 0.7rem; background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--line);
+    }
+    ol.board li.first { background: rgba(255, 213, 79, 0.18); border-color: rgba(255, 213, 79, 0.6); }
+    ol.board li.fresh { animation: fresh 2.4s ease; }
+    @keyframes fresh { 0% { background: rgba(129, 199, 132, 0.6); transform: scale(1.03); } 100% { } }
+    .rank { font-weight: 800; text-align: center; font-size: 1.15em; }
+    .who { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .who small { display: block; font-weight: 500; font-size: 0.72em; color: var(--muted); }
+    .pts { font-weight: 800; font-size: 1.25em; color: var(--gold); font-variant-numeric: tabular-nums; }
+    .room-board { font-size: clamp(1rem, 1.5vw, 1.45rem); }
+    .all-board { font-size: clamp(0.9rem, 1.1vw, 1.05rem); }
+    .empty { color: var(--muted); text-align: center; padding: 1.2rem 0.5rem; font-size: 0.95rem; }
+
+    .feed { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 1rem; font-size: 0.9rem; }
+    .feed li { padding: 0.35rem 0.6rem; border-radius: 0.5rem; background: rgba(255, 255, 255, 0.05); }
+    .feed .ago { float: right; color: var(--muted); font-size: 0.8em; }
+
+    .foot { margin-top: clamp(12px, 2vw, 24px); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; font-size: 0.85rem; color: var(--muted); }
+    .foot .err { color: var(--red); }
+    .how { font-size: 0.85rem; color: var(--muted); line-height: 1.45; margin-top: 0.8rem; }
+
+    .setup { max-width: 720px; margin: 2rem auto; line-height: 1.55; }
+    .setup code { background: rgba(255, 255, 255, 0.12); padding: 0.1em 0.35em; border-radius: 0.3em; }
+    .setup ol { margin: 0.8rem 0 0 1.4rem; }
+    .setup li { margin-bottom: 0.4rem; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h1>🌿 Invasive Species: The Game! <span style="color:var(--gold)">Leaderboard</span></h1>
+    <div class="tools">
+      <button id="btnNewRoom" title="Start a fresh room board (all-time scores are kept)">🔄 New room</button>
+      <button id="btnFull">⛶ Fullscreen</button>
+    </div>
+  </div>
+
+  <div id="app" class="grid">
+    <section class="card join">
+      <div class="scan">📱 Scan to play</div>
+      <img id="qr" class="qr" alt="QR code to open the game">
+      <div class="room-label">Room</div>
+      <div class="room" id="roomCode">····</div>
+      <div class="url" id="gameUrl"></div>
+      <div class="stats">
+        <div><b id="statWins">0</b><span>wins</span></div>
+        <div><b id="statPlayers">0</b><span>players</span></div>
+      </div>
+      <p class="how">Win a game, then post your score. Final score = 5000 ÷ turns played + 37 × natives saved. Only wins count.</p>
+    </section>
+
+    <section class="card">
+      <h2>🏆 This room</h2>
+      <ol class="board room-board" id="roomBoard"><li class="empty">No wins yet - be the first!</li></ol>
+      <ul class="feed" id="feed"></ul>
+    </section>
+
+    <section class="card">
+      <h2>🌍 All-time</h2>
+      <ol class="board all-board" id="allBoard"><li class="empty">Loading…</li></ol>
+    </section>
+  </div>
+
+  <div class="foot">
+    <span id="updated">Connecting…</span>
+    <span>Each player's best win is shown · refreshes every <span id="every"></span>s</span>
+  </div>
+
+  <script src="leaderboard-config.js"></script>
+  <script>
+    'use strict';
+    // Refresh cadence for a room of people playing ~5-10 minute games: often
+    // enough that a posted win shows up almost at once, light on the database.
+    const REFRESH_MS = 10000;
+    const TOP_N = 10;
+    const DB = String(window.LEADERBOARD_DB_URL || '').trim().replace(/\/+$/, '');
+
+    const $ = id => document.getElementById(id);
+    const store = {
+      get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    };
+
+    function genCode() {
+      const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I/O
+      let s = ''; for (let i = 0; i < 4; i++) s += a[Math.floor(Math.random() * a.length)];
+      return s;
+    }
+    function cleanCode(v) {
+      const c = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+      return c.length >= 3 ? c : '';
+    }
+
+    let room = cleanCode(new URLSearchParams(location.search).get('s')) || cleanCode(store.get('lb-room')) || genCode();
+    const seen = new Set();   // entry ids already on screen (to flash new ones)
+    let first = true, lastOk = 0;
+
+    function setRoom(code) {
+      room = code;
+      store.set('lb-room', room);
+      history.replaceState(null, '', location.pathname + '?s=' + room);
+      const gameUrl = new URL('./?s=' + room, location.href).href;
+      $('roomCode').textContent = room;
+      $('gameUrl').textContent = gameUrl;
+      $('qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=0&data=' + encodeURIComponent(gameUrl);
+      seen.clear(); first = true;
+    }
+
+    // Keep each player's best win (names compared case-insensitively).
+    function bestPerPlayer(entries) {
+      const best = new Map();
+      for (const e of entries) {
+        const key = String(e.name || '').toLowerCase();
+        const cur = best.get(key);
+        if (!cur || e.score > cur.score || (e.score === cur.score && e.ts < cur.ts)) best.set(key, e);
+      }
+      return [...best.values()].sort((a, b) => b.score - a.score || a.ts - b.ts);
+    }
+
+    function ago(ts) {
+      const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+      return s < 60 ? s + 's ago' : s < 3600 ? Math.round(s / 60) + 'm ago' : Math.round(s / 3600) + 'h ago';
+    }
+
+    function li(e, i, fresh) {
+      const el = document.createElement('li');
+      if (i === 0) el.classList.add('first');
+      if (fresh) el.classList.add('fresh');
+      const medals = ['🥇', '🥈', '🥉'];
+      const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = medals[i] || String(i + 1);
+      const who = document.createElement('span'); who.className = 'who'; who.textContent = e.name;
+      const sub = document.createElement('small'); sub.textContent = `${e.turns} turns · ${e.natives} natives`;
+      who.appendChild(sub);
+      const pts = document.createElement('span'); pts.className = 'pts'; pts.textContent = e.score;
+      el.append(rank, who, pts);
+      return el;
+    }
+
+    function renderBoard(el, rows, emptyMsg) {
+      el.replaceChildren();
+      if (!rows.length) {
+        const e = document.createElement('li'); e.className = 'empty'; e.textContent = emptyMsg;
+        el.appendChild(e); return;
+      }
+      rows.forEach((r, i) => el.appendChild(li(r, i, !first && !seen.has(r.id))));
+    }
+
+    const toList = obj => Object.entries(obj || {})
+      .map(([id, v]) => Object.assign({ id }, v))
+      .filter(e => e && typeof e.score === 'number' && e.won === true && e.name);
+
+    async function getJSON(url) {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+
+    async function refresh() {
+      if (document.hidden) return;
+      try {
+        const [roomData, allData] = await Promise.all([
+          getJSON(`${DB}/scores/sessions/${room}.json`),
+          getJSON(`${DB}/scores/all.json?orderBy=%22score%22&limitToLast=100`)
+        ]);
+        const roomList = toList(roomData);
+        const roomTop = bestPerPlayer(roomList).slice(0, TOP_N);
+        const allTop = bestPerPlayer(toList(allData)).slice(0, TOP_N);
+
+        renderBoard($('roomBoard'), roomTop, 'No wins yet - be the first!');
+        renderBoard($('allBoard'), allTop, 'No wins yet.');
+
+        $('statWins').textContent = roomList.length;
+        $('statPlayers').textContent = new Set(roomList.map(e => String(e.name).toLowerCase())).size;
+
+        const feed = $('feed'); feed.replaceChildren();
+        roomList.sort((a, b) => b.ts - a.ts).slice(0, 6).forEach(e => {
+          const item = document.createElement('li');
+          const t = document.createElement('span'); t.className = 'ago'; t.textContent = ago(e.ts);
+          item.append(t, document.createTextNode(`🏆 ${e.name} won in ${e.turns} turns - ${e.score}`));
+          feed.appendChild(item);
+        });
+
+        roomList.forEach(e => seen.add(e.id));
+        toList(allData).forEach(e => seen.add(e.id));
+        first = false;
+        lastOk = Date.now();
+        $('updated').classList.remove('err');
+      } catch (err) {
+        $('updated').classList.add('err');
+        $('updated').textContent = "⚠️ Can't reach the leaderboard database - retrying…";
+      }
+    }
+
+    function tickUpdated() {
+      if (!lastOk || $('updated').classList.contains('err')) return;
+      $('updated').textContent = 'Updated ' + ago(lastOk);
+    }
+
+    function showSetup() {
+      document.querySelector('.foot').style.display = 'none';
+      document.querySelector('.tools').style.display = 'none';
+      $('app').outerHTML = `
+        <div class="card setup">
+          <h2>Leaderboard not set up yet</h2>
+          <p>The global leaderboard stores scores in a free Firebase Realtime Database. To switch it on:</p>
+          <ol>
+            <li>Create a Firebase project at <code>console.firebase.google.com</code> and add a <b>Realtime Database</b> (locked mode is fine).</li>
+            <li>In the database's <b>Rules</b> tab, paste the contents of <code>database.rules.json</code> from this repository and publish.</li>
+            <li>Copy the database URL (like <code>https://your-project-default-rtdb.firebaseio.com</code>) into <code>leaderboard-config.js</code> and commit.</li>
+          </ol>
+          <p style="margin-top:0.8rem">The game itself works without it - players just won't see a post button.</p>
+        </div>`;
+    }
+
+    if (!DB) {
+      showSetup();
+    } else {
+      $('every').textContent = REFRESH_MS / 1000;
+      setRoom(room);
+      refresh();
+      setInterval(refresh, REFRESH_MS);
+      setInterval(tickUpdated, 1000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+      $('btnNewRoom').addEventListener('click', () => {
+        if (!confirm('Start a new room? The room board will start empty (all-time scores are kept).')) return;
+        setRoom(genCode());
+        refresh();
+      });
+      $('btnFull').addEventListener('click', () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+        else document.exitFullscreen?.();
+      });
+    }
+  </script>
+</body>
+</html>
