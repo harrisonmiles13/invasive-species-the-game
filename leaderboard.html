@@ -54,6 +54,7 @@
       padding: 0.55em 0.8em; border-radius: 0.7rem; background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--line);
     }
+    ol.board li.empty { display: block; }
     ol.board li.first { background: rgba(255, 213, 79, 0.18); border-color: rgba(255, 213, 79, 0.6); }
     ol.board li.fresh { animation: fresh 2.4s ease; }
     @keyframes fresh { 0% { background: rgba(129, 199, 132, 0.6); transform: scale(1.03); } 100% { } }
@@ -119,6 +120,7 @@
     <span>Each player's best win is shown · refreshes every <span id="every"></span>s</span>
   </div>
 
+  <script src="qrcode.min.js"></script>
   <script src="leaderboard-config.js"></script>
   <script>
     'use strict';
@@ -148,6 +150,13 @@
     const seen = new Set();   // entry ids already on screen (to flash new ones)
     let first = true, lastOk = 0;
 
+    function qrDataUrl(text) {
+      const q = qrcode(0, 'M');
+      q.addData(text);
+      q.make();
+      return q.createDataURL(8, 0);
+    }
+
     function setRoom(code) {
       room = code;
       store.set('lb-room', room);
@@ -155,7 +164,7 @@
       const gameUrl = new URL('./?s=' + room, location.href).href;
       $('roomCode').textContent = room;
       $('gameUrl').textContent = gameUrl;
-      $('qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=0&data=' + encodeURIComponent(gameUrl);
+      $('qr').src = qrDataUrl(gameUrl);
       seen.clear(); first = true;
     }
 
