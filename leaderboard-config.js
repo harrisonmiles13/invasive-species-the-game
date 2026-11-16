@@ -3,3 +3,7 @@
 // Leave it empty to turn the leaderboard off (the game works fine without it).
 // Setup steps are in README.md ("Global leaderboard").
 window.LEADERBOARD_DB_URL = 'https://invasive-species-the-game-default-rtdb.firebaseio.com';
+
+// Anonymous per-move gameplay logs to /logs (README, "Anonymous Gameplay Data").
+// Off: nothing is uploaded and the in-game notice and Settings toggle are hidden.
+window.GAMEPLAY_LOGS = false;

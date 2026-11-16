@@ -93,8 +93,11 @@ Until the URL is set, the game works as normal and the post button stays hidden;
 
 ## 📊 Anonymous Gameplay Data (research)
 
-When the database is configured, each game uploads one anonymous record to
-`/logs` so you can study how people play. It is designed to contain nothing that
+**Off by default.** With `window.GAMEPLAY_LOGS = true` in
+[`leaderboard-config.js`](leaderboard-config.js) and the database configured,
+each game uploads one anonymous record to `/logs` so you can study how people
+play. While it is off, nothing is uploaded and the How to Play notice and the
+Settings toggle are hidden. It is designed to contain nothing that
 identifies a person:
 
 - **Collected:** game version, the UTC **date** (no time), the game's random seed,

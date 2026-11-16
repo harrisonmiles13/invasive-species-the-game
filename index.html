@@ -993,7 +993,7 @@
         <div class="help-step"><span class="big">🦋</span><span>Native species (gold rings) die if surrounded by invaders. <b>Plant</b> more and <b>restore</b> habitat to keep your ratio healthy!</span></div>
         <div class="help-step"><span class="big">🏆</span><span><b>Win</b> by maintaining 70% natives for 5 consecutive turns. <b>Lose</b> if the invasion meter fills up or all natives are lost.</span></div>
         <div class="eco-note">💡 Once a species becomes invasive, complete eradication is nearly impossible. Management is about maintaining a balance. Tap any creature to learn about it.</div>
-        <div class="eco-note" style="border-left-color:#90CAF9;">📊 Your moves are recorded anonymously (no names or device info) to help improve the game. You can turn this off in ⚙️ Settings.</div>
+        <div class="eco-note" id="logNotice" style="border-left-color:#90CAF9;">📊 Your moves are recorded anonymously (no names or device info) to help improve the game. You can turn this off in ⚙️ Settings.</div>
         <button class="menu-btn primary" data-close="helpOverlay" style="margin-top:0.8rem;">Let's go! 🌿</button>
       </div>
     </div>
@@ -2897,6 +2897,7 @@
     // With the seed, the move list replays the game exactly (see ?replay).
     const GAME_VERSION = '2026.11.1';  // bump whenever rules change, so replays use matching rules
     const LOG = { moves: [], last: 0, done: true, off: false };
+    const LOGS_ON = window.GAMEPLAY_LOGS === true;
     let researchOn = true;
     try { researchOn = localStorage.getItem('nd-research') !== 'off'; } catch (e) {}
 
@@ -2929,7 +2930,7 @@
       if (LOG.off || LOG.done || !S) return;
       if (outcome === 'abandoned' && !LOG.moves.length) { LOG.done = true; return; }
       LOG.done = true;
-      if (!researchOn || !LB_URL) return;
+      if (!LOGS_ON || !researchOn || !LB_URL) return;
       const body = JSON.stringify(logRecord(outcome, fs));
       const url = `${LB_URL}/logs.json`;
       try {
@@ -2941,6 +2942,8 @@
     function updateResearchBtn() {
       document.getElementById('btnResearch').textContent =
         researchOn ? '📊 Anonymous play data: On' : '📊 Anonymous play data: Off';
+      document.getElementById('btnResearch').style.display = LOGS_ON ? '' : 'none';
+      document.getElementById('logNotice').style.display = LOGS_ON ? '' : 'none';
     }
 
     // ===== Replay a logged game (researchers): open index.html?replay ========
